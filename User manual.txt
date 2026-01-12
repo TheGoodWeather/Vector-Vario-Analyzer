@@ -1,0 +1,77 @@
+Tested on Windows 10 & 11  
+Version 1.0.0
+Contact : felixaubourg@gmail.com 
+
+** NO INTERNET CONNEXION REQUIRED ** 
+
+This software only works in local. For software updates and bugs correction please contact the support. 
+
+** PREREQUISITES ** 
+
+If the software was delivered to you without a "config" directory, please create it in the same directory of the executable. Otherwise you won't be able to analyze data. 
+In this folder config you should drop the config files of the probes you used. The name of the config file must be "config_{probe_number}". 
+(example: for the probe 06, version 5, the config file must be "config_V5N06". 
+
+** LOAD FILES ** 
+
+You can decide to analyze one flight or simultaneously two. Select the raw data file of the flights you want to analyze on your computer (it can be located anywhere). 
+If the associated config file is found the metadata should appears (Flight date, probe number and config version). 
+If not, please check ** TROUBLESHOOTING **
+Once the files are loaded, you can click on the button "Analyze"
+
+** CREATE POLAR DATA ** 
+
+The first graph displays the IAS vs Time, at a fixed interval of 100 ms. If two flights are analyzed, they will be automatically synchronized. You can zoom in and out,
+change the scale and several other options with the mouse right click. 
+
+To create polar data, simply click on "Add new point". You can then change the region of interest to calculate the Glide vs IAS graph by clicking on it in the first graph.
+You can zoom in and out on the Glide vs IAS graph, select which flight you want to show or hide, and remove the point by clicking on "Remove". 
+By default, if two flights are selected, the Glide and IAS values shown in the table are the calculated average between flight A and B. 
+
+
+** LOAD A REFERENCE ** 
+
+You can choose to load a flight as a reference and display it on the polar graph in order to compare your current polar points against previous ones. The reference flight is stored 
+in the database file. You can either hide flight A, flight B or both. Reference flights can not be modified in the analyse tab.
+
+** EXPORT FILES ** 
+
+Once you have created the desired polar points for you analysis, you can choose to export those in a .csv file. 
+Click on "Export", provide at least a flight number (for your own later uses, it will be also a unique ID in the database) and optionnaly other metadatas. 
+You can either export the flight data analyzed for each flights in a .csv file, or export the polar points in .csv file. 
+We also recommand to save the flight in the database for performing comparisons in the tab "Compare". To do that, just click on "Save analysis" on the export window. 
+
+** CHANGE UNIT DISPLAY **
+
+Since the 1.2.3 version it is possible to display the polar graph glide in degrees (°) or glide ratio. Simply select the according button beneath the graph
+
+** COMPARE FLIGHTS **
+
+In order to compare different flights located in your database, go the "compare" tab located on the top left of the window. You can now search in your database according to your
+filters (no filters applied will display all flights saved in the database). To display the polar data of the flight, simply click on the desired checkbox. You can display as many as flights as you want, but keep in mind there is only 4 different colors. You can also change the unit to "ratio", and choose to display only probe A or B. If you want to display the numerical values of a flight, Simply click on the row of the corresponding flight, and the data will appear on the table beneath. 
+To display the fit curve corresponding of the flight, click on the corresponding checkbox. At least three points are required for the fit to be consistent. It is a quadratic fitting.  
+
+** MANAGE DATABASE **
+
+The tab "Manage your database" allows the user to modify, delete or export directly the polar data saved into the local database. It is then easier than to edit the .JSON file by hand. The search option is the same than in the tab "Compare" or the "Export" window. 
+To edit an entry, press the button "Edit entry". You can then only modify the metadata that are not relevant such as the pilot, harness etc.. But you cannot edit the data itself nor the "flight number" which is supposed to be unique. Once in the edit mode, you can modify every entries you like. To leave the edit mode, Simply click again in the "Edit entry" button.
+
+To export a specific entry, just select the row on the table and click "Export entry", then select the location in your computer to save. 
+
+To delete a specific entry, just select the row on the table and click "Delete entry". Be careful as there will be no way to retrieve the deleted entry. 
+
+
+** TROUBLESHOOTING ** 
+
+If you have an error while loading a flight file, please check if the config file is well located (cf.  ** PREREQUISITES ** ). 
+Make sure that the config file contains the probe number and its version as comments in the first lines of the file:
+Example:
+//Version = 250405;
+//Probe = V5N05;
+
+Make sure your raw data file is not corrupted and has the probe number in the first line of the file: 
+Example :
+probe : V5N05
+
+
+For other bugs, please take screenshots of both the main windows and the console, and then send it to the editor as well as the log file located in your executable folder. 
