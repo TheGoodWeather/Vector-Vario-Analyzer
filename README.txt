@@ -15,7 +15,7 @@ Se référer au manuel utilisateur
 
 ### Prérequis pour lancer en python
 
-- Python 3.9+
+- Python 3.9.11
 - PyQt6 
 - pip
 
