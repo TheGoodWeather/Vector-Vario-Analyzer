@@ -6,12 +6,12 @@ from PyQt6.QtWidgets import QApplication, QLineEdit, QWidget, QVBoxLayout,QTable
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
+from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
 
 import sys
 from pathlib  import Path 
  
 SOFTWARE_VERSION = "1.0.0"
-VVA_VERSION = "1.0"
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -21,10 +21,14 @@ class MainWindow(QtWidgets.QMainWindow):
     
         uic.loadUi(self.resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
         
+        
+        self.setWindowTitle(f"Vector Vario Software Utility v{SOFTWARE_VERSION}")
         self.setFocus()  #allow the main windows to receive key press event 
         
         self.flight_loaded = False
         self.new_file_path = None 
+        
+        
         
         """
         Widgets tab import  / export
@@ -39,6 +43,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.logbox_handler = QTextEditLogger(self.textEdit_log)
         self.textEdit_log.verticalScrollBar().setValue(self.textEdit_log.verticalScrollBar().maximum())
         logger.addHandler(self.logbox_handler) 
+        
+        
+        #Table ------------------------------------
+        headers = ["Flight date","","Starting hour", "Altitude max","Altitude min", "Avg Wind dir", "Avg Wind speed", "Pilot", "Comment"]
+
+        self.tableWidget_database.setColumnCount(len(headers))
+        self.tableWidget_database.setHorizontalHeaderLabels(headers)
+        self.tableWidget_database.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        self.tableWidget_database.horizontalHeader().setStretchLastSection(True)
+        
+        self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
+        self.update_vva_table(self.flight, self.tableWidget_database)
         
     def resource_path(self, relative_path):
         """
@@ -67,6 +84,8 @@ class MainWindow(QtWidgets.QMainWindow):
         Fetching new file path and copying it into flight folder
         """
         self.lineEdit_file_path.clear()
+        self.lineEdit_comment.clear()
+        
         self.new_file_path = QtWidgets.QFileDialog.getOpenFileName(self, "Open flight file", "", ".CSV .IGC Files (*.csv *.igc)")
         if self.new_file_path[0]:
             self.new_file_path = Path(self.new_file_path[0]) 
@@ -114,94 +133,49 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def on_button_generate_vva(self):
         if self.new_file_path.suffix == ".csv":
-            #self.csv2vva(self.new_file_path)
+            generate_vva(self.new_file_path, csv2vva(self.new_file_path, self.lineEdit_comment))
             logger.info("Converting .csv file to .vva")
         elif self.new_file_path.suffix == ".IGC":
-            self.igc2vva(self.new_file_path)
+            generate_vva(self.new_file_path, igc2vva(self.new_file_path, self.lineEdit_comment))
             logger.info("Converting .igc file to .vva")
         else:
             logger.info(f"{self.new_file_path.suffix} files are not supported on version {SOFTWARE_VERSION}")
             return
-    
-    # def csv2vva(self, filepath):
         
-    #     with open(filepath, "r", encoding="utf-8") as file:
-            
-        
-        
-    def igc2vva(self, igc_filepath):
-        vv_vva = VVA_VERSION
-        vv_sn = None
-        vv_hw = None 
-        vv_fw = None
-        pilot = None
-        date = None
-        hour = None
-        altitude_max = None
-        alitude_min = None 
-        avg_windspeed = None
-        avg_winddir = None
-        with open(igc_filepath, "r", encoding="utf-8") as file:
-            for line in file:
-                line = line.strip()
-    
-                if line.startswith("AXVV"):
-                    vv_sn = line[4:]  
-                if line.startswith("HFRHWHARDWAREVERSION"):
-                    vv_hw= line.split(":")[1]
-                if line.startswith("HFRFWFIRMWAREVERSION"):
-                    vv_fw= line.split(":")[1]
-                if line.startswith("HFPLTPILOTINCHARGE"):
-                    pilot= line.split(":")[1]
-                if line.startswith("HFDTEDATE"):
-                    line= line.split(":")[1]
-                    date= line.split(",")[0]
-                if vv_sn and vv_hw and vv_fw and pilot and date != None :
-                    break 
-            
-            gps_altitude = []
-            windspeed = []
-            winddir = []
-            for line in file:
-                line = line.strip()
-                
-                if line.startswith("B"):
-                    gps_altitude.append(int(line[-5:]))
-                    lxvv_line = next(file, None)
-                    wind_index = lxvv_line.index('W')
-                    windspeed.append(int(str(lxvv_line[wind_index+1 : wind_index+3])))
-                    winddir.append(int(str(lxvv_line[wind_index+4 : wind_index+7])))
-            altitude_max = max(gps_altitude)
-            altitude_min = min(gps_altitude)
-            avg_winddir = sum(winddir) / len(winddir)
-            avg_windspeed = sum(windspeed) / len(windspeed)
-        
-        vva_path = igc_filepath.with_suffix(igc_filepath.suffix + ".vva")
-
-
-        with open(vva_path, "w", encoding="utf-8") as f:
-            try :
-                f.write(f"VV_VVA:{vv_vva}\n")
-                f.write(f"VV_SN:{vv_sn}\n")
-                f.write(f"VV_HW:{vv_hw}\n")
-                f.write(f"VV_FW:{vv_fw}\n")
-                f.write(f"pilot:{pilot}\n")
-                f.write(f"date:{date}\n")
-                f.write(f"hour:{hour}\n")
-                f.write(f"altitude_max:{altitude_max}\n")
-                f.write(f"altitude_min:{altitude_min}\n")
-                f.write(f"avg_windspeed:{avg_windspeed}\n")
-                f.write(f"avg_winddir:{avg_winddir}\n")
-
-            except Exception as e:
-                 logger.info(f"An error occurred: {e}")
-                
-                
+        self.flight = load_vva_files()
+        self.update_vva_table(self.flight, self.tableWidget_database)
         
     
     def on_button_clear_log(self):
         self.textEdit_log.clear()
         return
+    
+    def update_vva_table(self, data, table_widget):
+        
+        
+        table_widget.setRowCount(0)
+    
+        for row, flight in enumerate(data):
+            table_widget.insertRow(row)
+    
+            checkbox_item = QtWidgets.QTableWidgetItem()
+            checkbox_item.setFlags(
+            Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
+            checkbox_item.setCheckState(Qt.CheckState.Unchecked)
+            table_widget.setItem(row, 0, QtWidgets.QTableWidgetItem(str(flight["metadata"]["date"])))
+            table_widget.setItem(row, 1, checkbox_item)
+            table_widget.setItem(row, 2, QtWidgets.QTableWidgetItem(str(flight["metadata"]["hour"])))
+            table_widget.setItem(row, 3, QtWidgets.QTableWidgetItem(str(flight["metadata"]["altitude_max"])))
+            table_widget.setItem(row, 4, QtWidgets.QTableWidgetItem(str(flight["metadata"]["altitude_min"])))
+            table_widget.setItem(row, 5, QtWidgets.QTableWidgetItem(str(flight["metadata"]["avg_winddir"])))
+            table_widget.setItem(row, 6, QtWidgets.QTableWidgetItem(str(flight["metadata"]["avg_windspeed"])))
+            table_widget.setItem(row, 7, QtWidgets.QTableWidgetItem(str(flight["metadata"]["pilot"])))
+            table_widget.setItem(row, 8, QtWidgets.QTableWidgetItem(str(flight["metadata"]["comment"])))
+            
+    
+        table_widget.resizeColumnsToContents()
+        return
+        
     
 
 if __name__ == "__main__":

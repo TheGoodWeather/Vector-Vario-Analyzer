@@ -3,9 +3,10 @@ VV_SN:5FFVN_0005
 VV_HW:1.02
 VV_FW:1.32c
 pilot:Quent
-date:040126
-hour:None
+date:2026-01-04
+hour:13
 altitude_max:2593
 altitude_min:1560
-avg_windspeed:16.974068071312804
-avg_winddir:22.753646677471636
+avg_windspeed:16.97
+avg_winddir:22.75
+comment:
