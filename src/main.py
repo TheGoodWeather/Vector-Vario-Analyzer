@@ -7,6 +7,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
+from table_handler import update_vva_table, delete_table_entries, update_table_button_state
 
 import sys
 from pathlib  import Path 
@@ -39,6 +40,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_load_file.clicked.connect(self.on_button_load_file)
         self.pushButton_generate_vva.clicked.connect(self.on_button_generate_vva)
         self.pushButton_clear_log.clicked.connect(self.on_button_clear_log)
+        self.pushButton_delete_entry.clicked.connect(self.on_button_delete_entries)
         
         self.logbox_handler = QTextEditLogger(self.textEdit_log)
         self.textEdit_log.verticalScrollBar().setValue(self.textEdit_log.verticalScrollBar().maximum())
@@ -47,15 +49,20 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #Table ------------------------------------
         headers = ["Flight date","","Starting hour", "Altitude max","Altitude min", "Avg Wind dir", "Avg Wind speed", "Pilot", "Comment"]
-
+        self.button_list_table = [self.pushButton_delete_entry,self.pushButton_analyze_entry,self.pushButton_export_entry_ge,self.pushButton_export_entry_csv]
+        for button in self.button_list_table: #Disable table buttons
+            button.setEnabled(False)
         self.tableWidget_database.setColumnCount(len(headers))
         self.tableWidget_database.setHorizontalHeaderLabels(headers)
         self.tableWidget_database.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tableWidget_database.horizontalHeader().setStretchLastSection(True)
+        self.tableWidget_database.resizeColumnsToContents()
+        self.tableWidget_database.itemChanged.connect(lambda: update_table_button_state(self.tableWidget_database, self.button_list_table))
+
         
         self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
-        self.update_vva_table(self.flight, self.tableWidget_database)
+        update_vva_table(self.flight, self.tableWidget_database)
         
     def resource_path(self, relative_path):
         """
@@ -143,40 +150,30 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         self.flight = load_vva_files()
-        self.update_vva_table(self.flight, self.tableWidget_database)
+        update_vva_table(self.flight, self.tableWidget_database)
+        update_table_button_state(self.tableWidget_database, self.button_list_table)
         
     
     def on_button_clear_log(self):
         self.textEdit_log.clear()
         return
     
-    def update_vva_table(self, data, table_widget):
-        
-        
-        table_widget.setRowCount(0)
+    def on_button_delete_entries(self):
+        reply =  QMessageBox.question(
+        self,
+        "Warning",
+        "The source files will be deleted from the database.\n"
+        "Are you sure to proceed ?",
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        QMessageBox.StandardButton.No
+        )
     
-        for row, flight in enumerate(data):
-            table_widget.insertRow(row)
-    
-            checkbox_item = QtWidgets.QTableWidgetItem()
-            checkbox_item.setFlags(
-            Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
-            checkbox_item.setCheckState(Qt.CheckState.Unchecked)
-            table_widget.setItem(row, 0, QtWidgets.QTableWidgetItem(str(flight["metadata"]["date"])))
-            table_widget.setItem(row, 1, checkbox_item)
-            table_widget.setItem(row, 2, QtWidgets.QTableWidgetItem(str(flight["metadata"]["hour"])))
-            table_widget.setItem(row, 3, QtWidgets.QTableWidgetItem(str(flight["metadata"]["altitude_max"])))
-            table_widget.setItem(row, 4, QtWidgets.QTableWidgetItem(str(flight["metadata"]["altitude_min"])))
-            table_widget.setItem(row, 5, QtWidgets.QTableWidgetItem(str(flight["metadata"]["avg_winddir"])))
-            table_widget.setItem(row, 6, QtWidgets.QTableWidgetItem(str(flight["metadata"]["avg_windspeed"])))
-            table_widget.setItem(row, 7, QtWidgets.QTableWidgetItem(str(flight["metadata"]["pilot"])))
-            table_widget.setItem(row, 8, QtWidgets.QTableWidgetItem(str(flight["metadata"]["comment"])))
-            
-    
-        table_widget.resizeColumnsToContents()
+        if reply != QMessageBox.StandardButton.Yes:
+            logger.info("File deletion aborted")
+            return  
+        delete_table_entries(self.flight, self.tableWidget_database)
+        update_table_button_state(self.tableWidget_database, self.button_list_table)
         return
-        
-    
 
 if __name__ == "__main__":
     try:

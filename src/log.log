@@ -304,3 +304,42 @@
 [2026-01-25 08:12:45] INFO: File copied
 [2026-01-25 08:13:14] INFO: The file « 2026-01-04-XVV-FVN005-02.IGC » has already been uploaded
 [2026-01-25 08:13:15] INFO: File copied
+[2026-01-25 08:13:51] INFO: The file « 2026-01-04-XVV-FVN005-02.IGC » has already been uploaded
+[2026-01-25 08:13:52] INFO: File copied
+[2026-01-25 08:13:52] INFO: .vva file created at flight\2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-01-25 08:13:52] INFO: Converting .igc file to .vva
+[2026-01-25 08:15:02] INFO: File copied
+[2026-01-25 08:15:04] INFO: .vva file created at flight\LOGPRO014.csv.vva
+[2026-01-25 08:15:04] INFO: Converting .csv file to .vva
+[2026-01-26 06:43:09] DETAIL: files 2026-01-04-XVV-FVN005-02.IGC.vva deleted
+[2026-01-26 06:43:47] DETAIL: files LOGPRO014.csv.vva deleted
+[2026-01-26 06:51:41] INFO: File copied
+[2026-01-26 06:51:42] INFO: .vva file created at flight\LOGPRO014.csv.vva
+[2026-01-26 06:51:42] INFO: Converting .csv file to .vva
+[2026-01-26 06:52:09] INFO: files LOGPRO014.csv.vva deleted
+[2026-01-26 06:53:39] INFO: Nothing to delete
+[2026-01-26 07:17:19] INFO: File copied
+[2026-01-26 07:20:33] INFO: The file « LOGPRO014.csv » has already been uploaded
+[2026-01-26 07:20:36] INFO: File copied
+[2026-01-26 07:20:37] INFO: .vva file created at flight\LOGPRO014.csv.vva
+[2026-01-26 07:20:37] INFO: Converting .csv file to .vva
+[2026-01-26 07:36:35] INFO: files LOGPRO014.csv.vva deleted
+[2026-01-26 08:23:21] INFO: File copied
+[2026-01-26 08:23:23] INFO: .vva file created at flight\LOGPRO014.csv.vva
+[2026-01-26 08:23:23] INFO: Converting .csv file to .vva
+[2026-01-26 08:23:59] INFO: files LOGPRO014.csv.vva deleted
+[2026-01-26 08:24:05] INFO: File copied
+[2026-01-26 08:24:06] INFO: .vva file created at flight\2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-01-26 08:24:06] INFO: Converting .igc file to .vva
+[2026-01-26 08:24:16] INFO: File copied
+[2026-01-26 08:24:17] INFO: .vva file created at flight\LOGPRO014.csv.vva
+[2026-01-26 08:24:17] INFO: Converting .csv file to .vva
+[2026-01-26 08:24:28] INFO: Nothing to delete
+[2026-01-26 08:26:18] INFO: files LOGPRO014.csv.vva deleted
+[2026-01-26 08:33:19] INFO: files 2026-01-04-XVV-FVN005-02.IGC.vva deleted
+[2026-01-26 08:33:23] INFO: File copied
+[2026-01-26 08:33:25] INFO: .vva file created at flight\LOGPRO014.csv.vva
+[2026-01-26 08:33:25] INFO: Converting .csv file to .vva
+[2026-01-26 08:33:52] INFO: File copied
+[2026-01-26 08:33:53] INFO: .vva file created at flight\2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-01-26 08:33:53] INFO: Converting .igc file to .vva

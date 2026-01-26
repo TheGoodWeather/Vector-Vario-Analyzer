@@ -698,7 +698,7 @@ class App(QtWidgets.QMainWindow):
             self.export_update_signal.emit("Dual analysis enabled", True)
             
             self.export_update_signal.emit("Dual analysis enabled", True)
-            self.load_flight_file_B.setEnabled(True)  # Enable the button if the radio is checked
+            self.load_flight_file_B.F(True)  # Enable the button if the radio is checked
             self.checkBox_showB.setEnabled(True)
             self.radioButton_probe_B.setEnabled(True)
             self.lineFlightDateB.setEnabled(True)
