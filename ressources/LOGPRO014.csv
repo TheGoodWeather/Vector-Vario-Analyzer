@@ -1,6 +1,7 @@
 # [HASH] 0002121:365f008fe22ec1976cb84b021ca6d533de0db362cf3db0f55bb8316bfe41aaefba0cad8b548f80766961a7113cf6adee765677e1b5c19470974b5ec05642381c                                                                                                                                                                                                                                                                                                                                                                               
 # [VV] SN:5WNGC_0024 HW:1.03pro FW:1.32b
 # [PILOTE] Quentin 
+# [CALIB] 1.27 
 t;GNSS_fix;GNSS_time;GNSS_lat;GNSS_lon;GNSS_alt;GNSS_speed;GNSS_head;compass_head;pitch;roll;G_force;vario;DP;T_sensor;A0_cor_DP;A1_cor_DP;P_stat;air_T;air_RH;wind_origin;wind_vel
 6.00;0;2021-03-07 00:00:05.80;0.000000;0.000000;-17.00;0.00;0;92;-20;-56;1.00;0.00;2.4;16.9;0.0;0.00;898801;17.99;48.96;0;0.0
 6.22;0;2021-03-07 00:00:06.00;0.000000;0.000000;-17.00;0.00;0;92;-23;-55;0.98;-0.02;2.8;16.9;0.0;0.00;898799;17.98;48.93;0;0.0

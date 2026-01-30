@@ -15,11 +15,12 @@ def generate_vva(filepath, metadata):
             f.write(f"VV_SN:{metadata['vv_sn']}\n")
             f.write(f"VV_HW:{metadata['vv_hw']}\n")
             f.write(f"VV_FW:{metadata['vv_fw']}\n")
+            f.write(f"CALIB:{metadata['calib']}\n")
             f.write(f"pilot:{metadata['pilot']}\n")
             f.write(f"date:{metadata['date']}\n")
-            f.write(f"hour:{metadata['hour']}\n")
             f.write(f"altitude_max:{metadata['altitude_max']}\n")
             f.write(f"altitude_min:{metadata['altitude_min']}\n")
+            f.write(f"altitude_start:{metadata['altitude_start']}\n")
             f.write(f"avg_windspeed:{metadata['avg_windspeed']}\n")
             f.write(f"avg_winddir:{metadata['avg_winddir']}\n")
             f.write(f"comment:{metadata['comment']}\n")
@@ -36,15 +37,17 @@ def igc2vva(igc_filepath, widget_comment):
         "vv_sn" : None,
         "vv_hw" : None,
         "vv_fw" : None,
+        "calib" : None,
         "pilot" : None,
         "date" : None,
-        "hour" : None,
         "altitude_max" : None,
         "altitude_min" : None, 
+        "altitude_start" : None,
         "avg_windspeed" : None,
         "avg_winddir" : None,
         "comment" : ""
         }
+
 
     
     with open(igc_filepath, "r", encoding="utf-8") as file:
@@ -61,34 +64,37 @@ def igc2vva(igc_filepath, widget_comment):
                 metadata["pilot"]= line.split(":")[1]
             if line.startswith("HFDTEDATE"):
                 line= line.split(":")[1]   
-                metadata["date"]= datetime.strptime(line.split(",")[0],  "%d%m%y").strftime("%Y-%m-%d")
-            if metadata["vv_sn"] and metadata["vv_hw"] and metadata["vv_fw"] and metadata["pilot"] and metadata["date"] != None :
+                date_wo_hour = line.split(",")[0]
+            if metadata["vv_sn"] and metadata["vv_hw"] and metadata["vv_fw"] and metadata["pilot"] and date_wo_hour != None :
                 break 
-        
+            
+        file.seek(0)
         gps_altitude = []
         windspeed = []
         winddir = []
         hour = []
         for line in file:
             line = line.strip()
-            
             if line.startswith("B"):
                 gps_altitude.append(int(line[-5:]))
                 lxvv_line = next(file, None)
                 wind_index = lxvv_line.index('W')
-                hour.append(datetime.strptime(str(line[1:6]), "%H%M%S"))
+                hour.append(str(line[1:6]))
                 windspeed.append(int(str(lxvv_line[wind_index+1 : wind_index+3])))
                 winddir.append(int(str(lxvv_line[wind_index+4 : wind_index+7])))
         
         altitude_max = max(gps_altitude)
         altitude_min = min(gps_altitude)
+        altitude_start = gps_altitude[0]
         avg_winddir = sum(winddir) / len(winddir)
         avg_windspeed = sum(windspeed) / len(windspeed)
         comment = widget_comment.text()
-        print(hour[0])
-        metadata["hour"] = hour[0].strftime("%H")
+        
+        date = datetime.strptime(date_wo_hour + hour[0],"%d%m%y%H%M%S" ).strftime("%Y-%m-%d %H.%M")
+        metadata["date"] = date
         metadata["altitude_max"] = altitude_max
         metadata["altitude_min"] = altitude_min
+        metadata["altitude_start"] = altitude_start
         metadata["comment"] = comment
         
         if avg_windspeed is not None:
@@ -120,11 +126,12 @@ def csv2vva(csv_filepath, widget_comment):
         "vv_sn" : None,
         "vv_hw" : None,
         "vv_fw" : None,
+        "calib" : None,
         "pilot" : None,
         "date" : None,
-        "hour" : None,
         "altitude_max" : None,
         "altitude_min" : None, 
+        "altitude_start" : None,
         "avg_windspeed" : None,
         "avg_winddir" : None,
         "comment" : ""
@@ -145,11 +152,14 @@ def csv2vva(csv_filepath, widget_comment):
                     metadata["vv_hw"] = hw_match.group(1)
                 if fw_match:
                     metadata["vv_fw"] = fw_match.group(1)
-                    
+                
             elif line.startswith("# [PILOTE]"):
                 metadata["pilot"] = line.replace("# [PILOTE]", "").strip()
+                
+            elif line.startswith("# [CALIB]"):
+                metadata["calib"] = line.replace("# [CALIB]", "").strip()
             
-            elif metadata["vv_sn"] and metadata["vv_hw"] and metadata["vv_fw"] and metadata["pilot"] != None:
+            elif metadata["calib"] and metadata["vv_sn"] and metadata["vv_hw"] and metadata["vv_fw"] and metadata["pilot"] != None:
                 break
     
     gps_altitude = []
@@ -158,24 +168,23 @@ def csv2vva(csv_filepath, widget_comment):
     gnss_time = []
     
     with open(csv_filepath, "r", encoding="utf-8") as file:
-        for line in islice(file,4, None): #To change if there is more comments added into the file
-        
-            gps_altitude.append(float(line.split(";")[5]))
-            windspeed.append(float(line.split(";")[21]))
-            winddir.append(int(line.split(";")[20]))
-            gnss_time.append(datetime.strptime(str(line.split(";")[2]), "%Y-%m-%d %H:%M:%S.%f"))
+        for line in islice(file,5, None): #To change if there is more comments added into the file
+            if int(line.split(";")[1]) == 1 :  #If the GPS is fixed
+                gps_altitude.append(float(line.split(";")[5]))
+                windspeed.append(float(line.split(";")[21]))
+                winddir.append(int(line.split(";")[20]))
+                gnss_time.append(datetime.strptime(str(line.split(";")[2]), "%Y-%m-%d %H:%M:%S.%f"))
         
     altitude_max = max(gps_altitude)
     altitude_min = min(gps_altitude)
+    altitude_start = gps_altitude[0]
     avg_winddir = sum(winddir) / len(winddir)
     avg_windspeed = sum(windspeed) / len(windspeed)
-    date = gnss_time[0].strftime("%Y-%m-%d")
-    hour = gnss_time[0].strftime("%H")
-
+    date = gnss_time[0].strftime("%Y-%m-%d %H.%M")
     metadata["date"] = date
-    metadata["hour"] = hour
     metadata["altitude_max"] = altitude_max
     metadata["altitude_min"] = altitude_min
+    metadata["altitude_start"] = altitude_start
     metadata["comment"] = widget_comment.text()
     
     if avg_windspeed is not None:
@@ -196,11 +205,13 @@ def read_vva_metadata(vva_filepath):
         "vv_sn" : None,
         "vv_hw" : None,
         "vv_fw" : None,
+        "calib" : None,
         "pilot" : None,
         "date" : None,
         "hour" : None,
         "altitude_max" : None,
         "altitude_min" : None, 
+        "altitude_start" : None,
         "avg_windspeed" : None,
         "avg_winddir" : None,
         "comment" : ""
@@ -216,23 +227,24 @@ def read_vva_metadata(vva_filepath):
                 metadata["vv_sn"] = line.split(":")[1]  
             if line.startswith("VV_HW"):
                 metadata["vv_hw"] = line.split(":")[1]  
+            if line.startswith("CALIB"):
+                metadata["calib"] = line.split(":")[1]  
             if line.startswith("pilot"):
                 metadata["pilot"] = line.split(":")[1]
             if line.startswith("date"):
-                metadata["date"] = line.split(":")[1]  
-            if line.startswith("hour"):
-                metadata["hour"] = line.split(":")[1]  
+                metadata["date"] = line.split(":")[1]   
             if line.startswith("altitude_max"):
                 metadata["altitude_max"] = line.split(":")[1]  
             if line.startswith("altitude_min"):
                 metadata["altitude_min"] = line.split(":")[1]  
+            if line.startswith("altitude_start"):
+                metadata["altitude_start"] = line.split(":")[1]  
             if line.startswith("avg_windspeed"):
                 metadata["avg_windspeed"] = line.split(":")[1]  
             if line.startswith("avg_winddir"):
                 metadata["avg_winddir"] = line.split(":")[1]  
             if line.startswith("comment"):
                 metadata["comment"] = line.split(":")[1] 
-            
     return metadata
 
 def load_vva_files(flight_dir="flight"):

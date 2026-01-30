@@ -7,7 +7,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
-from table_handler import update_vva_table, delete_table_entries, update_table_button_state
+from table_handler import update_vva_table, delete_table_entries, update_table_button_state, analyze_table_entries
 
 import sys
 from pathlib  import Path 
@@ -41,6 +41,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_generate_vva.clicked.connect(self.on_button_generate_vva)
         self.pushButton_clear_log.clicked.connect(self.on_button_clear_log)
         self.pushButton_delete_entry.clicked.connect(self.on_button_delete_entries)
+        self.pushButton_analyze_entry.clicked.connect(self.on_button_analyze_entries)
         
         self.logbox_handler = QTextEditLogger(self.textEdit_log)
         self.textEdit_log.verticalScrollBar().setValue(self.textEdit_log.verticalScrollBar().maximum())
@@ -48,7 +49,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         
         #Table ------------------------------------
-        headers = ["Flight date","","Starting hour", "Altitude max","Altitude min", "Avg Wind dir", "Avg Wind speed", "Pilot", "Comment"]
+        headers = ["","Flight date", "Start altitude","Max altitude", "Pilot", "Comment"]
         self.button_list_table = [self.pushButton_delete_entry,self.pushButton_analyze_entry,self.pushButton_export_entry_ge,self.pushButton_export_entry_csv]
         for button in self.button_list_table: #Disable table buttons
             button.setEnabled(False)
@@ -173,6 +174,10 @@ class MainWindow(QtWidgets.QMainWindow):
             return  
         delete_table_entries(self.flight, self.tableWidget_database)
         update_table_button_state(self.tableWidget_database, self.button_list_table)
+        return
+    
+    def on_button_analyze_entries(self):
+        analyze_table_entries(self.flight, self.tableWidget_database)
         return
 
 if __name__ == "__main__":
