@@ -7,7 +7,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
-from moulinette import moulinette_csv, moulinette_igc
+from moulinette import fetch_raw_csv, fetch_raw_igc
 import sys
 from pathlib  import Path 
 
@@ -76,6 +76,6 @@ def analyze_table_entries(data, table_widget):
     for row in rows_to_analyze:
         logger.info(f"Analyzing {data[row]['file_name']}")
         if data[row]["origin_file_path"].suffix == ".csv":
-            moulinette_csv(data[row])
+            fetch_raw_csv(data[row])
         elif data[row]["origin_file_path"].suffix == ".igc":
-            moulinette_igc(data[row])
+            fetch_raw_igc(data[row])

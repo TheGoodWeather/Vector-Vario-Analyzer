@@ -1,0 +1,50 @@
+#eh-stripe-card-element,#eh-stripe-exp-element, #eh-stripe-cvc-element, #eh-stripe-iban-element  {
+    background:#fff;
+    height: 30px;
+    padding:5px 50px;
+    border: 1px solid #eee;
+    width:100%;
+}
+#eh-stripe-exp-element, #eh-stripe-cvc-element {
+    padding:5px 10px;
+}
+.stripe-card-group {
+	width:100%;
+}
+.woocommerce-checkout #payment ul.payment_methods li .eh-stripe-card-brand {
+    display: block;
+    width: 30px;
+    height: 24px;
+    margin-top: -24px;
+    float: left;
+    margin-left: 4px;
+}
+.woocommerce-checkout #payment ul.payment_methods li .eh-stripe-card-brand.eh-stripe-credit-card-brand {
+    background: no-repeat url(../img/credit-card.svg);
+}
+.woocommerce-checkout #payment ul.payment_methods li .eh-stripe-card-brand.eh-stripe-visa-brand {
+    background: no-repeat url(../img/visa.svg);
+}
+
+.woocommerce-checkout #payment ul.payment_methods li .eh-stripe-card-brand.eh-stripe-mastercard-brand {
+    background: no-repeat url(../img/mastercard.svg);
+}
+
+.woocommerce-checkout #payment ul.payment_methods li .eh-stripe-card-brand.eh-stripe-amex-brand {
+    background: no-repeat url(../img/amex.svg);
+
+}
+.woocommerce-checkout #payment ul.payment_methods li .eh-stripe-card-brand.eh-stripe-discover-brand {
+    background: no-repeat url(../img/discover.svg);
+}
+
+.woocommerce-checkout #payment ul.payment_methods li .eh-stripe-card-brand.eh-stripe-diners-brand {
+    background: no-repeat url(../img/diners.svg);
+}
+.woocommerce-checkout #payment ul.payment_methods li .eh-stripe-card-brand.eh-stripe-jcb-brand {
+    background: no-repeat url(../img/jcb.svg);
+}
+
+#eh-stripe-payment-request-button{
+    padding: 20px 0;
+}

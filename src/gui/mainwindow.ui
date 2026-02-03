@@ -232,6 +232,13 @@
                </widget>
               </item>
               <item>
+               <widget class="QProgressBar" name="progressBar">
+                <property name="value">
+                 <number>24</number>
+                </property>
+               </widget>
+              </item>
+              <item>
                <widget class="QFrame" name="frame_8">
                 <property name="frameShape">
                  <enum>QFrame::StyledPanel</enum>
