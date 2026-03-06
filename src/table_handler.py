@@ -54,6 +54,9 @@ def delete_table_entries(data, table_widget):
     return
 
 def update_table_button_state(table_widget, button_list):
+    """
+    This function disables all the buttons when no flight is selected
+    """
     for row in range(table_widget.rowCount()):
         checkbox_item = table_widget.item(row, 0)  # colonne checkbox
         if checkbox_item and checkbox_item.checkState() == Qt.CheckState.Checked:
@@ -73,9 +76,11 @@ def analyze_table_entries(data, table_widget):
     if len(rows_to_analyze) == 0:
         logger.info("Nothing to analyze")
         return
-    for row in rows_to_analyze:
-        logger.info(f"Analyzing {data[row]['file_name']}")
-        if data[row]["origin_file_path"].suffix == ".CSV":
-            fetch_raw_csv(data[row])
-        elif data[row]["origin_file_path"].suffix == ".IGC":
-            fetch_raw_igc(data[row])
+    
+    return rows_to_analyze
+    # for row in rows_to_analyze:
+    #     logger.info(f"Analyzing {data[row]['file_name']}")
+    #     if data[row]["origin_file_path"].suffix == ".csv":
+    #         fetch_raw_csv(data[row])
+    #     elif data[row]["origin_file_path"].suffix == ".IGC":
+    #         fetch_raw_igc(data[row])

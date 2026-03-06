@@ -10,6 +10,7 @@ from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
 from table_handler import update_vva_table, delete_table_entries, update_table_button_state, analyze_table_entries
 from PyQt6.QtCore import QThread
 from moulinette_worker import MoulinetteWorker
+from PyQt6.QtCore import QThreadPool
 
 import sys
 from pathlib  import Path 
@@ -24,6 +25,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
         uic.loadUi(self.resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
         
+        self.threadpool = QThreadPool() #initialize thread
         
         self.setWindowTitle(f"Vector Vario Software Utility v{SOFTWARE_VERSION}")
         self.setFocus()  #allow the main windows to receive key press event 
@@ -49,6 +51,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.textEdit_log.verticalScrollBar().setValue(self.textEdit_log.verticalScrollBar().maximum())
         logger.addHandler(self.logbox_handler) 
         
+        #initialize progress bar to 0
+        self.progressBar.setValue(0)
         
         #Table ------------------------------------
         headers = ["","Flight date", "Start altitude","Max altitude", "Pilot", "Comment"]
@@ -179,8 +183,29 @@ class MainWindow(QtWidgets.QMainWindow):
         return
     
     def on_button_analyze_entries(self):
-        analyze_table_entries(self.flight, self.tableWidget_database)
+        row_to_analyze = analyze_table_entries(self.flight, self.tableWidget_database)
+        
+        for row in row_to_analyze:
+
+            worker = MoulinetteWorker(self.flight[row])
+    
+            worker.signals.progress.connect(self.update_progress_bar)
+            worker.signals.finished.connect(self.analysis_finished)
+            worker.signals.error.connect(self.analysis_error)
+    
+            self.threadpool.start(worker)
         return
+    
+    def update_progress_bar(self, value):
+        print(value)
+        self.progressBar.setValue(value)
+       
+    def analysis_finished(self, flight_dic):
+        logger.info(f"Finished {flight_dic['file_name']}")
+       
+        
+    def analysis_error(self, msg):
+        logger.error(msg)
 
 if __name__ == "__main__":
     try:

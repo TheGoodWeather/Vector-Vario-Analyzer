@@ -30,7 +30,7 @@ raw_data_model = {  #available for both csv and igc file
     }
     
 
-def fetch_raw_csv(flight_dic):
+def fetch_raw_csv(flight_dic , progress_callback):
     """
     
     Parameters
@@ -44,11 +44,13 @@ def fetch_raw_csv(flight_dic):
     None.
 
     """
+    total_lines = 0 
     raw_data = raw_data_model #initializing the dic that will be returned
     #Remove spaces and blank lines
     with open(flight_dic["origin_file_path"], 'r') as file:
            lines = file.readlines()
            lines = [line for line in lines if line.strip()]
+           total_lines = len(lines)
     with open(flight_dic["origin_file_path"], 'w') as file:
         file.writelines(lines)
     
@@ -74,22 +76,29 @@ def fetch_raw_csv(flight_dic):
                     raw_data_from_csv[columns[i]] = np.append(raw_data_from_csv[columns[i]], values[i])  # On ajoute les valeurs dans les arrays en les convertissant en float pour pouvoir les traiter
         
         for i, (parameter_from_csv, value_from_csv) in enumerate(raw_data_from_csv.items()):
+            if i % 200 == 0:
+                emit_progress(progress_callback, 0, 40, i, total_lines)
             for j, (parameter_from_model, value_from_model) in enumerate(raw_data.items()):
                 if parameter_from_csv == parameter_from_model:
-                    if parameter_from_csv == "GNSS_time": #Converting the string into float or datetime for the GNSS time
+                    if parameter_from_csv == "GNSS_time": #Converting the string into float, int or datetime for the GNSS time
                         raw_data[parameter_from_model] = raw_data_from_csv[parameter_from_csv] #TO DO : COnvert into datetime variable 
+                    elif parameter_from_csv in {"GNSS_fix", "GNSS_head" , "compass_head" , "pitch" , "roll" , "P_stat" , "wind_origin"}:
+                        raw_data[parameter_from_model] = raw_data_from_csv[parameter_from_csv].astype(int)
                     else:
                         raw_data[parameter_from_model] = raw_data_from_csv[parameter_from_csv].astype(float)
+        
         
         with np.errstate(divide='ignore', invalid='ignore'):
             #calculating IAS as it is not natively recorded into LOGPRO
             raw_data["IAS"] = np.sqrt(np.multiply(2.0 / 1.225, np.add(raw_data["DP"], raw_data["A0_cor_DP"][-1], np.multiply(raw_data["A1_cor_DP"][-1], raw_data["T_sensor"]))))
             
         
-        raw_data["AirES"],raw_data["AirE"],raw_data["AirW"], raw_data["AirTd"], raw_data["LCL"], raw_data["AirTheta"], raw_data["AirRho"], raw_data["VarioIAS"], raw_data["TAS"] = additional_data_process(raw_data)
+        raw_data["AirES"],raw_data["AirE"],raw_data["AirW"], raw_data["AirTd"], raw_data["LCL"], raw_data["AirTheta"], raw_data["AirRho"], raw_data["VarioIAS"], raw_data["TAS"] = additional_data_process(raw_data , progress_callback)
         flight_dic["data"] = raw_data
         
-def fetch_raw_igc(flight_dic):
+
+        
+def fetch_raw_igc(flight_dic, progress_callback):
     """
     
 
@@ -105,19 +114,26 @@ def fetch_raw_igc(flight_dic):
     None.
 
     """
+    total_lines = 0 
     raw_data = raw_data_model #initializing the dic that will be returned
     #Remove spaces and blank lines
     with open(flight_dic["origin_file_path"], 'r') as file:
            lines = file.readlines()
            lines = [line for line in lines if line.strip()]
+           total_lines = len(lines)
+
     with open(flight_dic["origin_file_path"], 'w') as file:
         file.writelines(lines)
 
-
+    
     with open(flight_dic["origin_file_path"], "r", encoding="utf-8") as file:
-        for line in file:
+        
+        for i, line in enumerate(file):
             line = line.strip()
             
+            if i % 200 == 0:
+                emit_progress(progress_callback, 0, 40, i, total_lines)
+                
             if line.startswith("HFDTEDATE"):
                 line= line.split(":")[1]   
                 date_wo_hour = line.split(",")[0]
@@ -180,34 +196,12 @@ def fetch_raw_igc(flight_dic):
         raw_data["P_stat"] = np.multiply(101325, np.power(np.subtract(1, np.divide(raw_data["QNS_alt"],44109.12)),5.255))
         raw_data["vario"] = np.multiply(np.divide(np.add(np.diff(raw_data["QNS_alt"],append=0), np.diff(raw_data["GNSS_alt"], append=0)),2), dt)
                 
-        raw_data["AirES"],raw_data["AirE"],raw_data["AirW"], raw_data["AirTd"], raw_data["LCL"], raw_data["AirTheta"], raw_data["AirRho"], raw_data["VarioIAS"], raw_data["TAS"] = additional_data_process(raw_data)
+        raw_data["AirES"],raw_data["AirE"],raw_data["AirW"], raw_data["AirTd"], raw_data["LCL"], raw_data["AirTheta"], raw_data["AirRho"], raw_data["VarioIAS"], raw_data["TAS"] = additional_data_process(raw_data,progress_callback )
         flight_dic["data"] = raw_data       
-        
-       
-        # # print("P_stat_____________")
-        # # print(raw_data["P_stat"][1000:1010])
-        # print("AirES___________")
-        # print(raw_data["AirES"][11110:11120])
-        # print("AirE___________")
-        # print(raw_data["AirE"][11110:11120])
-        # print("AirW___________")
-        # print(raw_data["AirW"][11110:11120])
-        # print("AirTd___________")
-        # print(raw_data["AirTd"][11110:11120])
-        # print("LCLl___________")
-        # print(raw_data["LCL"][11110:11120])
-        # print("AirTheta___________")
-        # print(raw_data["AirTheta"][11110:11120])
-        # print("AirRho___________")
-        # print(raw_data["AirRho"][11110:11120])
-        # print("TAS___________")
-        # print(raw_data["TAS"][11110:11120])
-        
     
-        
-    return
 
-def additional_data_process(raw_data):
+
+def additional_data_process(raw_data, progress_callback):
     """
     
     
@@ -243,23 +237,31 @@ def additional_data_process(raw_data):
         
         # pression de vapeur saturante en hPa
         AirES = np.multiply(6.112, np.exp(np.divide(np.multiply(17.67,raw_data["air_T"]), np.add(raw_data["air_T"], 243.5))))
+        emit_progress(progress_callback, 40, 60, 1, 9)
         # Pression de vapeur réelle en hPa
         AirE = np.multiply(raw_data["air_RH"],AirES) / 100
+        emit_progress(progress_callback, 40, 60, 2, 9)
         #Mixing ratio 
         AirW = np.divide(np.multiply(0.622,AirE ), np.subtract(raw_data["P_stat"],AirE ))
+        emit_progress(progress_callback, 40, 60, 3, 9)
         #Dewpoint in °C
         AirTd = 243.5 * np.divide(np.log(np.divide(AirE,6.112)),np.subtract(17.67, np.log(np.divide(AirE,6.112))))
+        emit_progress(progress_callback, 40, 60, 4, 9)
         # Cloud base in meters
         LCL = np.add(raw_data["GNSS_alt"] , np.divide(np.subtract(raw_data["air_T"],AirTd), 0.0098))
+        emit_progress(progress_callback, 40, 60, 5, 9)
         # Potential temperature in °C
         AirTheta = np.multiply(np.add(raw_data["air_T"], 273.15), np.power(np.divide(100000,raw_data["P_stat"]),0.286))
+        emit_progress(progress_callback, 40, 60, 6, 9)
         # Air density kg/m^3
         AirRho = np.multiply(np.multiply(1.1885,np.divide(raw_data["P_stat"],100000)), np.divide(293.15, np.add(273 ,raw_data["air_T"] )))
+        emit_progress(progress_callback, 40, 60, 7, 9)
         # Normalized vario m/s
         VarioIAS = np.multiply(raw_data["vario"], np.sqrt(np.divide(AirRho,1.225)))
+        emit_progress(progress_callback, 40, 60, 8, 9)
         # True airspeed
         TAS = np.multiply(raw_data["IAS"], np.sqrt(np.divide(AirRho,1.225)))
-        
+        emit_progress(progress_callback, 40, 60, 9, 9)
     
     #     Pabs = data['Patm']
     #     dtC = np.mean(np.diff(data['Time'][1:])) / 1000  # Periode moyenne seconde
@@ -270,3 +272,12 @@ def additional_data_process(raw_data):
     
     
     return AirES, AirE, AirW, AirTd, LCL , AirTheta, AirRho, VarioIAS, TAS
+
+
+
+def emit_progress(callback, start, span, step, total_steps):
+    """
+    This function is used to emit progress signal to update the gui progress bar
+    """
+    progress = start + int(span * step / total_steps)
+    callback.emit(progress)
