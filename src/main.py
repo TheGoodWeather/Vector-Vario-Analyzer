@@ -8,6 +8,8 @@ from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
 from table_handler import update_vva_table, delete_table_entries, update_table_button_state, analyze_table_entries
+from PyQt6.QtCore import QThread
+from moulinette_worker import MoulinetteWorker
 
 import sys
 from pathlib  import Path 

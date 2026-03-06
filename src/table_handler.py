@@ -75,7 +75,7 @@ def analyze_table_entries(data, table_widget):
         return
     for row in rows_to_analyze:
         logger.info(f"Analyzing {data[row]['file_name']}")
-        if data[row]["origin_file_path"].suffix == ".csv":
+        if data[row]["origin_file_path"].suffix == ".CSV":
             fetch_raw_csv(data[row])
-        elif data[row]["origin_file_path"].suffix == ".igc":
+        elif data[row]["origin_file_path"].suffix == ".IGC":
             fetch_raw_igc(data[row])

@@ -1,6 +1,7 @@
 import numpy as np
 from datetime import datetime
 import re
+from gps_calculation import calculateDistance, calculateHeading
 
 raw_data_model = {  #available for both csv and igc file 
     "GNSS_time" : [],
@@ -30,7 +31,19 @@ raw_data_model = {  #available for both csv and igc file
     
 
 def fetch_raw_csv(flight_dic):
+    """
     
+    Parameters
+    ----------
+    flight_dic : dic
+    
+    This function returns all the raw data from a csv files, and compute additionnaly the IAS value.
+
+    Returns
+    -------
+    None.
+
+    """
     raw_data = raw_data_model #initializing the dic that will be returned
     #Remove spaces and blank lines
     with open(flight_dic["origin_file_path"], 'r') as file:
@@ -77,8 +90,21 @@ def fetch_raw_csv(flight_dic):
         flight_dic["data"] = raw_data
         
 def fetch_raw_igc(flight_dic):
+    """
     
+
+    Parameters
+    ----------
+    flight_dic : TYPE
     
+    This function returns all the raw data from a igc files, and compute additionnaly the Vario, Pstat, heading GPS and speed_Gps values.
+.
+
+    Returns
+    -------
+    None.
+
+    """
     raw_data = raw_data_model #initializing the dic that will be returned
     #Remove spaces and blank lines
     with open(flight_dic["origin_file_path"], 'r') as file:
@@ -101,9 +127,9 @@ def fetch_raw_igc(flight_dic):
                 east_index = line.index("E")
                 alti_index = line.index("A")
                 time_index = line.index("B")
-                raw_data["GNSS_time"].append(datetime.strptime(date_wo_hour + line[time_index+1 : time_index+6],"%d%m%y%H%M%S" ).strftime("%Y-%m-%d %H.%M.%S"))
-                raw_data["GNSS_lat"].append(float(line[nord_index-7 : nord_index-1])/100000)
-                raw_data["GNSS_lon"].append(float(line[east_index-8 : east_index-1])/100000)
+                raw_data["GNSS_time"].append(datetime.strptime(date_wo_hour + line[time_index+1 : time_index+7],"%d%m%y%H%M%S" ))
+                raw_data["GNSS_lat"].append(float(line[nord_index-7 : nord_index])/100000) # decimal degrees 
+                raw_data["GNSS_lon"].append(float(line[east_index-8 : east_index])/100000) # decimal degrees
                 raw_data["QNS_alt"].append(int(line[alti_index+1 : alti_index+5]))
                 raw_data["GNSS_alt"].append(int(line[alti_index+6 : alti_index+10]))
                 
@@ -117,32 +143,80 @@ def fetch_raw_igc(flight_dic):
                 atti_index = lxvv_line.index('D')
                 g_index = lxvv_line.index('G')
            
-                raw_data["air_T"].append(float(str(line[temp_index+1 : temp_index+4]))/10)
-                raw_data["air_RH"].append(float(str(line[hum_index+1 : hum_index+3]))/10)
-                raw_data["IAS"].append(float(str(line[ias_index+1 : ias_index+3]))/10)
-                raw_data["netto"].append(float(str(line[netto_index+1 : netto_index+4]))/10)
-                raw_data["wind_vel"].append(float(str(lxvv_line[wind_index+1 : wind_index+3]))/10)
-                raw_data["wind_origin"].append(int(str(lxvv_line[wind_index+4 : wind_index+7])))
-                raw_data["compass_head"].append(int(str(line[atti_index+1 : atti_index+3])))
-                raw_data["pitch"].append(int(str(line[atti_index+4 : atti_index+7])))
-                raw_data["roll"].append(int(str(line[atti_index+8 : atti_index+11])))
-                raw_data["G_force"].append(float(str(line[g_index+1 : g_index+3]))/10)
-            
-        dt = np.mean(np.diff(int(raw_data["GNSS_time"].strftime("%S")))) # mean period between each readings in seconds
+                raw_data["air_T"].append(float(str(lxvv_line[temp_index+1 : temp_index+5]))/10)
+                raw_data["air_RH"].append(float(str(lxvv_line[hum_index+1 : hum_index+4]))/10)
+                raw_data["IAS"].append(float(str(lxvv_line[ias_index+1 : ias_index+4]))/10)
+                raw_data["netto"].append(float(str(lxvv_line[netto_index+1 : netto_index+5]))/10)
+                raw_data["wind_vel"].append(float(str(lxvv_line[wind_index+4 : wind_index+7]))/10)
+                raw_data["wind_origin"].append(int(str(lxvv_line[wind_index+1 : wind_index+4])))
+                raw_data["compass_head"].append(int(str(lxvv_line[atti_index+1 : atti_index+4])))
+                raw_data["pitch"].append(int(str(lxvv_line[atti_index+4 : atti_index+8])))
+                raw_data["roll"].append(int(str(lxvv_line[atti_index+8 : atti_index+12])))
+                raw_data["G_force"].append(float(str(lxvv_line[g_index+1 : g_index+4]))/10)
+
+        timestamps = np.array([t.timestamp() for t in raw_data["GNSS_time"]])
+        dt = np.mean(np.diff(timestamps))
+        # computing heading
+        raw_data["GNSS_head"] = []
+        for i in range(len(raw_data["GNSS_lat"]) - 1):
+            head = calculateHeading(
+                raw_data["GNSS_lat"][i], raw_data["GNSS_lon"][i],
+                raw_data["GNSS_lat"][i+1], raw_data["GNSS_lon"][i+1]
+            )
+            raw_data["GNSS_head"].append(round(head))
+        
+        
+        # computing speed 
+        raw_data["GNSS_speed"] = []
+        for i in range(len(raw_data["GNSS_lat"]) - 1):
+            distance = calculateDistance(
+                raw_data["GNSS_lat"][i], raw_data["GNSS_lon"][i],
+                raw_data["GNSS_lat"][i+1], raw_data["GNSS_lon"][i+1]
+            )
+            speed = distance / dt  #speed is in m/s
+         
+            raw_data["GNSS_speed"].append(round(speed,1))
+
         raw_data["P_stat"] = np.multiply(101325, np.power(np.subtract(1, np.divide(raw_data["QNS_alt"],44109.12)),5.255))
-        raw_data["vario"] = np.multiply(np.divide(np.add(np.diff(raw_data["QNS_alt"]), np.diff(raw_data["GNSS_alt"])),2), dt)
+        raw_data["vario"] = np.multiply(np.divide(np.add(np.diff(raw_data["QNS_alt"],append=0), np.diff(raw_data["GNSS_alt"], append=0)),2), dt)
+                
         raw_data["AirES"],raw_data["AirE"],raw_data["AirW"], raw_data["AirTd"], raw_data["LCL"], raw_data["AirTheta"], raw_data["AirRho"], raw_data["VarioIAS"], raw_data["TAS"] = additional_data_process(raw_data)
         flight_dic["data"] = raw_data       
+        
+       
+        # # print("P_stat_____________")
+        # # print(raw_data["P_stat"][1000:1010])
+        # print("AirES___________")
+        # print(raw_data["AirES"][11110:11120])
+        # print("AirE___________")
+        # print(raw_data["AirE"][11110:11120])
+        # print("AirW___________")
+        # print(raw_data["AirW"][11110:11120])
+        # print("AirTd___________")
+        # print(raw_data["AirTd"][11110:11120])
+        # print("LCLl___________")
+        # print(raw_data["LCL"][11110:11120])
+        # print("AirTheta___________")
+        # print(raw_data["AirTheta"][11110:11120])
+        # print("AirRho___________")
+        # print(raw_data["AirRho"][11110:11120])
+        # print("TAS___________")
+        # print(raw_data["TAS"][11110:11120])
+        
+    
+        
     return
 
 def additional_data_process(raw_data):
     """
-
+    
+    
     Parameters
     ----------
-    flight_dic : TYPE
-        This function process additional data from log files
-
+    raw_data : dic
+    
+    This function computes addtionnal data that are not initialy written in CSV or IGC files. 
+    
     Returns
     -------
     AirES : TYPE
@@ -178,7 +252,7 @@ def additional_data_process(raw_data):
         # Cloud base in meters
         LCL = np.add(raw_data["GNSS_alt"] , np.divide(np.subtract(raw_data["air_T"],AirTd), 0.0098))
         # Potential temperature in °C
-        AirTheta = np.multiply(np.add(raw_data["air_T"], 237), np.power(np.divide(100000,raw_data["P_stat"]),0.286))
+        AirTheta = np.multiply(np.add(raw_data["air_T"], 273.15), np.power(np.divide(100000,raw_data["P_stat"]),0.286))
         # Air density kg/m^3
         AirRho = np.multiply(np.multiply(1.1885,np.divide(raw_data["P_stat"],100000)), np.divide(293.15, np.add(273 ,raw_data["air_T"] )))
         # Normalized vario m/s
@@ -186,6 +260,7 @@ def additional_data_process(raw_data):
         # True airspeed
         TAS = np.multiply(raw_data["IAS"], np.sqrt(np.divide(AirRho,1.225)))
         
+    
     #     Pabs = data['Patm']
     #     dtC = np.mean(np.diff(data['Time'][1:])) / 1000  # Periode moyenne seconde
     
