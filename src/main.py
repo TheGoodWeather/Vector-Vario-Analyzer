@@ -7,14 +7,15 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
-from table_handler import update_vva_table, delete_table_entries, update_table_button_state, analyze_table_entries
+from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row
 from PyQt6.QtCore import QThread
 from moulinette_worker import MoulinetteWorker
 from PyQt6.QtCore import QThreadPool
-
+from export import export_file_csv
 import sys
 from pathlib  import Path 
- 
+import pprint
+
 SOFTWARE_VERSION = "1.0.0"
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -26,11 +27,13 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(self.resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
         
         self.threadpool = QThreadPool() #initialize thread
+        # To manage export threads sequentially 
+        self.analyze_queue = []
+        self.analyze_running = False
         
         self.setWindowTitle(f"Vector Vario Software Utility v{SOFTWARE_VERSION}")
         self.setFocus()  #allow the main windows to receive key press event 
         
-        self.flight_loaded = False
         self.new_file_path = None 
         
         
@@ -46,6 +49,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_clear_log.clicked.connect(self.on_button_clear_log)
         self.pushButton_delete_entry.clicked.connect(self.on_button_delete_entries)
         self.pushButton_analyze_entry.clicked.connect(self.on_button_analyze_entries)
+        self.pushButton_export_entry_csv.clicked.connect(self.on_button_export_entries_csv)
         
         self.logbox_handler = QTextEditLogger(self.textEdit_log)
         self.textEdit_log.verticalScrollBar().setValue(self.textEdit_log.verticalScrollBar().maximum())
@@ -65,7 +69,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tableWidget_database.horizontalHeader().setStretchLastSection(True)
         self.tableWidget_database.resizeColumnsToContents()
-        self.tableWidget_database.itemChanged.connect(lambda: update_table_button_state(self.tableWidget_database, self.button_list_table))
+        self.tableWidget_database.itemChanged.connect(lambda: update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge))
 
         
         self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
@@ -145,7 +149,7 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info(f"An error occurred: {e}")
         
 
-    def on_button_generate_vva(self):
+    def on_button_generate_vva(self, widget_):
         if self.new_file_path.suffix == ".csv":
             generate_vva(self.new_file_path, csv2vva(self.new_file_path, self.lineEdit_comment))
             logger.info("Converting .csv file to .vva")
@@ -158,14 +162,16 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.flight = load_vva_files()
         update_vva_table(self.flight, self.tableWidget_database)
-        update_table_button_state(self.tableWidget_database, self.button_list_table)
-        
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge)
+        self.lineEdit_file_path.clear()
+        self.lineEdit_comment.clear()
     
     def on_button_clear_log(self):
         self.textEdit_log.clear()
         return
     
     def on_button_delete_entries(self):
+        
         reply =  QMessageBox.question(
         self,
         "Warning",
@@ -179,33 +185,70 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info("File deletion aborted")
             return  
         delete_table_entries(self.flight, self.tableWidget_database)
-        update_table_button_state(self.tableWidget_database, self.button_list_table)
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge)
         return
     
     def on_button_analyze_entries(self):
-        row_to_analyze = analyze_table_entries(self.flight, self.tableWidget_database)
+        """
+        This function can handle multiple analysis through threads . It waits for the previous analysis to finish before 
+        starting the next one
+        """
+        row_to_analyze = return_selected_row(self.flight, self.tableWidget_database)
+        if not row_to_analyze:
+            return 
+        self.analyze_queue = row_to_analyze.copy()
         
-        for row in row_to_analyze:
+        if not self.analyze_running: #If the analyze hasn't started yet
+            self.start_next_analysis_thread(self.pushButton_analyze_entry)
+            
+        
+    
+    def start_next_analysis_thread(self, button_analyse):
+        
+        if not self.analyze_queue: #if the queue is empty
+            self.analyze_running = False 
+            logger.info("Analysis done")
+            button_analyse.setEnabled(True)
+            return
+        
 
-            worker = MoulinetteWorker(self.flight[row])
-    
-            worker.signals.progress.connect(self.update_progress_bar)
-            worker.signals.finished.connect(self.analysis_finished)
-            worker.signals.error.connect(self.analysis_error)
-    
-            self.threadpool.start(worker)
-        return
+        self.analyze_running = True #Starting analysis 
+        button_analyse.setEnabled(False)
+        row = self.analyze_queue.pop(0)
+        
+        # if self.flight[row]["is_data_processed"] == True:
+        #     logger.info("Analysis already done")
+        #     return
+        
+        worker = MoulinetteWorker(self.flight[row])
+
+        worker.signals.progress.connect(self.update_progress_bar)
+        worker.signals.finished.connect(self.analysis_finished)
+        worker.signals.error.connect(self.analysis_error)
+
+        self.threadpool.start(worker)
     
     def update_progress_bar(self, value):
-        print(value)
         self.progressBar.setValue(value)
        
     def analysis_finished(self, flight_dic):
         logger.info(f"Finished {flight_dic['file_name']}")
+        flight_dic["is_data_processed"] = True 
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge)
+        self.start_next_analysis_thread(self.pushButton_analyze_entry)
        
         
     def analysis_error(self, msg):
-        logger.error(msg)
+        logger.error(f"Error while analyzing data : {msg}")
+        
+        
+    def on_button_export_entries_csv(self):
+        
+        row_to_export = return_selected_row(self.flight, self.tableWidget_database)
+        for row in row_to_export:
+            export_file_csv(self.flight[row])
+            
+        
 
 if __name__ == "__main__":
     try:

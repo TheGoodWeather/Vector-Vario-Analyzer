@@ -53,34 +53,40 @@ def delete_table_entries(data, table_widget):
         data.pop(row)
     return
 
-def update_table_button_state(table_widget, button_list):
+def update_table_button_state(table_widget, flight, export_button_csv, delete_button, analyze_button, export_button_ge):
     """
     This function disables all the buttons when no flight is selected
     """
+    selected_row = []
     for row in range(table_widget.rowCount()):
         checkbox_item = table_widget.item(row, 0)  # colonne checkbox
         if checkbox_item and checkbox_item.checkState() == Qt.CheckState.Checked:
-            for button in button_list:
-                button.setEnabled(True)
-            return
+            selected_row.append(row)
+    if not selected_row:
+        export_button_csv.setEnabled(False)
+        delete_button.setEnabled(False)
+        analyze_button.setEnabled(False)
+        export_button_ge.setEnabled(False)
+        return 
+   
+    delete_button.setEnabled(True)
+    analyze_button.setEnabled(True)
+    
+    all_processed = all(flight[row]["is_data_processed"] for row in selected_row)
+    export_button_csv.setEnabled(all_processed)
+    export_button_ge.setEnabled(all_processed)       
         
-    for button in button_list:
-        button.setEnabled(False)
+    
         
-def analyze_table_entries(data, table_widget):
-    rows_to_analyze = []
+def return_selected_row(data, table_widget):
+    rows_selected = []
     for row in range(table_widget.rowCount()):
         checkbox_item = table_widget.item(row, 0)  
         if checkbox_item and checkbox_item.checkState() == Qt.CheckState.Checked:
-            rows_to_analyze.append(row)
-    if len(rows_to_analyze) == 0:
-        logger.info("Nothing to analyze")
+            rows_selected.append(row)
+    if len(rows_selected) == 0:
+        logger.info("No rows selected")
         return
     
-    return rows_to_analyze
-    # for row in rows_to_analyze:
-    #     logger.info(f"Analyzing {data[row]['file_name']}")
-    #     if data[row]["origin_file_path"].suffix == ".csv":
-    #         fetch_raw_csv(data[row])
-    #     elif data[row]["origin_file_path"].suffix == ".IGC":
-    #         fetch_raw_igc(data[row])
+    return rows_selected
+

@@ -671,3 +671,384 @@
 [2026-03-06 17:35:37] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
 [2026-03-06 17:35:38] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
 [2026-03-06 17:35:40] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 11:20:26] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 11:20:28] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 11:20:40] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 11:20:40] ERROR: 'numpy.ndarray' object has no attribute 'append'
+[2026-03-09 11:20:43] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 11:20:58] INFO: files LOGPRO007_20260121_120019.csv.vva deleted
+[2026-03-09 11:20:58] INFO: files 2026-01-29-XVV-JRJ035-01.IGC.vva deleted
+[2026-03-09 11:21:24] INFO: File copied
+[2026-03-09 11:21:26] INFO: .vva file created at flight\LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 11:21:26] INFO: Converting .csv file to .vva
+[2026-03-09 13:44:27] ERROR: Failed to export: 'NoneType' object has no attribute 'values'
+[2026-03-09 13:48:29] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 13:48:30] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 13:55:51] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 13:55:53] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 13:56:56] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 13:56:57] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 13:57:14] ERROR: Failed to export: only integers, slices (`:`), ellipsis (`...`), numpy.newaxis (`None`) and integer or boolean arrays are valid indices
+[2026-03-09 14:03:57] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:03:58] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:04:13] ERROR: Failed to export: only integers, slices (`:`), ellipsis (`...`), numpy.newaxis (`None`) and integer or boolean arrays are valid indices
+[2026-03-09 14:08:01] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:08:02] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:08:10] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 14:08:51] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:08:52] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:08:57] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 14:18:56] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:18:58] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:19:07] ERROR: Failed to export: list index out of range
+[2026-03-09 14:20:18] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:20:19] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:20:27] ERROR: Failed to export: list index out of range
+[2026-03-09 14:21:19] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:21:20] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:23:24] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:23:26] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:36:18] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:36:19] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:36:25] INFO: Save succesful : C:/Users/Félisme/Documents/Vector Software Analyzer/vector_software/src/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 14:58:48] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 14:58:49] ERROR: Error while analyzing data : type numpy.ndarray doesn't define __round__ method
+[2026-03-09 15:00:11] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 15:00:13] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 15:00:16] ERROR: Failed to export: [Errno 13] Permission denied: 'C:/Users/Félisme/Documents/Vector Software Analyzer/vector_software/src/LOGPRO007_20260121_120019_processed.csv'
+[2026-03-09 15:00:27] INFO: Save succesful : C:/Users/Félisme/Documents/Vector Software Analyzer/vector_software/src/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 15:02:49] INFO: File copied
+[2026-03-09 15:02:52] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:02:52] INFO: Converting .igc file to .vva
+[2026-03-09 15:02:59] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 15:02:59] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:03:01] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 15:03:24] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 15:03:31] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 15:05:37] ERROR: Error while analyzing data : 'numpy.ndarray' object has no attribute 'append'
+[2026-03-09 15:05:48] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-09 15:12:28] INFO: files LOGPRO007_20260121_120019.csv.vva deleted
+[2026-03-09 15:12:28] INFO: files 2026-01-29-XVV-JRJ035-01.IGC.vva deleted
+[2026-03-09 15:13:07] INFO: File copied
+[2026-03-09 15:13:09] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:13:09] INFO: Converting .igc file to .vva
+[2026-03-09 15:13:16] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:13:22] ERROR: Failed to export: list index out of range
+[2026-03-09 15:14:21] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:17:26] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:18:49] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:20:15] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:21:04] ERROR: Error while analyzing data : list index out of range
+[2026-03-09 15:22:42] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:22:52] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-09 15:32:23] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:32:47] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-09 15:50:22] INFO: files 2026-01-29-XVV-JRJ035-01.IGC.vva deleted
+[2026-03-09 15:51:27] INFO: File copied
+[2026-03-09 15:51:28] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:51:28] INFO: Converting .igc file to .vva
+[2026-03-09 15:51:32] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:51:32] INFO: Converting .igc file to .vva
+[2026-03-09 15:51:37] INFO: File copied
+[2026-03-09 15:51:38] INFO: .vva file created at flight\LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 15:51:38] INFO: Converting .csv file to .vva
+[2026-03-09 15:51:43] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 15:51:44] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-09 15:51:46] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 15:51:59] INFO: Save succesful : C:/Users/Félisme/Desktop/files_to_check/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-09 15:52:12] INFO: Save succesful : C:/Users/Félisme/Desktop/files_to_check/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 16:07:02] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 16:07:05] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 16:07:49] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 16:07:52] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:05:26] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:05:29] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:05:48] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 18:15:46] INFO: files 2026-01-29-XVV-JRJ035-01.IGC.vva deleted
+[2026-03-09 18:15:53] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:15:56] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:22:44] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:22:47] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:25:23] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:25:26] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:26:25] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 18:30:20] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:30:23] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:30:31] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-09 18:52:49] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-09 18:52:50] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:43:30] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:43:31] ERROR: Error while analyzing data : ufunc 'divide' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+[2026-03-10 11:44:38] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:44:40] ERROR: Error while analyzing data : ufunc 'divide' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+[2026-03-10 11:46:23] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:46:24] ERROR: Error while analyzing data : ufunc 'divide' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+[2026-03-10 11:46:46] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:46:47] ERROR: Error while analyzing data : ufunc 'divide' not supported for the input types, and the inputs could not be safely coerced to any supported types according to the casting rule ''safe''
+[2026-03-10 11:47:50] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:47:51] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:49:08] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:49:09] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:49:52] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:49:53] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:51:21] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:51:23] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:52:20] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:52:22] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 11:52:32] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-10 14:48:46] INFO: files LOGPRO007_20260121_120019.csv.vva deleted
+[2026-03-10 14:49:23] INFO: File copied
+[2026-03-10 14:49:25] INFO: .vva file created at flight\LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 14:49:25] INFO: Converting .csv file to .vva
+[2026-03-10 14:49:31] INFO: File copied
+[2026-03-10 14:49:32] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 14:49:32] INFO: Converting .igc file to .vva
+[2026-03-10 14:54:59] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 14:55:00] ERROR: Error while analyzing data : unsupported operand type(s) for +: 'int' and 'list'
+[2026-03-10 14:55:02] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:03:00] ERROR: Error while analyzing data : unsupported operand type(s) for +: 'int' and 'list'
+[2026-03-10 15:06:09] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:06:42] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:06:43] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:06:45] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:07:51] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-10 15:08:00] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-10 15:13:21] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:13:22] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:13:25] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:13:37] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-10 15:13:41] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-10 15:16:35] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:16:36] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:16:39] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:16:50] ERROR: Failed to export: [Errno 13] Permission denied: 'C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv'
+[2026-03-10 15:24:49] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:24:49] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:24:50] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:24:53] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:26:23] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:26:23] ERROR: Error while analyzing data : 'numpy.ndarray' object has no attribute 'append'
+[2026-03-10 15:26:36] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:26:39] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:27:50] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:27:51] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:28:06] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-10 15:45:19] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:45:20] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:53:35] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:53:35] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:53:35] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:53:38] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:53:38] INFO: Analysis done
+[2026-03-10 15:54:42] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-10 15:54:49] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-10 15:57:15] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:57:16] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 15:57:16] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:57:19] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 15:57:19] INFO: Analysis done
+[2026-03-10 16:01:15] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:01:16] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:01:16] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:01:18] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:01:18] INFO: Analysis done
+[2026-03-10 16:03:41] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:03:41] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:03:41] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:03:44] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:03:44] INFO: Analysis done
+[2026-03-10 16:04:26] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:04:26] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:04:26] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:04:29] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:04:29] INFO: Analysis done
+[2026-03-10 16:09:27] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:09:27] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:09:28] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:09:30] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:09:30] INFO: Analysis done
+[2026-03-10 16:10:49] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:10:50] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 16:10:50] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:10:52] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 16:10:52] INFO: Analysis done
+[2026-03-10 16:11:00] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-10 16:11:05] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-10 19:01:17] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 19:01:18] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-10 19:01:18] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 19:01:20] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-10 19:01:20] INFO: Analysis done
+[2026-03-10 19:01:43] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-10 19:01:53] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-10 19:02:56] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-10 19:03:03] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-11 10:22:37] INFO: files LOGPRO007_20260121_120019.csv.vva deleted
+[2026-03-11 10:22:37] INFO: files 2026-01-29-XVV-JRJ035-01.IGC.vva deleted
+[2026-03-11 10:22:54] INFO: File copied
+[2026-03-11 10:22:56] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:22:56] INFO: Converting .igc file to .vva
+[2026-03-11 10:23:02] INFO: File copied
+[2026-03-11 10:23:03] INFO: .vva file created at flight\LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:23:03] INFO: Converting .csv file to .vva
+[2026-03-11 10:23:17] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:23:17] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:23:17] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:23:18] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:23:18] INFO: Analysis done
+[2026-03-11 10:23:31] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 10:23:35] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-11 10:34:54] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:34:55] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:34:55] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:34:57] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:34:57] INFO: Analysis done
+[2026-03-11 10:35:05] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 10:35:09] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-11 10:39:35] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:39:35] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:39:35] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:39:37] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:39:37] INFO: Analysis done
+[2026-03-11 10:39:47] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 10:39:50] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-11 10:44:12] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:44:13] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:44:13] INFO: Analysis done
+[2026-03-11 10:44:19] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 10:46:44] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:46:45] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:46:45] INFO: Analysis done
+[2026-03-11 10:48:12] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:48:13] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:48:13] INFO: Analysis done
+[2026-03-11 10:49:44] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:49:44] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:49:44] INFO: Analysis done
+[2026-03-11 10:49:52] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 10:53:26] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:53:26] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:53:26] INFO: Analysis done
+[2026-03-11 10:53:31] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 10:55:04] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:55:04] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:55:04] INFO: Analysis done
+[2026-03-11 10:55:10] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 10:57:35] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:57:35] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 10:57:35] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:57:36] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:57:36] INFO: Analysis done
+[2026-03-11 10:57:41] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 10:57:43] ERROR: Failed to export: 'numpy.str_' object has no attribute 'strftime'
+[2026-03-11 10:58:46] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:58:47] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 10:58:47] INFO: Analysis done
+[2026-03-11 11:04:49] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:04:49] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:04:49] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:05:19] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:05:19] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:05:19] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:07:11] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:07:12] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:07:12] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:08:30] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:08:30] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:08:30] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:09:42] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:09:42] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:09:42] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:12:54] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:12:55] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:12:55] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:12:56] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:12:56] INFO: Analysis done
+[2026-03-11 11:13:06] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 11:13:09] ERROR: Failed to export: 'numpy.datetime64' object has no attribute 'strftime'
+[2026-03-11 11:15:48] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:15:48] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:15:48] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:15:49] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:15:49] INFO: Analysis done
+[2026-03-11 11:15:54] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 11:15:58] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-11 11:18:38] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:18:39] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:18:39] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:18:40] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:18:40] INFO: Analysis done
+[2026-03-11 11:18:42] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:18:42] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:18:42] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:18:43] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:18:43] INFO: Analysis done
+[2026-03-11 11:18:48] INFO: Save succesful : C:/Users/Félisme/Desktop/2026-01-29-XVV-JRJ035-01_processed.csv 
+[2026-03-11 11:18:52] INFO: Save succesful : C:/Users/Félisme/Desktop/LOGPRO007_20260121_120019_processed.csv 
+[2026-03-11 11:18:55] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:18:55] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 11:18:55] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:18:57] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 11:18:57] INFO: Analysis done
+[2026-03-11 16:20:01] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 16:20:01] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 16:20:02] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:20:04] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:20:04] INFO: Analysis done
+[2026-03-11 16:20:07] INFO: Analysis already done
+[2026-03-11 16:48:31] INFO: files 2026-01-29-XVV-JRJ035-01.IGC.vva deleted
+[2026-03-11 16:48:36] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:48:38] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:48:38] INFO: Analysis done
+[2026-03-11 16:49:54] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:49:56] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:49:56] INFO: Analysis done
+[2026-03-11 16:51:20] INFO: File copied
+[2026-03-11 16:51:26] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 16:51:26] INFO: Converting .igc file to .vva
+[2026-03-11 16:54:16] INFO: File copied
+[2026-03-11 16:54:19] INFO: .vva file created at flight\2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:54:19] INFO: Converting .igc file to .vva
+[2026-03-11 16:54:25] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:54:25] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:54:25] INFO: Analysis done
+[2026-03-11 16:54:52] INFO: Analysis already done
+[2026-03-11 16:56:43] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:43] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:43] INFO: Analysis done
+[2026-03-11 16:56:46] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:46] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:46] INFO: Analysis done
+[2026-03-11 16:56:50] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:50] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:50] INFO: Analysis done
+[2026-03-11 16:56:50] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:50] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:50] INFO: Analysis done
+[2026-03-11 16:56:53] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:53] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:53] INFO: Analysis done
+[2026-03-11 16:56:53] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:53] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:53] INFO: Analysis done
+[2026-03-11 16:56:53] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:53] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:53] INFO: Analysis done
+[2026-03-11 16:56:59] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:59] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:56:59] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 16:57:00] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 16:57:00] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:57:00] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:57:00] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 16:57:01] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 16:57:01] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:57:04] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:57:04] INFO: Analysis done
+[2026-03-11 16:57:09] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:57:09] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-03-11 16:57:09] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 16:57:10] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-03-11 16:57:10] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:57:14] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-03-11 16:57:14] INFO: Analysis done

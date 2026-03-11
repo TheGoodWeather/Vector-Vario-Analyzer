@@ -2,7 +2,7 @@ import numpy as np
 from datetime import datetime
 import re
 from gps_calculation import calculateDistance, calculateHeading
-
+import copy
 raw_data_model = {  #available for both csv and igc file 
     "GNSS_time" : [],
     "GNSS_lat" : [],
@@ -38,6 +38,7 @@ def fetch_raw_csv(flight_dic , progress_callback):
     flight_dic : dic
     
     This function returns all the raw data from a csv files, and compute additionnaly the IAS value.
+    It also sets all the netto and QNS_alt values to NaN because it has not been integrated yet
 
     Returns
     -------
@@ -45,7 +46,8 @@ def fetch_raw_csv(flight_dic , progress_callback):
 
     """
     total_lines = 0 
-    raw_data = raw_data_model #initializing the dic that will be returned
+    
+    raw_data = copy.deepcopy(raw_data_model) #initializing the dic that will be returned
     #Remove spaces and blank lines
     with open(flight_dic["origin_file_path"], 'r') as file:
            lines = file.readlines()
@@ -81,22 +83,28 @@ def fetch_raw_csv(flight_dic , progress_callback):
             for j, (parameter_from_model, value_from_model) in enumerate(raw_data.items()):
                 if parameter_from_csv == parameter_from_model:
                     if parameter_from_csv == "GNSS_time": #Converting the string into float, int or datetime for the GNSS time
-                        raw_data[parameter_from_model] = raw_data_from_csv[parameter_from_csv] #TO DO : COnvert into datetime variable 
+                        raw_data[parameter_from_model] = np.array([datetime.strptime(t, "%Y-%m-%d %H:%M:%S.%f")for t in raw_data_from_csv[parameter_from_csv]])    
+                    #raw_data[parameter_from_model] = datetime.strptime(str(raw_data_from_csv[parameter_from_csv]),"%Y-%m-%d %H:%M:%S.%f" ) 
                     elif parameter_from_csv in {"GNSS_fix", "GNSS_head" , "compass_head" , "pitch" , "roll" , "P_stat" , "wind_origin"}:
                         raw_data[parameter_from_model] = raw_data_from_csv[parameter_from_csv].astype(int)
+                        
                     else:
                         raw_data[parameter_from_model] = raw_data_from_csv[parameter_from_csv].astype(float)
         
         
         with np.errstate(divide='ignore', invalid='ignore'):
             #calculating IAS as it is not natively recorded into LOGPRO
-            raw_data["IAS"] = np.sqrt(np.multiply(2.0 / 1.225, np.add(raw_data["DP"], raw_data["A0_cor_DP"][-1], np.multiply(raw_data["A1_cor_DP"][-1], raw_data["T_sensor"]))))
-            
+            raw_data["IAS"] = np.round(np.divide(np.sqrt(np.abs(np.multiply(2.0 / 1.225, np.add(raw_data["DP"], np.add(raw_data["A0_cor_DP"][-1], np.multiply(raw_data["A1_cor_DP"][-1], raw_data["T_sensor"])))))), flight_dic['metadata']['calib']),2)
+        
+        raw_data["P_stat"] = np.divide(raw_data["P_stat"],10)
+        
+        raw_data["QNS_alt"] = np.full(len(raw_data["GNSS_time"]),np.nan)
+        raw_data["netto"] = np.full(len(raw_data["GNSS_time"]),np.nan)
         
         raw_data["AirES"],raw_data["AirE"],raw_data["AirW"], raw_data["AirTd"], raw_data["LCL"], raw_data["AirTheta"], raw_data["AirRho"], raw_data["VarioIAS"], raw_data["TAS"] = additional_data_process(raw_data , progress_callback)
         flight_dic["data"] = raw_data
         
-
+        return flight_dic["data"]
         
 def fetch_raw_igc(flight_dic, progress_callback):
     """
@@ -114,8 +122,9 @@ def fetch_raw_igc(flight_dic, progress_callback):
     None.
 
     """
+
     total_lines = 0 
-    raw_data = raw_data_model #initializing the dic that will be returned
+    raw_data = copy.deepcopy(raw_data_model) #initializing the dic that will be returned
     #Remove spaces and blank lines
     with open(flight_dic["origin_file_path"], 'r') as file:
            lines = file.readlines()
@@ -180,7 +189,7 @@ def fetch_raw_igc(flight_dic, progress_callback):
                 raw_data["GNSS_lat"][i+1], raw_data["GNSS_lon"][i+1]
             )
             raw_data["GNSS_head"].append(round(head))
-        
+        raw_data["GNSS_head"].append(np.nan)  #To complete the array
         
         # computing speed 
         raw_data["GNSS_speed"] = []
@@ -192,13 +201,18 @@ def fetch_raw_igc(flight_dic, progress_callback):
             speed = distance / dt  #speed is in m/s
          
             raw_data["GNSS_speed"].append(round(speed,1))
+        raw_data["GNSS_speed"].append(np.nan) #to complete the array
+        
+        raw_data["DP"] = np.full(len(raw_data["GNSS_time"]),np.nan)
+        raw_data["T_sensor"] = np.full(len(raw_data["GNSS_time"]),np.nan)
 
-        raw_data["P_stat"] = np.multiply(101325, np.power(np.subtract(1, np.divide(raw_data["QNS_alt"],44109.12)),5.255))
+        raw_data["P_stat"] = np.round(np.multiply(101325, np.power(np.subtract(1, np.divide(raw_data["QNS_alt"],44109.12)),5.255)))
         raw_data["vario"] = np.multiply(np.divide(np.add(np.diff(raw_data["QNS_alt"],append=0), np.diff(raw_data["GNSS_alt"], append=0)),2), dt)
                 
         raw_data["AirES"],raw_data["AirE"],raw_data["AirW"], raw_data["AirTd"], raw_data["LCL"], raw_data["AirTheta"], raw_data["AirRho"], raw_data["VarioIAS"], raw_data["TAS"] = additional_data_process(raw_data,progress_callback )
         flight_dic["data"] = raw_data       
-    
+        
+        return flight_dic["data"]
 
 
 def additional_data_process(raw_data, progress_callback):
@@ -242,7 +256,7 @@ def additional_data_process(raw_data, progress_callback):
         AirE = np.multiply(raw_data["air_RH"],AirES) / 100
         emit_progress(progress_callback, 40, 60, 2, 9)
         #Mixing ratio 
-        AirW = np.divide(np.multiply(0.622,AirE ), np.subtract(raw_data["P_stat"],AirE ))
+        AirW = np.divide(np.multiply(0.622,AirE * 100 ), np.subtract(raw_data["P_stat"],AirE * 100 ))  #converting AirE from Hpa to Pa
         emit_progress(progress_callback, 40, 60, 3, 9)
         #Dewpoint in °C
         AirTd = 243.5 * np.divide(np.log(np.divide(AirE,6.112)),np.subtract(17.67, np.log(np.divide(AirE,6.112))))
@@ -262,16 +276,8 @@ def additional_data_process(raw_data, progress_callback):
         # True airspeed
         TAS = np.multiply(raw_data["IAS"], np.sqrt(np.divide(AirRho,1.225)))
         emit_progress(progress_callback, 40, 60, 9, 9)
-    
-    #     Pabs = data['Patm']
-    #     dtC = np.mean(np.diff(data['Time'][1:])) / 1000  # Periode moyenne seconde
-    
-    #     RhoI = np.multiply((np.multiply(1.1885, Pabs)),(293.15 / (273.15 + data['Temp_AoA'])))  # Masse volumique capteur incidence
-    #     RhoK = np.multiply((np.multiply(1.1885, Pabs)),(293.15 / (273.15 + data['Temp_IAS'])))  # Masse volumique Vitesse
-    #     RhoL = np.multiply((np.multiply(1.1885, Pabs)),(293.15 / (273.15 + data['Temp_AoS'])))  # Masse volumique Vitesse*
-    
-    
-    return AirES, AirE, AirW, AirTd, LCL , AirTheta, AirRho, VarioIAS, TAS
+  
+    return np.round(AirES,5), np.round(AirE,5) , np.round(AirW,2), np.round(AirTd,2), np.round(LCL,2) , np.round(AirTheta,2), np.round(AirRho,2), np.round(VarioIAS,2), np.round(TAS,2)
 
 
 

@@ -192,7 +192,8 @@ def csv2vva(csv_filepath, widget_comment):
         
     if avg_winddir is not None:
         metadata["avg_winddir"] = round(avg_winddir,2)
-        
+    file.close()
+    
     return metadata
 
 def read_vva_metadata(vva_filepath):
@@ -208,7 +209,6 @@ def read_vva_metadata(vva_filepath):
         "calib" : None,
         "pilot" : None,
         "date" : None,
-        "hour" : None,
         "altitude_max" : None,
         "altitude_min" : None, 
         "altitude_start" : None,
@@ -226,9 +226,14 @@ def read_vva_metadata(vva_filepath):
             if line.startswith("VV_SN"):
                 metadata["vv_sn"] = line.split(":")[1]  
             if line.startswith("VV_HW"):
-                metadata["vv_hw"] = line.split(":")[1]  
+                metadata["vv_hw"] = line.split(":")[1]
+            if line.startswith("VV_FW"):
+                metadata["vv_fw"] = line.split(":")[1]  
             if line.startswith("CALIB"):
-                metadata["calib"] = line.split(":")[1]  
+                if line.split(":")[1] != 'None':
+                    metadata["calib"] = float(line.split(":")[1])
+                else:
+                    metadata["calib"] = line.split(":")[1]
             if line.startswith("pilot"):
                 metadata["pilot"] = line.split(":")[1]
             if line.startswith("date"):
@@ -245,6 +250,7 @@ def read_vva_metadata(vva_filepath):
                 metadata["avg_winddir"] = line.split(":")[1]  
             if line.startswith("comment"):
                 metadata["comment"] = line.split(":")[1] 
+    file.close()
     return metadata
 
 def load_vva_files(flight_dir="flight"):
@@ -258,7 +264,7 @@ def load_vva_files(flight_dir="flight"):
            "file_path" : None,
            "file_name" : None,
            "origin_file_path" : None,
-           "is_active" : False}
+           "is_data_processed" : False}
         flight["metadata"] = read_vva_metadata(file)
         flight["file_name"] = file.name
         flight["file_path"] = file
