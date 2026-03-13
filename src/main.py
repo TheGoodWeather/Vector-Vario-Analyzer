@@ -2,7 +2,7 @@
 import os
 import shutil
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
@@ -11,10 +11,14 @@ from table_handler import update_vva_table, delete_table_entries, update_table_b
 from PyQt6.QtCore import QThread
 from moulinette_worker import MoulinetteWorker
 from PyQt6.QtCore import QThreadPool
+from pyqtgraph import ErrorBarItem 
+import pyqtgraph as pg
 from export import export_file_csv
 import sys
 from pathlib  import Path 
 import pprint
+import numpy as np
+from plot import update_1D_plot, clear_plots_1D
 
 SOFTWARE_VERSION = "1.0.0"
 
@@ -60,21 +64,45 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #Table ------------------------------------
         headers = ["","Flight date", "Start altitude","Max altitude", "Pilot", "Comment"]
-        self.button_list_table = [self.pushButton_delete_entry,self.pushButton_analyze_entry,self.pushButton_export_entry_ge,self.pushButton_export_entry_csv]
-        for button in self.button_list_table: #Disable table buttons
-            button.setEnabled(False)
+        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab, self.dynamic_tab]
+        for tab in self.tab_list:
+            index = self.tabWidget.indexOf(tab)
+            self.tabWidget.setTabEnabled(index, False)
         self.tableWidget_database.setColumnCount(len(headers))
         self.tableWidget_database.setHorizontalHeaderLabels(headers)
         self.tableWidget_database.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tableWidget_database.horizontalHeader().setStretchLastSection(True)
         self.tableWidget_database.resizeColumnsToContents()
-        self.tableWidget_database.itemChanged.connect(lambda: update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge))
+        self.tableWidget_database.itemChanged.connect(lambda : update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget))
 
         
         self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
         update_vva_table(self.flight, self.tableWidget_database)
         
+        """
+        Widgets tab 1D plot
+        """
+        self.graph1_tab1D.setBackground("w")
+        self.graph1_tab1D.setLabel('left', 'No variable selected')
+        self.graph1_tab1D.setLabel('bottom', 'GNSS Time (s)')
+        self.graph1_tab1D.setTitle("Select a variable to plot in time")
+        self.graph1_tab1D.showGrid(x=True, y=True, alpha=0.3)
+        self.graph1_tab1D.setEnabled(True)
+        
+        self.graph2_tab1D.setBackground("w")
+        self.graph2_tab1D.setLabel('left', 'No variable selected')
+        self.graph2_tab1D.setLabel('bottom', 'GNSS Time (s)')
+        self.graph2_tab1D.setTitle("Select a variable to plot in time")
+        self.graph2_tab1D.showGrid(x=True, y=True, alpha=0.3)
+        self.graph2_tab1D.setEnabled(True)
+        
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda choice: self.populate_combobox_1D_variable(self.flight, self.listWidget_variable_plot1, self.listWidget_variable_plot2, choice))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: clear_plots_1D(self.graph1_tab1D, self.graph2_tab1D))
+        self.listWidget_variable_plot1.itemChanged.connect(lambda: self.handle_checkboxes_on_widgetlist_1D(self.listWidget_variable_plot1))
+        self.listWidget_variable_plot2.itemChanged.connect(lambda: self.handle_checkboxes_on_widgetlist_1D(self.listWidget_variable_plot2))
+        self.listWidget_variable_plot1.itemChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
+        self.listWidget_variable_plot2.itemChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
     def resource_path(self, relative_path):
         """
         Get absolute path to resource (for PyInstaller and development) 
@@ -162,7 +190,9 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.flight = load_vva_files()
         update_vva_table(self.flight, self.tableWidget_database)
-        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge)
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
+        self.populate_combobox_tab_1D(self.flight, self.comboBox_flight_tab1D)
+        
         self.lineEdit_file_path.clear()
         self.lineEdit_comment.clear()
     
@@ -185,7 +215,8 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info("File deletion aborted")
             return  
         delete_table_entries(self.flight, self.tableWidget_database)
-        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge)
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
+        self.populate_combobox_tab_1D(self.flight, self.comboBox_flight_tab1D)
         return
     
     def on_button_analyze_entries(self):
@@ -209,6 +240,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.analyze_running = False 
             logger.info("Analysis done")
             button_analyse.setEnabled(True)
+            self.populate_combobox_tab_1D(self.flight, self.comboBox_flight_tab1D)
             return
         
 
@@ -234,7 +266,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def analysis_finished(self, flight_dic):
         logger.info(f"Finished {flight_dic['file_name']}")
         flight_dic["is_data_processed"] = True 
-        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge)
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
         self.start_next_analysis_thread(self.pushButton_analyze_entry)
        
         
@@ -248,7 +280,74 @@ class MainWindow(QtWidgets.QMainWindow):
         for row in row_to_export:
             export_file_csv(self.flight[row])
             
+    def populate_combobox_tab_1D(self, data, combo_box_flight):
+        #first we remove all the items in the combobox 
+        combo_box_flight.clear()
+        for row, flight in enumerate(data):
+            original_filename = Path(flight['file_name'])
+            original_filename_wo_extension = original_filename.with_suffix("")
+            original_filename_wo_extension = str(original_filename_wo_extension.with_suffix(""))
+            if combo_box_flight.findText(original_filename_wo_extension) >= 0 and not flight['is_data_processed'] :
+                combo_box_flight.removeItem(combo_box_flight.findText(original_filename_wo_extension))
+            elif flight['is_data_processed'] and combo_box_flight.findText(original_filename_wo_extension) < 0:
+                combo_box_flight.addItem(f"{original_filename_wo_extension}")
+                
+    def populate_combobox_1D_variable(self, flight_dic, list1, list2, choice):
+        # list1.blockSignals(True)
+        # list2.blockSignals(True)
+        list1.clear()
+        list2.clear()
+        for row, flight in enumerate(flight_dic):
+            if flight['file_name'].split(".")[0] == choice:
+                if flight['is_data_processed'] and flight['data']:
+                    for index, variable in enumerate(flight['data']):
+                        if variable != 'GNSS_time':                       
+                            if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
+                                item1 = QListWidgetItem(variable)
+                                item1.setFlags(
+                                    item1.flags() | Qt.ItemFlag.ItemIsUserCheckable
+                                )
+                            
+                                item1.setCheckState(Qt.CheckState.Unchecked)
+                                
+                                item2 = QListWidgetItem(variable)
+                                item2.setFlags(
+                                    item2.flags() | Qt.ItemFlag.ItemIsUserCheckable
+                                )
+                            
+                                item2.setCheckState(Qt.CheckState.Unchecked)
+                            
+                                list1.addItem(item1)
+                                list2.addItem(item2)
+                            
+            
+        # list1.blockSignals(False)
+        # list2.blockSignals(False)
         
+    def handle_checkboxes_on_widgetlist_1D(self, list_widget):
+        list_widget.blockSignals(True)
+        item_checked = []
+        for i in range(list_widget.count()):
+            item = list_widget.item(i)
+            if item.checkState() == Qt.CheckState.Checked:
+                item_checked.append(item)
+       
+        if len(item_checked) >= 2:
+            for i in range(list_widget.count()):
+                item = list_widget.item(i)
+                if item.checkState()!= Qt.CheckState.Checked:
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+                    item.setBackground(QBrush(QColor(240, 240, 240)))
+                    
+        if len(item_checked) < 2:
+            for i in range(list_widget.count()):
+                item = list_widget.item(i)
+                if item.checkState()!= Qt.CheckState.Checked:
+                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                    item.setBackground(QBrush(QColor("white")))
+        list_widget.blockSignals(False)
+            
+        #update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D)
 
 if __name__ == "__main__":
     try:

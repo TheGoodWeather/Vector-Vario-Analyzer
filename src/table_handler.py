@@ -51,31 +51,43 @@ def delete_table_entries(data, table_widget):
         data[row]["file_path"].unlink() # delete source file 
         data[row]["origin_file_path"].unlink() # delete source file 
         data.pop(row)
+        
     return
 
-def update_table_button_state(table_widget, flight, export_button_csv, delete_button, analyze_button, export_button_ge):
+def update_table_button_state(table_widget, flight, export_button_csv, delete_button, analyze_button, export_button_ge , tab_list, tab_widget):
     """
     This function disables all the buttons when no flight is selected
+    It enables the export buttons when all the flight selected are analyzed 
+    It enables the other tabs when all the flight selected are analyzed 
     """
+    all_processed = False
+    at_least_one_processed = False
     selected_row = []
+    #BUTTONS
     for row in range(table_widget.rowCount()):
         checkbox_item = table_widget.item(row, 0)  # colonne checkbox
         if checkbox_item and checkbox_item.checkState() == Qt.CheckState.Checked:
             selected_row.append(row)
+            
     if not selected_row:
         export_button_csv.setEnabled(False)
         delete_button.setEnabled(False)
         analyze_button.setEnabled(False)
         export_button_ge.setEnabled(False)
-        return 
-   
-    delete_button.setEnabled(True)
-    analyze_button.setEnabled(True)
+    else : 
+    
+        delete_button.setEnabled(True)
+        analyze_button.setEnabled(True)
     
     all_processed = all(flight[row]["is_data_processed"] for row in selected_row)
     export_button_csv.setEnabled(all_processed)
-    export_button_ge.setEnabled(all_processed)       
-        
+    export_button_ge.setEnabled(all_processed)     
+    
+    ##TABS
+    at_least_one_processed = any(flight[row]["is_data_processed"] for row, data in enumerate(flight))
+    for tab in tab_list:
+        index = tab_widget.indexOf(tab)
+        tab_widget.setTabEnabled(index, at_least_one_processed)
     
         
 def return_selected_row(data, table_widget):

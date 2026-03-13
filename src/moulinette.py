@@ -274,10 +274,10 @@ def additional_data_process(raw_data, progress_callback):
         VarioIAS = np.multiply(raw_data["vario"], np.sqrt(np.divide(AirRho,1.225)))
         emit_progress(progress_callback, 40, 60, 8, 9)
         # True airspeed
-        TAS = np.multiply(raw_data["IAS"], np.sqrt(np.divide(AirRho,1.225)))
+        TAS = np.multiply(raw_data["IAS"], np.sqrt(np.divide(1.225, AirRho)))
         emit_progress(progress_callback, 40, 60, 9, 9)
   
-    return np.round(AirES,5), np.round(AirE,5) , np.round(AirW,2), np.round(AirTd,2), np.round(LCL,2) , np.round(AirTheta,2), np.round(AirRho,2), np.round(VarioIAS,2), np.round(TAS,2)
+    return np.round(AirES,5), np.round(AirE,5) , np.round(AirW,5), np.round(AirTd,2), np.round(LCL,2) , np.round(AirTheta,2), np.round(AirRho,2), np.round(VarioIAS,2), np.round(TAS,2)
 
 
 
