@@ -18,7 +18,8 @@ import sys
 from pathlib  import Path 
 import pprint
 import numpy as np
-from plot import update_1D_plot, clear_plots_1D
+from preference_windows import UnitDialog
+from plot import update_1D_plot, clear_plots_1D, toggle_x_link
 
 SOFTWARE_VERSION = "1.0.0"
 
@@ -29,6 +30,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__()
     
         uic.loadUi(self.resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
+        self.unit_dialog = UnitDialog(parent = self)  
         
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
@@ -41,6 +43,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.new_file_path = None 
         
         
+        
+        """
+        Widgets Menu Bar
+        """
+        
+        self.actionUnits.triggered.connect(self.display_unit_window)
         
         """
         Widgets tab import  / export
@@ -103,6 +111,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.listWidget_variable_plot2.itemChanged.connect(lambda: self.handle_checkboxes_on_widgetlist_1D(self.listWidget_variable_plot2))
         self.listWidget_variable_plot1.itemChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
         self.listWidget_variable_plot2.itemChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
+        self.checkBox_x_axis_link.stateChanged.connect(lambda: toggle_x_link(self.graph1_tab1D, self.graph2_tab1D, self.checkBox_x_axis_link))
+        
     def resource_path(self, relative_path):
         """
         Get absolute path to resource (for PyInstaller and development) 
@@ -325,6 +335,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # list2.blockSignals(False)
         
     def handle_checkboxes_on_widgetlist_1D(self, list_widget):
+        max_number_plot = 1
         list_widget.blockSignals(True)
         item_checked = []
         for i in range(list_widget.count()):
@@ -332,22 +343,28 @@ class MainWindow(QtWidgets.QMainWindow):
             if item.checkState() == Qt.CheckState.Checked:
                 item_checked.append(item)
        
-        if len(item_checked) >= 2:
+        if len(item_checked) >= max_number_plot:
             for i in range(list_widget.count()):
                 item = list_widget.item(i)
                 if item.checkState()!= Qt.CheckState.Checked:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
                     item.setBackground(QBrush(QColor(240, 240, 240)))
                     
-        if len(item_checked) < 2:
+        if len(item_checked) < max_number_plot:
             for i in range(list_widget.count()):
                 item = list_widget.item(i)
                 if item.checkState()!= Qt.CheckState.Checked:
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                     item.setBackground(QBrush(QColor("white")))
         list_widget.blockSignals(False)
-            
-        #update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D)
+        
+        
+        
+    def display_unit_window(self): #Call the unit window
+        if self.unit_dialog.isVisible():
+            self.unit_dialog.hide()
+        else:
+            self.unit_dialog.show()
 
 if __name__ == "__main__":
     try:

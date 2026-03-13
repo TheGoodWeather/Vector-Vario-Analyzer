@@ -15,10 +15,15 @@ colors = [
    ]
 
 def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
+    """
+    This function was initially written in order to handle multiple plot on the same graph. 
+    For now it only plot one as it is to complex to add several scales with pyqtgraph
+    """
 
     variables = get_checked_variables(list_widget)
     if len(variables) == 0:
         plot_widget.clear()
+        
         return
     
     
@@ -26,33 +31,18 @@ def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
     for row, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == comboBox_flight.currentText():
             x = np.array([t.timestamp() for t in flight['data']['GNSS_time']])
+  
             plot_widget.setLabel("left", variables[0])
+            plot_widget.setTitle(f"{variables[0]} vs time")
             plot_widget.addLegend()
+            plot_widget.enableAutoRange(True)
             pen1 = pg.mkPen(colors[0], width=2)
+            date_axis = pg.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+            plot_widget.setAxisItems({'bottom': date_axis})
             plot_widget.plot(x, flight['data'][variables[0]] , pen=pen1,  name=variables[0])
             
-            if len(variables) > 1:
-                
-            
-
-
-                plot_widget.setTitle("")
-                plot_widget.showAxis('right')
-                plot_widget.getAxis('right').setLabel("right", variables[1])
-                p2 = pg.ViewBox()
-                plot_widget.scene().addItem(p2)
-                plot_widget.getAxis('right').linkToView(p2)
-                p2.setXLink(plot_widget)
-                def updateViews():
-                    p2.setGeometry(plot_widget.getViewBox().sceneBoundingRect())
-                    p2.linkedViewChanged(plot_widget.getViewBox(), p2.XAxis)
-                
-                updateViews()
-                plot_widget.getViewBox().sigResized.connect(updateViews)
-                pen2 = pg.mkPen(colors[1], width=2)
-                curve2 = pg.PlotCurveItem(x, flight['data'][variables[1]], pen=pen2, name=variables[1] )
-                p2.addItem(curve2)
-            break
+            plot_widget.autoRange()
+        
             
 def get_checked_variables(list_widget):
 
@@ -71,31 +61,8 @@ def clear_plots_1D(plot1, plot2):
     plot1.clear()
     plot2.clear()
 
-def update_spinboxes_from_view(self, graph, spin_xmin, spin_xmax, spin_ymin, spin_ymax):
-    vb = graph.getViewBox()
-    x_range, y_range = vb.viewRange()
-    
-    # Block signals to avoid triggering view update again
-    spin_xmin.blockSignals(True)
-    spin_xmax.blockSignals(True)
-    spin_ymin.blockSignals(True)
-    spin_ymax.blockSignals(True)
-    
-    spin_xmin.setValue(x_range[0])
-    spin_xmax.setValue(x_range[1])
-    spin_ymin.setValue(y_range[0])
-    spin_ymax.setValue(y_range[1])
-    
-    spin_xmin.blockSignals(False)
-    spin_xmax.blockSignals(False)
-    spin_ymin.blockSignals(False)
-    spin_ymax.blockSignals(False)
-
-def update_view_from_spinboxes(self, graph, spin_xmin, spin_xmax, spin_ymin, spin_ymax):
-    xmin = spin_xmin.value()
-    xmax = spin_xmax.value()
-    ymin = spin_ymin.value()
-    ymax = spin_ymax.value()
-    
-    graph.setXRange(xmin, xmax, padding=0)
-    graph.setYRange(ymin, ymax, padding=0)
+def toggle_x_link(plot1, plot2, checkbox):
+    if checkbox.isChecked():
+        plot2.setXLink(plot1)
+    else:
+        plot2.setXLink(None)
