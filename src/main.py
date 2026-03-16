@@ -8,9 +8,8 @@ from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
 from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row
-from PyQt6.QtCore import QThread
+from PyQt6.QtCore import QThread, QThreadPool, QSettings
 from moulinette_worker import MoulinetteWorker
-from PyQt6.QtCore import QThreadPool
 from pyqtgraph import ErrorBarItem 
 import pyqtgraph as pg
 from export import export_file_csv
@@ -31,7 +30,9 @@ class MainWindow(QtWidgets.QMainWindow):
     
         uic.loadUi(self.resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
         self.unit_dialog = UnitDialog(parent = self)  
-        
+        self.unit_dialog.unitsChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
+        self.unit_dialog.unitsChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
+        self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
         self.analyze_queue = []
@@ -361,21 +362,22 @@ class MainWindow(QtWidgets.QMainWindow):
         
         
     def display_unit_window(self): #Call the unit window
+        
         if self.unit_dialog.isVisible():
             self.unit_dialog.hide()
         else:
             self.unit_dialog.show()
 
 if __name__ == "__main__":
-    try:
-        if not QtWidgets.QApplication.instance():
-            app = QtWidgets.QApplication(sys.argv)
-        else : 
-            app = QtWidgets.QApplication.instance() 
-        app.setStyle("Fusion")
-        window = MainWindow()
-        window.showMaximized()
-        sys.exit(app.exec())
-    except Exception as e:
-        print(f"Fatal error {e}")
-        # logger.exception(f"Fatal error occurred during startup {e}")
+   #try:
+    if not QtWidgets.QApplication.instance():
+        app = QtWidgets.QApplication(sys.argv)
+    else : 
+        app = QtWidgets.QApplication.instance() 
+    app.setStyle("Fusion")
+    window = MainWindow()
+    window.showMaximized()
+    sys.exit(app.exec())
+    # except Exception as e:
+    #     print(f"Fatal error {e}")
+    #     # logger.exception(f"Fatal error occurred during startup {e}")
