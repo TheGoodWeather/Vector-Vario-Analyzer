@@ -18,7 +18,7 @@ from pathlib  import Path
 import pprint
 import numpy as np
 from preference_windows import UnitDialog
-from plot import update_1D_plot, clear_plots_1D, toggle_x_link
+from plot import update_1D_plot, clear_plots_1D, toggle_x_link, update_2D_plot
 
 SOFTWARE_VERSION = "1.0.0"
 
@@ -115,6 +115,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.listWidget_variable_plot2.itemChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
         self.checkBox_x_axis_link.stateChanged.connect(lambda: toggle_x_link(self.graph1_tab1D, self.graph2_tab1D, self.checkBox_x_axis_link))
         
+        """
+        Widgets tab 2D plot
+        """
+        self.checkboxes_variables_plot2D = [self.checkBox_altitude_plot2D, self.checkBox_LCL_plot2D, self.checkBox_temp_plot2D, self.checkBox_hum_plot2D]
+        self.listWidget_flights_plot2D.itemChanged.connect(lambda: update_2D_plot(self.flight, self.checkboxes_variables_plot2D, self.checkBox_windbarbs,self.listWidget_flights_plot2D , self.graph_tab2D))
+        self.graph_tab2D.setBackground("w")
+        self.graph_tab2D.setLabel("left", "Longitudes")
+        self.graph_tab2D.setLabel("bottom", "Latitudes")
+        self.graph_tab2D.addLegend()
+        self.graph_tab2D.showGrid(x=True, y=True, alpha=0.3)
+        self.graph_tab2D.setEnabled(True)
+    
     def resource_path(self, relative_path):
         """
         Get absolute path to resource (for PyInstaller and development) 
@@ -143,7 +155,6 @@ class MainWindow(QtWidgets.QMainWindow):
         at every starts
 
         """
-        print("writing")
         self.settings.beginGroup("geometry")
         self.settings.setValue("pos", self.pos())
         self.settings.setValue("size", self.size())
@@ -229,6 +240,7 @@ class MainWindow(QtWidgets.QMainWindow):
         update_vva_table(self.flight, self.tableWidget_database)
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
         self.populate_combobox_tab_1D(self.flight, self.comboBox_flight_tab1D)
+        self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
         
         self.lineEdit_file_path.clear()
         self.lineEdit_comment.clear()
@@ -254,6 +266,7 @@ class MainWindow(QtWidgets.QMainWindow):
         delete_table_entries(self.flight, self.tableWidget_database)
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
         self.populate_combobox_tab_1D(self.flight, self.comboBox_flight_tab1D)
+        self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
         return
     
     def on_button_analyze_entries(self):
@@ -278,6 +291,7 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info("Analysis done")
             button_analyse.setEnabled(True)
             self.populate_combobox_tab_1D(self.flight, self.comboBox_flight_tab1D)
+            self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
             return
         
 
@@ -438,7 +452,20 @@ class MainWindow(QtWidgets.QMainWindow):
                     item.setBackground(QBrush(QColor(240, 240, 240)))
     
         list_widget.blockSignals(False)
-        
+    
+    def populate_flight_list_tab_2D(self, flight_dic, widget_list):
+        #first we remove all the items in the combobox 
+        widget_list.clear()
+        for row, flight in enumerate(flight_dic):
+            if flight['is_data_processed'] and flight['data']:
+                flight_name = str(Path(flight['file_name']).with_suffix("").with_suffix(""))
+                item = QListWidgetItem(flight_name)
+                item.setFlags(
+                    item.flags() | Qt.ItemFlag.ItemIsUserCheckable
+                )
+                item.setCheckState(Qt.CheckState.Unchecked)
+                widget_list.addItem(item)
+              
         
     def display_unit_window(self): #Call the unit window
         

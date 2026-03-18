@@ -34,8 +34,7 @@ def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
     for row, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == comboBox_flight.currentText():
             x = np.array([t.timestamp() for t in flight['data']['GNSS_time']])
-            print(np.divide(x[500:520], 1000000000))
-            print("_________________")
+           
             y = convert_array_to_unit(flight['data'][variables[0]], variables[0])
             plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])}")
             plot_widget.setTitle(f"{variables[0]} vs time")
@@ -73,6 +72,8 @@ def get_checked_variables(list_widget):
 def clear_plots_1D(plot1, plot2):
     plot1.clear()
     plot2.clear()
+    
+
 
 def toggle_x_link(plot1, plot2, checkbox):
     if checkbox.isChecked():
@@ -82,3 +83,68 @@ def toggle_x_link(plot1, plot2, checkbox):
 
     
 
+def update_2D_plot(flight_dic, checkboxes_variable, checkbox_wind , list_widget_flight, plot_widget):
+    """
+
+    """
+    
+    plot_widget.enableAutoRange(True)
+    plot_widget.setAspectLocked(True)
+    
+    flights = get_checked_variables(list_widget_flight)
+    if len(flights) == 0:
+        plot_widget.clear()
+
+        
+        return
+    
+    
+    plot_widget.clear()
+
+    for row, flight in enumerate(flight_dic):
+        if flight['file_name'].split(".")[0] in flights:
+            color = colors[row % len(colors)]
+            pen = pg.mkPen(color, width=2)
+            #main scatter
+            scatter = pg.ScatterPlotItem(brush=pg.mkBrush('b'), pen=pen, size=1)
+            x = flight['data']['GNSS_lon']
+            y = flight['data']['GNSS_lat']
+            scatter.setData(x, y)
+            plot_widget.setTitle(f"{flight['file_name'].split('.')[0]} flight trajectory")
+            
+            
+            #scatter start
+            start = pg.ScatterPlotItem(
+            x=[x[0]], y=[y[0]],
+            brush=pg.mkBrush('black'),
+            size=5,
+            symbol='o'
+            )
+        
+            # scatter finish 
+            end = pg.ScatterPlotItem(
+                x=[x[-1]], y=[y[-1]],
+                brush=pg.mkBrush('black'),
+                size=5,
+                symbol='x'
+            )
+            
+            
+            text_start = pg.TextItem("Start", color='black')
+            text_start.setPos(x[0], y[0])
+            
+            text_end = pg.TextItem("Finish", color='black')
+            text_end.setPos(x[-1], y[-1])
+            
+            plot_widget.addItem(text_start)
+            plot_widget.addItem(text_end)
+            plot_widget.addItem(scatter)
+            plot_widget.addItem(start)
+            plot_widget.addItem(end)
+            plot_widget.addItem(start)
+            plot_widget.addItem(end)
+            plot_widget.addItem(scatter)
+            plot_widget.autoRange()
+
+  
+   
