@@ -34,6 +34,8 @@ def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
     for row, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == comboBox_flight.currentText():
             x = np.array([t.timestamp() for t in flight['data']['GNSS_time']])
+            print(np.divide(x[500:520], 1000000000))
+            print("_________________")
             y = convert_array_to_unit(flight['data'][variables[0]], variables[0])
             plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])}")
             plot_widget.setTitle(f"{variables[0]} vs time")
@@ -44,6 +46,14 @@ def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
             plot_widget.setAxisItems({'bottom': date_axis})
             plot_widget.plot(x, y, pen=pen1,  name=variables[0])
             
+            if len(variables) > 1:
+                y2 = convert_array_to_unit(flight['data'][variables[1]], variables[1])
+                plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])} / {variables[1]} {get_unit(variables[1])}")
+                plot_widget.setTitle(f"{variables[0]} and {variables[1]} vs time")
+                plot_widget.addLegend()
+                pen2 = pg.mkPen(colors[1], width=2)
+                plot_widget.plot(x, y2, pen=pen2,  name=variables[1])
+                
             plot_widget.autoRange()
         
             

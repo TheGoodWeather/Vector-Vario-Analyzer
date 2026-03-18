@@ -2,8 +2,8 @@
 import os
 import shutil
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QMainWindow
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
@@ -40,6 +40,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.setWindowTitle(f"Vector Vario Software Utility v{SOFTWARE_VERSION}")
         self.setFocus()  #allow the main windows to receive key press event 
+        self.read_settings_main()
         
         self.new_file_path = None 
         
@@ -135,7 +136,32 @@ class MainWindow(QtWidgets.QMainWindow):
             base_path = Path(__file__).parent
     
         return base_path / relative_path
-    
+    def write_settings_main(self):
+        """
+        This function will be called when the main window is closed. 
+        It will record every parameters (geometry) as QSettings to be retrieved 
+        at every starts
+
+        """
+        print("writing")
+        self.settings.beginGroup("geometry")
+        self.settings.setValue("pos", self.pos())
+        self.settings.setValue("size", self.size())
+        self.settings.endGroup()
+        
+    def read_settings_main(self):
+ 
+        self.settings.beginGroup("geometry")
+        self.move(self.settings.value("pos", defaultValue=QPoint(50, 50)))
+        self.resize(self.settings.value("size" , defaultValue=QSize(400, 200)))
+        self.settings.endGroup()
+        
+    def closeEvent(self, event):
+        self.write_settings_main()
+        super().closeEvent(event)
+        event.accept()
+        
+        
     def on_button_load_file(self):
         """
         Fetching new file path and copying it into flight folder
@@ -336,29 +362,82 @@ class MainWindow(QtWidgets.QMainWindow):
         # list2.blockSignals(False)
         
     def handle_checkboxes_on_widgetlist_1D(self, list_widget):
-        max_number_plot = 1
+        """
+        This function handles what variables can be displayed on the same graph
+        relative to their scale (same group only, max 2 variables)
+        """
+    
+        var_to_unit_group_dic = {
+            "heading": ["compass_head", "GNSS_head", "wind_origin"],
+            "speed": ["GNSS_speed", "vario", "wind_vel", "IAS", "VarioIAS", "TAS", "netto"],
+            "altitude": ["GNSS_alt", "QNS_alt", "LCL"],
+            "temperature": ["T_sensor", "air_T", "AirTheta", "AirTd"],
+            "angle": ["pitch", "roll"],
+            "pressure": ["DP", "P_stat", "AirES", "AirE"]
+        }
+    
+
+        var_to_group = {
+            var: group
+            for group, variables in var_to_unit_group_dic.items()
+            for var in variables
+        }
+    
+        max_number_plot = 2
+    
         list_widget.blockSignals(True)
+    
         item_checked = []
         for i in range(list_widget.count()):
             item = list_widget.item(i)
             if item.checkState() == Qt.CheckState.Checked:
                 item_checked.append(item)
-       
-        if len(item_checked) >= max_number_plot:
+    
+        for i in range(list_widget.count()):
+            item = list_widget.item(i)
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            item.setBackground(QBrush(QColor("white")))
+    
+        if len(item_checked) == 0:
+            list_widget.blockSignals(False)
+            return
+    
+        first_var = item_checked[0].text()
+        first_group = var_to_group.get(first_var)
+        
+        
+        if first_group is None:
             for i in range(list_widget.count()):
                 item = list_widget.item(i)
-                if item.checkState()!= Qt.CheckState.Checked:
+    
+                if item.checkState() != Qt.CheckState.Checked:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
                     item.setBackground(QBrush(QColor(240, 240, 240)))
-                    
-        if len(item_checked) < max_number_plot:
+                    item.setToolTip("Variable without unit group → single selection only")
+    
+            list_widget.blockSignals(False)
+            return
+    
+        if len(item_checked) == 1:
+    
             for i in range(list_widget.count()):
                 item = list_widget.item(i)
-                if item.checkState()!= Qt.CheckState.Checked:
-                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-                    item.setBackground(QBrush(QColor("white")))
+                var = item.text()
+    
+                if var_to_group.get(var) != first_group: #If the item
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+                    item.setBackground(QBrush(QColor(240, 240, 240)))
+    
+        elif len(item_checked) >= max_number_plot:
+    
+            for i in range(list_widget.count()):
+                item = list_widget.item(i)
+    
+                if item.checkState() != Qt.CheckState.Checked:
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+                    item.setBackground(QBrush(QColor(240, 240, 240)))
+    
         list_widget.blockSignals(False)
-        
         
         
     def display_unit_window(self): #Call the unit window
@@ -376,7 +455,7 @@ if __name__ == "__main__":
         app = QtWidgets.QApplication.instance() 
     app.setStyle("Fusion")
     window = MainWindow()
-    window.showMaximized()
+    window.show()
     sys.exit(app.exec())
     # except Exception as e:
     #     print(f"Fatal error {e}")

@@ -42,20 +42,21 @@ def get_unit(variable):
     
     settings = QSettings("Vector Vario", "VVA")
     settings.beginGroup("units")
+    unit = None
     for group, variables in var_to_unit_group_dic.items():
         if variable in variables:
             unit = settings.value(group)    
-
-    
     settings.endGroup()
     return unit
 
 
 def convert_array_to_unit(array, variable):
     unit = get_unit(variable)
+
     if variable in ["GNSS_lat", "GNSS_lon"]: #no need to convert for GNSS coordinates
         array_converted = array 
-    elif variable in ["T_sensor", "air_T"]:
+    elif variable in ["T_sensor", "air_T", "AirTd"]:
+
         if unit == "°K":
             array_converted = np.add(array,273.15) 
         elif unit == "°F":
@@ -69,6 +70,8 @@ def convert_array_to_unit(array, variable):
             array_converted = np.add(np.multiply(np.subtract(array,273.15), 9/5),32)  
         elif unit == "°C":
             array_converted = np.subtract(array , 273.15)
+    elif unit not in units_coeff_dic:
+        array_converted = array
     else:
         array_converted = np.multiply(array, units_coeff_dic[unit])
         
