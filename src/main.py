@@ -18,7 +18,7 @@ from pathlib  import Path
 import pprint
 import numpy as np
 from preference_windows import UnitDialog
-from plot import update_1D_plot, clear_plots_1D, toggle_x_link, update_2D_plot
+from plot import update_1D_plot, clear_plots_1D, toggle_x_link, update_2D_plot, update_wind_barbs_2D, save_checked_variables_1D, restore_checked_variables_1D
 
 SOFTWARE_VERSION = "1.0.0"
 
@@ -109,9 +109,14 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.comboBox_flight_tab1D.currentTextChanged.connect(lambda choice: self.populate_combobox_1D_variable(self.flight, self.listWidget_variable_plot1, self.listWidget_variable_plot2, choice))
         self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: clear_plots_1D(self.graph1_tab1D, self.graph2_tab1D))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1 , self.listWidget_variable_plot2))
+
         self.listWidget_variable_plot1.itemChanged.connect(lambda: self.handle_checkboxes_on_widgetlist_1D(self.listWidget_variable_plot1))
+        self.listWidget_variable_plot1.itemChanged.connect(lambda: save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
         self.listWidget_variable_plot2.itemChanged.connect(lambda: self.handle_checkboxes_on_widgetlist_1D(self.listWidget_variable_plot2))
         self.listWidget_variable_plot1.itemChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
+        self.listWidget_variable_plot2.itemChanged.connect(lambda: save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
         self.listWidget_variable_plot2.itemChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
         self.checkBox_x_axis_link.stateChanged.connect(lambda: toggle_x_link(self.graph1_tab1D, self.graph2_tab1D, self.checkBox_x_axis_link))
         
@@ -119,13 +124,37 @@ class MainWindow(QtWidgets.QMainWindow):
         Widgets tab 2D plot
         """
         self.checkboxes_variables_plot2D = [self.checkBox_altitude_plot2D, self.checkBox_LCL_plot2D, self.checkBox_temp_plot2D, self.checkBox_hum_plot2D]
-        self.listWidget_flights_plot2D.itemChanged.connect(lambda: update_2D_plot(self.flight, self.checkboxes_variables_plot2D, self.checkBox_windbarbs,self.listWidget_flights_plot2D , self.graph_tab2D))
+        
         self.graph_tab2D.setBackground("w")
-        self.graph_tab2D.setLabel("left", "Longitudes")
-        self.graph_tab2D.setLabel("bottom", "Latitudes")
+        self.graph_tab2D.setLabel("left", "Latitudes")
+        self.graph_tab2D.setLabel("bottom", "Longitudes")
         self.graph_tab2D.addLegend()
         self.graph_tab2D.showGrid(x=True, y=True, alpha=0.3)
         self.graph_tab2D.setEnabled(True)
+        self.colorbar = pg.ColorBarItem(values=(0, 1),width=10,colorMap=pg.colormap.get('turbo'), interactive=False, orientation='horizontal')
+        self.color_gradient_bar_widget.addItem(self.colorbar)
+        self.color_gradient_bar_widget.setBackground(None)
+        self.colorbar.setOpacity(0) 
+        
+        #signals
+        self.listWidget_flights_plot2D.itemChanged.connect(lambda: update_2D_plot(self.flight, None, None,self.listWidget_flights_plot2D , self.graph_tab2D ,self.colorbar))
+        self.listWidget_flights_plot2D.itemChanged.connect(lambda: self.reset_checkboxes_color_variable(self.checkboxes_variables_plot2D, self.checkBox_windbarbs, self.colorbar))
+        self.listWidget_flights_plot2D.itemChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_altitude_plot2D.stateChanged.connect(lambda: update_2D_plot(self.flight, self.checkBox_altitude_plot2D, 'GNSS_alt',self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
+        self.checkBox_hum_plot2D.stateChanged.connect(lambda: update_2D_plot(self.flight, self.checkBox_hum_plot2D, 'air_RH',self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
+        self.checkBox_temp_plot2D.stateChanged.connect(lambda: update_2D_plot(self.flight, self.checkBox_temp_plot2D, 'air_T', self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
+        self.checkBox_LCL_plot2D.stateChanged.connect(lambda: update_2D_plot(self.flight, self.checkBox_LCL_plot2D, 'LCL', self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
+        self.checkBox_altitude_plot2D.stateChanged.connect(lambda: self.handle_checkboxes_color_variable(self.checkboxes_variables_plot2D,  self.checkBox_windbarbs,self.listWidget_flights_plot2D))
+        self.checkBox_hum_plot2D.stateChanged.connect(lambda: self.handle_checkboxes_color_variable(self.checkboxes_variables_plot2D,  self.checkBox_windbarbs,self.listWidget_flights_plot2D))
+        self.checkBox_LCL_plot2D.stateChanged.connect(lambda: self.handle_checkboxes_color_variable(self.checkboxes_variables_plot2D,  self.checkBox_windbarbs,self.listWidget_flights_plot2D))
+        self.checkBox_temp_plot2D.stateChanged.connect(lambda: self.handle_checkboxes_color_variable(self.checkboxes_variables_plot2D, self.checkBox_windbarbs, self.listWidget_flights_plot2D))
+        self.checkBox_altitude_plot2D.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_hum_plot2D.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_temp_plot2D.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_LCL_plot2D.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_windbarbs.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.horizontalSlider_reswind.valueChanged.connect(lambda:update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()) )
+    
     
     def resource_path(self, relative_path):
         """
@@ -454,7 +483,10 @@ class MainWindow(QtWidgets.QMainWindow):
         list_widget.blockSignals(False)
     
     def populate_flight_list_tab_2D(self, flight_dic, widget_list):
-        #first we remove all the items in the combobox 
+        """
+        Populating the flight list according to flight that has been already processed
+
+        """
         widget_list.clear()
         for row, flight in enumerate(flight_dic):
             if flight['is_data_processed'] and flight['data']:
@@ -465,7 +497,75 @@ class MainWindow(QtWidgets.QMainWindow):
                 )
                 item.setCheckState(Qt.CheckState.Unchecked)
                 widget_list.addItem(item)
+                
+    def handle_checkboxes_color_variable(self, checkbox_list, checkbox_wind, flight_list):
+        """
+        This function prevent the user to select multiple variables to color the plot, limiting it 
+        at one variable.
+
+        """
+        sender = self.sender()  # checkbox qui a déclenché le signal
+        flight_selected = False
+        for i in range(flight_list.count()):
+            item = flight_list.item(i)
+            if item.checkState() == Qt.CheckState.Checked:
+                flight_selected = True
+                break
+    
+        if not flight_selected:
+            checkbox_wind.setChecked(False)
+            checkbox_wind.setEnabled(False)
+            for checkbox in checkbox_list:
+                checkbox.blockSignals(True)
+                checkbox.setChecked(False)
+                checkbox.setEnabled(False)
+                checkbox.blockSignals(False)
+            return
+    
+        for checkbox in checkbox_list:
+            checkbox.setEnabled(True)
+
+        if sender.isChecked():
+            checkbox_wind.setEnabled(True)
+            for checkbox in checkbox_list:
+                if checkbox != sender:
+                    checkbox.blockSignals(True)
+                    checkbox.setChecked(False)
+                    checkbox.blockSignals(False)
+                    
+    def reset_checkboxes_color_variable(self, checkbox_list, checkbox_wind,  colorbar):
+        """
+        This function enable the checkboxes color variable when a flight is selected in the 
+        flight widget list, or disable it when no flight is selected. 
+
+        """
+        sender = self.sender()
+        flight_selected = False
+        for i in range(sender.count()):
+            item = sender.item(i)
+            if item.checkState() == Qt.CheckState.Checked:
+                flight_selected = True
+                break
+    
+        if flight_selected:
+            checkbox_wind.setEnabled(True)
+            for checkbox in checkbox_list:
+                checkbox.blockSignals(True)
+                checkbox.setEnabled(True)
+                checkbox.blockSignals(False)
+        else:
+            checkbox_wind.setEnabled(False)
+            checkbox_wind.setChecked(False)
+            for checkbox in checkbox_list:
+                checkbox.blockSignals(True)
+                checkbox.setEnabled(False)
+                checkbox.setChecked(False)
+                checkbox.blockSignals(False)
+    
+            colorbar.setOpacity(0)
               
+  
+        
         
     def display_unit_window(self): #Call the unit window
         

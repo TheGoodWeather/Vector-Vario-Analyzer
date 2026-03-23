@@ -264,7 +264,9 @@ def load_vva_files(flight_dir="flight"):
            "file_path" : None,
            "file_name" : None,
            "origin_file_path" : None,
-           "is_data_processed" : False}
+           "is_data_processed" : False,
+           "plot" : {"variables_1D" : [[],[]],
+                     "windbarbs_2D" : []}}
         flight["metadata"] = read_vva_metadata(file)
         flight["file_name"] = file.name
         flight["file_path"] = file

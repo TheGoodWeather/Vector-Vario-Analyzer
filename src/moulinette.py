@@ -155,8 +155,8 @@ def fetch_raw_igc(flight_dic, progress_callback):
                 raw_data["GNSS_time"].append(datetime.strptime(date_wo_hour + line[time_index+1 : time_index+7],"%d%m%y%H%M%S" ))
                 raw_data["GNSS_lat"].append(float(line[nord_index-7 : nord_index])/100000) # decimal degrees 
                 raw_data["GNSS_lon"].append(float(line[east_index-8 : east_index])/100000) # decimal degrees
-                raw_data["QNS_alt"].append(int(line[alti_index+1 : alti_index+5]))
-                raw_data["GNSS_alt"].append(int(line[alti_index+6 : alti_index+10]))
+                raw_data["QNS_alt"].append(int(line[alti_index+1 : alti_index+6]))
+                raw_data["GNSS_alt"].append(int(line[alti_index+7 : alti_index+11]))
                 
                 
                 lxvv_line = next(file, None)
