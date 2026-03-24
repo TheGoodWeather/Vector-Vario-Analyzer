@@ -45,8 +45,7 @@ def igc2vva(igc_filepath, widget_comment):
         "altitude_start" : None,
         "avg_windspeed" : None,
         "avg_winddir" : None,
-        "comment" : ""
-        }
+        "comment" : ""}
 
 
     
@@ -266,10 +265,15 @@ def load_vva_files(flight_dir="flight"):
            "origin_file_path" : None,
            "is_data_processed" : False,
            "plot" : {"variables_1D" : [[],[]],
-                     "windbarbs_2D" : []}}
+                     "windbarbs_2D" : [],
+                     "roi_polar": [],
+                     "plot_color" : None,
+                     "crosshair_v": None,
+                     "crosshair_h": None}}
         flight["metadata"] = read_vva_metadata(file)
         flight["file_name"] = file.name
         flight["file_path"] = file
+
         origin_file = file.with_suffix("")
         if origin_file.exists():
             flight["origin_file_path"] = origin_file

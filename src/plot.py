@@ -5,14 +5,21 @@ from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, Q
 from PyQt6.QtCore import Qt, pyqtSignal, QSettings
 from PyQt6.QtGui import QColor, QPen, QBrush
 import numpy as np
+import datetime
 from units import convert_array_to_unit , get_unit
+from table_handler import create_polar_table
 import math
 pg.setConfigOptions(useOpenGL=True)
 pg.setConfigOptions(antialias=True)
 
 colors = [
    QColor(253, 50, 22),     
-   QColor(128, 204, 0)
+   QColor(128, 204, 0),
+   QColor(255, 235, 59),
+   QColor(3, 169, 244),     
+   QColor(156, 39, 176),
+   QColor(255, 138, 101)
+   
    ]
 
 
@@ -20,7 +27,7 @@ colors = [
 def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
     """
     This function was initially written in order to handle multiple plot on the same graph. 
-    For now it only plot one as it is to complex to add several scales with pyqtgraph
+    For now it only plot one as it is to complex to add several scales with pyqtgraph.
     """
 
     variables = get_checked_variables(list_widget)
@@ -41,7 +48,7 @@ def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
             plot_widget.setTitle(f"{variables[0]} vs time")
             plot_widget.addLegend()
             plot_widget.enableAutoRange(True)
-            pen1 = pg.mkPen(colors[0], width=2)
+            pen1 = pg.mkPen(flight['plot']['plot_color'], width=1)
             date_axis = pg.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
             plot_widget.setAxisItems({'bottom': date_axis})
             plot_widget.plot(x, y, pen=pen1,  name=variables[0])
@@ -51,7 +58,7 @@ def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
                 plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])} / {variables[1]} {get_unit(variables[1])}")
                 plot_widget.setTitle(f"{variables[0]} and {variables[1]} vs time")
                 plot_widget.addLegend()
-                pen2 = pg.mkPen(colors[1], width=2)
+                pen2 = pg.mkPen(flight['plot']['plot_color'].darker(), width=1)
                 plot_widget.plot(x, y2, pen=pen2,  name=variables[1])
                 
             plot_widget.autoRange()
@@ -123,9 +130,14 @@ def restore_checked_variables_1D(flight_dic, comboBox_flight, list_widget1, list
 
 
 def clear_plots_1D(plot1, plot2):
-    plot1.clear()
-    plot2.clear()
-    
+    if plot1:
+        plot1.clear()
+    else:
+        return
+    if plot2:
+        plot2.clear()
+    else:
+        return
 
 
 def toggle_x_link(plot1, plot2, checkbox):
@@ -157,7 +169,7 @@ def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flig
         if flight['file_name'].split(".")[0] in flights:
             #setting the color mapping 
             if checkbox_color is None:
-                color = colors[row % len(colors)]
+                color = flight['plot']['plot_color']
                 pen = pg.mkPen(color, width=2)
                 brush = None
                 color_bar.setOpacity(0)
@@ -178,7 +190,7 @@ def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flig
                     pen = None
                     color_bar.setOpacity(1)
                 elif not checkbox_color.isChecked():
-                    color = colors[row % len(colors)]
+                    color = flight['plot']['plot_color']
                     pen = pg.mkPen(color, width=2)
                     brush = None
                     color_bar.setOpacity(0)
@@ -193,7 +205,7 @@ def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flig
                 x=x,
                 y=y,
                 brush=brush,
-                size=3,
+                size=2,
                 pen=pen
             )
             plot_widget.setTitle(f"{flight['file_name'].split('.')[0]} flight trajectory")
@@ -203,7 +215,7 @@ def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flig
             start = pg.ScatterPlotItem(
             x=[x[0]], y=[y[0]],
             brush=pg.mkBrush('black'),
-            size=5,
+            size=3,
             symbol='o'
             )
         
@@ -211,7 +223,7 @@ def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flig
             end = pg.ScatterPlotItem(
                 x=[x[-1]], y=[y[-1]],
                 brush=pg.mkBrush('black'),
-                size=5,
+                size=3,
                 symbol='x'
             )
             
@@ -329,3 +341,186 @@ def update_wind_barbs_2D(flight_dic, list_widget_flight, plot_widget, checkbox_w
                         flight['plot']['windbarbs_2D']= []
 
                         
+def update_polartab_timeserie_plot(flight_dic, comboBox_flight, combobox_var, plot_widget):
+    """
+    Same function than 1D plot, but it takes only one var as input
+    """
+    
+    variable = combobox_var.currentText()
+    if variable == '':
+        plot_widget.clear()
+        return
+    
+    
+    plot_widget.clear()
+    for row, flight in enumerate(flight_dic):
+        if flight['file_name'].split(".")[0] == comboBox_flight.currentText():
+            
+            y = convert_array_to_unit(flight['data'][variable], variable)
+            x = np.arange(len(y))
+
+            plot_widget.setLimits(xMin=np.min(x), xMax=np.max(x), yMin=np.min(y), yMax=np.max(y))
+            plot_widget.setLabel("left", f"{variable} {get_unit(variable)}")
+            plot_widget.setTitle(f"{variable}")
+            plot_widget.addLegend()
+            plot_widget.enableAutoRange(False)
+            pen1 = pg.mkPen(flight['plot']['plot_color'], width=1)
+            plot_widget.plot(x, y, pen=pen1,  name=variable)
+            plot_widget.autoRange()
+
+def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight):
+    """
+    Creating a new ROI
+    """
+    for row, flight in enumerate(flight_dic):
+        if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+            roi = pg.LinearRegionItem(values=(calculate_roi(flight, "min"), calculate_roi(flight, "max")), bounds=(calculate_roi(flight, "bound_min"), calculate_roi(flight, "bound_max" )))
+            roi.setMovable(True)
+            roi.setBrush(QColor(100, 100, 100, 25)) 
+            roi.setZValue(10)  # Stay on top
+            plot_widget_time.addItem(roi)
+            flight['plot']['roi_polar'].append([roi, None, None, None, None]) #And we add the ROI to the dic,
+            update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight)
+            roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight))
+
+            
+            
+def calculate_roi(flight, edge):
+    """ 
+    edge : 'min' ou 'max' 
+    Calculate a position that suits well to be displayed for new ROIs 
+    """
+    #t = np.array([t.timestamp() for t in flight['data']['GNSS_time']])
+    t= np.arange(len(flight['data']['GNSS_time']))
+    t0 = t[0]
+    t_end = t[-1]
+    total_duration = t_end - t0
+
+    existing_rois = []
+
+    if flight['plot']['roi_polar']:
+        for roi_data in flight['plot']['roi_polar']:
+            existing_rois.append((roi_data[0].getRegion()[0], roi_data[0].getRegion()[1]))
+
+    existing_rois.sort(key=lambda x: x[0])
+
+    if not existing_rois:
+        # middle flight
+        center = t0 + total_duration / 2
+        half_width = total_duration * 0.06
+
+        start = center - half_width
+        end = center + half_width
+
+    else:
+        last_xmin, last_xmax = existing_rois[-1]
+        remaining = max(t_end - last_xmax, 0)
+
+        if remaining > 0:
+            interval = max(
+                remaining * 0.1,
+                total_duration * 0.08
+            )
+
+            start = last_xmax + total_duration * 0.08
+            end = min(start + interval, t_end)
+
+        else:
+            # Plus de place
+            start = last_xmax + 50
+            end = t_end
+    if edge == 'min':
+        return int(start)
+    elif edge == 'max':
+        return int(end)
+    elif edge == 'bound_min':
+        return int(t0)
+    else:
+        return int(t_end)
+
+            
+
+def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight):
+    
+    for row, flight in enumerate(flight_dic):
+        if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+            if len(flight['plot']['roi_polar']) > 0:
+                for roi_data in flight['plot']['roi_polar']:
+                    x_min, x_max = roi_data[0].getRegion()
+                    if x_min != x_max:
+                        with np.errstate(divide='ignore', invalid='ignore'):
+                            vx = np.sqrt(np.subtract(np.square(flight['data']['IAS']), np.square(flight['data']['VarioIAS'])))
+                            glide_ratio = np.divide(vx, flight['data']['VarioIAS'])
+                            glide_ratio_avg = round(np.nanmean(glide_ratio[int(x_min):int(x_max)]),2)
+                            vx_avg = round(np.nanmean(vx[int(x_min):int(x_max)]),2)
+                            ias_avg = round(np.nanmean(flight['data']['IAS'][int(x_min):int(x_max)]),2)
+                            vario_avg = round(np.nanmean(flight['data']['VarioIAS'][int(x_min):int(x_max)]),2)
+                            
+                            roi_data[1] =  ias_avg
+                            roi_data[2] = vx_avg
+                            roi_data[3] = vario_avg
+                            roi_data[4] = glide_ratio_avg
+                            
+    update_vxvz_graph(flight_dic, plot_widget)
+    create_polar_table(flight_dic, table_widget, combobox_flight)
+        
+def display_rois(flight_dic, plot_widget, combobox_flight):
+    """
+    This function keeps the existings rois displayed even though we change the variable or the flight
+    """
+    for row, flight in enumerate(flight_dic):
+        if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+            if flight['plot']['roi_polar']:
+                for roi in flight['plot']['roi_polar']:
+                    plot_widget.addItem(roi[0])  #roi[0] is the pyqtgraph item 
+                    
+                    
+          
+            
+def reset_highlights(flight_dic, plot_widget):
+    """
+    Reset the color of a ROI if it has been changed by a previous selection
+    And it also removes the crosshair from the previous selection 
+    """
+    for row, flight in enumerate(flight_dic):
+        if flight['is_data_processed']:
+            for roi in flight['plot']['roi_polar']:
+                roi[0].setBrush(QColor(100, 100, 100, 25))
+            if flight['plot']['crosshair_v']:
+                plot_widget.removeItem(flight['plot']['crosshair_v'])
+                plot_widget.removeItem(flight['plot']['crosshair_h'])  
+
+def update_vxvz_graph(flight_dic, plot_widget):
+    
+    plot_widget.clear()
+    plot_widget.enableAutoRange(True)
+    plot_widget.setAspectLocked(True)
+    
+    for row, flight in enumerate(flight_dic):
+        if flight['is_data_processed']: 
+            if len(flight['plot']['roi_polar']) > 0:
+                scatter_polar_vx = []
+                scatter_polar_vz = []
+                for roi_data in flight['plot']['roi_polar']:
+                    scatter_polar_vx.append(roi_data[2])
+                    scatter_polar_vz.append(roi_data[3])
+                
+                    pen = pg.mkPen(flight['plot']['plot_color'], width=2)
+                    brush = None
+                    scatter = pg.ScatterPlotItem(
+                        x=scatter_polar_vx,
+                        y=scatter_polar_vz,
+                        brush=brush,
+                        size=2,
+                        pen=pen
+                    )
+                    plot_widget.addItem(scatter)
+                    plot_widget.autoRange()
+                    
+        
+        
+        
+        
+        
+        
+        

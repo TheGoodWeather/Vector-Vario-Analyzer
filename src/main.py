@@ -7,7 +7,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
-from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row
+from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table, on_table_cell_clicked
 from PyQt6.QtCore import QThread, QThreadPool, QSettings
 from moulinette_worker import MoulinetteWorker
 from pyqtgraph import ErrorBarItem 
@@ -18,7 +18,7 @@ from pathlib  import Path
 import pprint
 import numpy as np
 from preference_windows import UnitDialog
-from plot import update_1D_plot, clear_plots_1D, toggle_x_link, update_2D_plot, update_wind_barbs_2D, save_checked_variables_1D, restore_checked_variables_1D
+import plot 
 
 SOFTWARE_VERSION = "1.0.0"
 
@@ -30,8 +30,9 @@ class MainWindow(QtWidgets.QMainWindow):
     
         uic.loadUi(self.resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
         self.unit_dialog = UnitDialog(parent = self)  
-        self.unit_dialog.unitsChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
-        self.unit_dialog.unitsChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
+        self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
+        self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
+        self.unit_dialog.unitsChanged.connect(lambda : plot.update_polartab_timeserie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
@@ -108,17 +109,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph2_tab1D.setEnabled(True)
         
         self.comboBox_flight_tab1D.currentTextChanged.connect(lambda choice: self.populate_combobox_1D_variable(self.flight, self.listWidget_variable_plot1, self.listWidget_variable_plot2, choice))
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: clear_plots_1D(self.graph1_tab1D, self.graph2_tab1D))
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1 , self.listWidget_variable_plot2))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph1_tab1D, self.graph2_tab1D))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1 , self.listWidget_variable_plot2))
 
         self.listWidget_variable_plot1.itemChanged.connect(lambda: self.handle_checkboxes_on_widgetlist_1D(self.listWidget_variable_plot1))
-        self.listWidget_variable_plot1.itemChanged.connect(lambda: save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
+        self.listWidget_variable_plot1.itemChanged.connect(lambda: plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
         self.listWidget_variable_plot2.itemChanged.connect(lambda: self.handle_checkboxes_on_widgetlist_1D(self.listWidget_variable_plot2))
-        self.listWidget_variable_plot1.itemChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
-        self.listWidget_variable_plot2.itemChanged.connect(lambda: save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
-        self.listWidget_variable_plot2.itemChanged.connect(lambda: update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
-        self.checkBox_x_axis_link.stateChanged.connect(lambda: toggle_x_link(self.graph1_tab1D, self.graph2_tab1D, self.checkBox_x_axis_link))
+        self.listWidget_variable_plot1.itemChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
+        self.listWidget_variable_plot2.itemChanged.connect(lambda: plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
+        self.listWidget_variable_plot2.itemChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
+        self.checkBox_x_axis_link.stateChanged.connect(lambda: plot.toggle_x_link(self.graph1_tab1D, self.graph2_tab1D, self.checkBox_x_axis_link))
         
         """
         Widgets tab 2D plot
@@ -133,29 +134,58 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph_tab2D.setEnabled(True)
         self.colorbar = pg.ColorBarItem(values=(0, 1),width=10,colorMap=pg.colormap.get('turbo'), interactive=False, orientation='horizontal')
         self.color_gradient_bar_widget.addItem(self.colorbar)
-        self.color_gradient_bar_widget.setBackground(None)
+        self.color_gradient_bar_widget.setBackground("w")
         self.colorbar.setOpacity(0) 
         
         #signals
-        self.listWidget_flights_plot2D.itemChanged.connect(lambda: update_2D_plot(self.flight, None, None,self.listWidget_flights_plot2D , self.graph_tab2D ,self.colorbar))
+        self.listWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_2D_plot(self.flight, None, None,self.listWidget_flights_plot2D , self.graph_tab2D ,self.colorbar))
         self.listWidget_flights_plot2D.itemChanged.connect(lambda: self.reset_checkboxes_color_variable(self.checkboxes_variables_plot2D, self.checkBox_windbarbs, self.colorbar))
-        self.listWidget_flights_plot2D.itemChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
-        self.checkBox_altitude_plot2D.stateChanged.connect(lambda: update_2D_plot(self.flight, self.checkBox_altitude_plot2D, 'GNSS_alt',self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
-        self.checkBox_hum_plot2D.stateChanged.connect(lambda: update_2D_plot(self.flight, self.checkBox_hum_plot2D, 'air_RH',self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
-        self.checkBox_temp_plot2D.stateChanged.connect(lambda: update_2D_plot(self.flight, self.checkBox_temp_plot2D, 'air_T', self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
-        self.checkBox_LCL_plot2D.stateChanged.connect(lambda: update_2D_plot(self.flight, self.checkBox_LCL_plot2D, 'LCL', self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
+        self.listWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_altitude_plot2D.stateChanged.connect(lambda: plot.update_2D_plot(self.flight, self.checkBox_altitude_plot2D, 'GNSS_alt',self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
+        self.checkBox_hum_plot2D.stateChanged.connect(lambda: plot.update_2D_plot(self.flight, self.checkBox_hum_plot2D, 'air_RH',self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
+        self.checkBox_temp_plot2D.stateChanged.connect(lambda: plot.update_2D_plot(self.flight, self.checkBox_temp_plot2D, 'air_T', self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
+        self.checkBox_LCL_plot2D.stateChanged.connect(lambda: plot.update_2D_plot(self.flight, self.checkBox_LCL_plot2D, 'LCL', self.listWidget_flights_plot2D , self.graph_tab2D, self.colorbar))
         self.checkBox_altitude_plot2D.stateChanged.connect(lambda: self.handle_checkboxes_color_variable(self.checkboxes_variables_plot2D,  self.checkBox_windbarbs,self.listWidget_flights_plot2D))
         self.checkBox_hum_plot2D.stateChanged.connect(lambda: self.handle_checkboxes_color_variable(self.checkboxes_variables_plot2D,  self.checkBox_windbarbs,self.listWidget_flights_plot2D))
         self.checkBox_LCL_plot2D.stateChanged.connect(lambda: self.handle_checkboxes_color_variable(self.checkboxes_variables_plot2D,  self.checkBox_windbarbs,self.listWidget_flights_plot2D))
         self.checkBox_temp_plot2D.stateChanged.connect(lambda: self.handle_checkboxes_color_variable(self.checkboxes_variables_plot2D, self.checkBox_windbarbs, self.listWidget_flights_plot2D))
-        self.checkBox_altitude_plot2D.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
-        self.checkBox_hum_plot2D.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
-        self.checkBox_temp_plot2D.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
-        self.checkBox_LCL_plot2D.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
-        self.checkBox_windbarbs.stateChanged.connect(lambda: update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
-        self.horizontalSlider_reswind.valueChanged.connect(lambda:update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()) )
+        self.checkBox_altitude_plot2D.stateChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_hum_plot2D.stateChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_temp_plot2D.stateChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_LCL_plot2D.stateChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.checkBox_windbarbs.stateChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()))
+        self.horizontalSlider_reswind.valueChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.listWidget_flights_plot2D, self.graph_tab2D, self.checkBox_windbarbs, self.horizontalSlider_reswind, self.horizontalSlider_reswind.value()) )
     
     
+        """
+        Widgets tab POLAR
+        """
+        self.tableView_polar_points.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableView_polar_points.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
+        self.tableView_polar_points.cellClicked.connect(lambda row, column: on_table_cell_clicked(row, self.flight, self.comboBox_flight_select_polartab, self.tableView_polar_points, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.pushButton_remove_polar_point))
+        self.graph_tabpolar_vxvz.setBackground("w")
+        self.graph_tabpolar_vxvz.setLabel('left', 'Vz (m/s)')
+        self.graph_tabpolar_vxvz.setLabel('bottom', 'Vx (m/s)')
+        self.graph_tabpolar_vxvz.setTitle("Vx vs Vz")
+        self.graph_tabpolar_vxvz.showGrid(x=True, y=True, alpha=0.3)
+        self.graph_tabpolar_vxvz.setEnabled(True)
+        self.graph_tabpolar_timeserie.setBackground("w")
+        self.graph_tabpolar_timeserie.setLabel("bottom", "Sample")
+        self.graph_tabpolar_timeserie.addLegend()
+        self.graph_tabpolar_timeserie.showGrid(x=True, y=True, alpha=0.3)
+        self.graph_tabpolar_timeserie.setEnabled(True)
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda choice: self.populate_combobox_polar_variable(self.flight, self.comboBox_variable_select_polartab, choice))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_tabpolar_timeserie, None))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda:plot.update_polartab_timeserie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
+        self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.update_polartab_timeserie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
+        self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.reset_highlights(self.flight, self.graph_tabpolar_vxvz ))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda :create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
+        self.pushButton_add_polar_point.clicked.connect(lambda : plot.create_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab))
+        self.pushButton_add_polar_point.clicked.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
+        
+
     def resource_path(self, relative_path):
         """
         Get absolute path to resource (for PyInstaller and development) 
@@ -268,12 +298,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.flight = load_vva_files()
         update_vva_table(self.flight, self.tableWidget_database)
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
-        self.populate_combobox_tab_1D(self.flight, self.comboBox_flight_tab1D)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
         
         self.lineEdit_file_path.clear()
         self.lineEdit_comment.clear()
-    
+        
+        
+        
     def on_button_clear_log(self):
         self.textEdit_log.clear()
         return
@@ -294,7 +327,8 @@ class MainWindow(QtWidgets.QMainWindow):
             return  
         delete_table_entries(self.flight, self.tableWidget_database)
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
-        self.populate_combobox_tab_1D(self.flight, self.comboBox_flight_tab1D)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
         return
     
@@ -319,7 +353,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.analyze_running = False 
             logger.info("Analysis done")
             button_analyse.setEnabled(True)
-            self.populate_combobox_tab_1D(self.flight, self.comboBox_flight_tab1D)
+            self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
+            self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
             self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
             return
         
@@ -327,10 +362,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.analyze_running = True #Starting analysis 
         button_analyse.setEnabled(False)
         row = self.analyze_queue.pop(0)
-        
-        # if self.flight[row]["is_data_processed"] == True:
-        #     logger.info("Analysis already done")
-        #     return
         
         worker = MoulinetteWorker(self.flight[row])
 
@@ -360,9 +391,15 @@ class MainWindow(QtWidgets.QMainWindow):
         for row in row_to_export:
             export_file_csv(self.flight[row])
             
-    def populate_combobox_tab_1D(self, data, combo_box_flight):
+    def populate_combobox_flight(self, data, combo_box_flight):
+        """
+        Set the flights that has been analyzed into the specified combobox. Used in 1D plot and Polar tab
+
+        """
         #first we remove all the items in the combobox 
         combo_box_flight.clear()
+        self.set_colors_to_flights(data) # We set a color to each flight here because the analyze has to be finished before setting new color trust me
+
         for row, flight in enumerate(data):
             original_filename = Path(flight['file_name'])
             original_filename_wo_extension = original_filename.with_suffix("")
@@ -565,6 +602,22 @@ class MainWindow(QtWidgets.QMainWindow):
             colorbar.setOpacity(0)
               
   
+    def populate_combobox_polar_variable(self, flight_dic, combobox_var, choice):
+        
+        combobox_var.clear()
+        for row, flight in enumerate(flight_dic):
+            if flight['file_name'].split(".")[0] == choice:
+                if flight['is_data_processed'] and flight['data']:
+                    for index, variable in enumerate(flight['data']):
+                        if variable == 'IAS' or variable == 'GNSS_alt' :                       
+                            if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
+                                combobox_var.addItem(variable)
+                                
+
+    def set_colors_to_flights(self, flight_dic):
+        for row, flight in enumerate(flight_dic):
+            if flight['is_data_processed']: 
+                flight['plot']['plot_color'] = plot.colors[row % len(plot.colors)]
         
         
     def display_unit_window(self): #Call the unit window

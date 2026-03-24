@@ -40,6 +40,7 @@ pywin32==310
 pywin32-ctypes==0.2.3
 pyzmq==26.4.0
 scipy==1.15.2
+setuptools==82.0.0
 six==1.17.0
 spyder-kernels==3.0.3
 stack-data==0.6.3
