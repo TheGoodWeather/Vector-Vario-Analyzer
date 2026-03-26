@@ -13,6 +13,7 @@ from moulinette_worker import MoulinetteWorker
 from pyqtgraph import ErrorBarItem 
 import pyqtgraph as pg
 from export import export_file_csv, export_file_kml
+from plot_emagram import update_emagram_graph
 import sys
 from pathlib  import Path 
 import pprint
@@ -32,9 +33,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unit_dialog = UnitDialog(parent = self)  
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
-        self.unit_dialog.unitsChanged.connect(lambda : plot.update_polartab_timeserie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
+        self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
+        self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
+
+        
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
@@ -181,20 +185,43 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph_tabpolar_timeserie.addLegend()
         self.graph_tabpolar_timeserie.showGrid(x=True, y=True, alpha=0.3)
         self.graph_tabpolar_timeserie.setEnabled(True)
-        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda choice: self.populate_combobox_polar_variable(self.flight, self.comboBox_variable_select_polartab, choice))
+        
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda choice: self.populate_combobox_variable(self.flight, self.comboBox_variable_select_polartab, choice, 'polar'))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_tabpolar_timeserie, None))
-        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.load_roi_from_flight(self.flight, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz,  self.tableView_polar_points,  self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz ))
-        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda:plot.update_polartab_timeserie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
-        self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.update_polartab_timeserie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
-        self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab))
-        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.load_polar_roi(self.flight, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz,  self.tableView_polar_points,  self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz ))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda:plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
+        self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
+        self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab , 'roi_polar'))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab, 'roi_polar'))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.reset_highlights(self.flight, self.graph_tabpolar_vxvz ))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda :create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
         self.pushButton_add_polar_point.clicked.connect(lambda : plot.create_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
         self.pushButton_add_polar_point.clicked.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
         self.pushButton_remove_polar_point.clicked.connect(lambda : plot.remove_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
         self.pushButton_save_polar.clicked.connect(lambda : save_section_to_vva(self.flight, 'roi_polar'))
-                                                           
+        
+        
+        
+        """
+        Widgets tab EMAGRAM
+        """
+        
+        self.graph_atmtab_timeserie.setBackground("w")
+        self.graph_atmtab_timeserie.setLabel("bottom", "Sample")
+        self.graph_atmtab_timeserie.addLegend()
+        self.graph_atmtab_timeserie.showGrid(x=True, y=True, alpha=0.3)
+        self.graph_atmtab_timeserie.setEnabled(True)
+
+        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda choice: self.populate_combobox_variable(self.flight, self.comboBox_variable_select_atmtab, choice, 'emagram'))
+        
+        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_atmtab_timeserie, None))
+        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.widget_19, self.comboBox_flight_select_atmtab ))
+        
+        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
+        self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
+        self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
+        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
+        self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : update_emagram_graph(self.flight, self.widget_19, self.comboBox_flight_select_atmtab))   
     def resource_path(self, relative_path):
         """
         Get absolute path to resource (for PyInstaller and development) 
@@ -309,6 +336,7 @@ class MainWindow(QtWidgets.QMainWindow):
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
         self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
         
         self.lineEdit_file_path.clear()
@@ -338,6 +366,7 @@ class MainWindow(QtWidgets.QMainWindow):
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
         self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
         return
     
@@ -364,6 +393,7 @@ class MainWindow(QtWidgets.QMainWindow):
             button_analyse.setEnabled(True)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
+            self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
             self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
             return
         
@@ -408,7 +438,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
     def populate_combobox_flight(self, data, combo_box_flight):
         """
-        Set the flights that has been analyzed into the specified combobox. Used in 1D plot and Polar tab
+        Set the flights that has been analyzed into the specified combobox. Used in 1D plot, polar and emagram
 
         """
         #first we remove all the items in the combobox 
@@ -617,22 +647,33 @@ class MainWindow(QtWidgets.QMainWindow):
             colorbar.setOpacity(0)
               
   
-    def populate_combobox_polar_variable(self, flight_dic, combobox_var, choice):
+    def populate_combobox_variable(self, flight_dic, combobox_var, choice, tab):
         """
-        This function populate the variable according to the flight selected in the combobox. 
-        It also set a prioritarization of the variable IAS
+        This function populate the variable according to the flight selected in the combobox in selected tab
+        It also set a prioritarization of the variable IAS in the polar tab
         """
         combobox_var.clear()
         
         for flight in flight_dic:
             if flight['file_name'].split(".")[0] == choice:
                 if flight['is_data_processed'] and flight['data']:
-                    priority_vars = ['IAS', 'GNSS_alt']
+                    if tab == 'polar':
+                        priority_vars = ['IAS', 'GNSS_alt']
+                        print("populate polar")
+                        for variable in priority_vars:
+                            if variable in flight['data']:
+                                if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
+                                    combobox_var.addItem(variable)
+                    elif tab == 'emagram':
+                        print("populate emagram")
+
+                        for variable in flight['data']:
+                            if variable != 'GNSS_time':
+                                if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
+                                    combobox_var.addItem(variable)
     
-                    for variable in priority_vars:
-                        if variable in flight['data']:
-                            if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
-                                combobox_var.addItem(variable)
+    
+
                                 
 
     def set_colors_to_flights(self, flight_dic):

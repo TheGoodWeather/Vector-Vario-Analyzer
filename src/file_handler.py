@@ -270,6 +270,7 @@ def load_vva_files(flight_dir="flight"):
            "plot" : {"variables_1D" : [[],[]],
                      "windbarbs_2D" : [],
                      "roi_polar": [],
+                     "roi_emagram": [],
                      "plot_color" : None,
                      "crosshair_v": None,
                      "crosshair_h": None}}

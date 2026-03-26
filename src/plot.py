@@ -342,17 +342,18 @@ def update_wind_barbs_2D(flight_dic, list_widget_flight, plot_widget, checkbox_w
                         flight['plot']['windbarbs_2D']= []
 
                         
-def update_polartab_timeserie_plot(flight_dic, comboBox_flight, combobox_var, plot_widget):
+def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_widget):
     """
-    Same function than 1D plot, but it takes only one var as input.
+    Same function than 1D plot, but it takes only one var as input. 
+    It is also not plotted with time as it is too complicated to handle with the linear region (ROI)
     It also load the existing ROI
+    Used both in Polar and Emagram tab
     """
     
     variable = combobox_var.currentText()
     if variable == '':
         plot_widget.clear()
         return
-    
     
     plot_widget.clear()
     for row, flight in enumerate(flight_dic):
@@ -441,7 +442,7 @@ def calculate_roi(flight, edge):
         return int(t_end)
     
     
-def load_roi_from_flight(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_widget, combobox_flight , legend_vxvz):
+def load_polar_roi(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_widget, combobox_flight , legend_vxvz):
     plot_widget_time.clear()
     for flight in flight_dic:
         if flight['is_data_processed']:
@@ -452,6 +453,15 @@ def load_roi_from_flight(flight_dic, plot_widget_time, plot_widget_vxvz, table_p
                     roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz))
         update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz)
 
+def load_emagram_roi(flight_dic, plot_widget_time, plot_widget_emagram, combobox_flight):
+    plot_widget_time.clear()
+    for flight in flight_dic:
+        if flight['is_data_processed']:
+            if len(flight['plot']['roi_emagram']) > 0:
+                for roi in flight['plot']['roi_emagram']:
+                    plot_widget_time.addItem(roi)
+                    roi.sigRegionChanged.connect(lambda : update_emagram_values(flight_dic, plot_widget_emagram))
+        update_emagram_values(flight_dic, plot_widget_emagram)
 
 def remove_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz):
     row = table_polar_widget.currentRow() #the row selected 
@@ -495,14 +505,29 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
     create_polar_table(flight_dic, table_widget, combobox_flight)
     update_vxvz_graph(flight_dic, plot_widget, legend_vxvz)
         
-def display_rois(flight_dic, plot_widget, combobox_flight):
+def update_emagram_values(flight_dic, plot_widget_emagram):
+    for row, flight in enumerate(flight_dic):
+        # if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+        if flight['is_data_processed']:
+            if len(flight['plot']['roi_emagram']) > 0:
+                for roi in flight['plot']['roi_emagram']:
+                    x_min, x_max = roi.getRegion()
+                    if x_min != x_max:
+                        with np.errstate(divide='ignore', invalid='ignore'):
+                            print(x_min)
+                            print(x_max)
+                            
+    #update_emagram_graph(flight_dic, plot_widget_emagram)
+    
+    
+def display_rois(flight_dic, plot_widget, combobox_flight, tab):
     """
     This function keeps the existings rois displayed even though we change the variable or the flight
     """
     for row, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == combobox_flight.currentText():
-            if flight['plot']['roi_polar']:
-                for roi in flight['plot']['roi_polar']:
+            if flight['plot'][tab]:
+                for roi in flight['plot'][tab]:
                     plot_widget.addItem(roi[0])  #roi[0] is the pyqtgraph item 
                     
                     
@@ -555,8 +580,7 @@ def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
                 
 
 
-        
-        
+
         
         
         
