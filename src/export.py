@@ -2,12 +2,14 @@ from PyQt6 import QtWidgets
 from logging_handler import QTextEditLogger, logger
 from pathlib  import Path 
 import csv
+import simplekml
 
 
 def export_file_csv(flight):
     
     
-    filename = create_file_name(flight)
+    filename = create_file_name(flight , '_processed.csv' )
+
     filepath, _ = QtWidgets.QFileDialog.getSaveFileName(None,"Save file as .csv", filename, "CSV Files (*.csv);;All Files (*)")
     
     if filepath:
@@ -79,11 +81,47 @@ def export_file_csv(flight):
 
 
 
-def create_file_name(flight): #Little function to create a path file for export
+def create_file_name(flight , end): #Little function to create a path file for export
         original_filename = Path(flight['file_name'])
         original_filename_wo_extension = original_filename.with_suffix("")
         original_filename_wo_extension = original_filename_wo_extension.with_suffix("") #remove both extension .csv / .igc and .vva
-        file_name = str(original_filename_wo_extension) + '_processed.csv' 
+        file_name = str(original_filename_wo_extension) + end
         return file_name
 
 
+def export_file_kml(flight):
+    
+    
+    kml = simplekml.Kml() 
+    
+    filename = create_file_name(flight , '_track.kml')
+    filepath, _ = QtWidgets.QFileDialog.getSaveFileName(None,"Save file as .kml", filename, "KML Files (*.kml);;All Files (*)")
+    coords = []
+    if filepath:
+        for i in range(len(flight['data']['GNSS_lat'])):
+            lat = flight['data']['GNSS_lat'][i]
+            lon = flight['data']['GNSS_lon'][i]
+            alt = flight['data']['GNSS_alt'][i]
+            coords.append((lon,lat,alt))            
+            
+    line = kml.newlinestring(
+        name=f"{flight['file_name'].split('.')[0]}",
+        coords=coords
+    )
+    
+    line.altitudemode = simplekml.AltitudeMode.absolute
+    line.extrude = 0 # ligne vers le sol (optionnel)
+    line.style.linestyle.width = 2
+    line.style.linestyle.color = simplekml.Color.red
+
+    
+    kml.save(filepath)
+
+   
+        
+        
+        
+        
+        
+        
+        

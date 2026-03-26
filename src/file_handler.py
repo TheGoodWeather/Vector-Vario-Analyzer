@@ -4,7 +4,10 @@ import re
 from itertools import islice
 from datetime import datetime
 from pathlib import Path
- 
+import pyqtgraph as pg
+from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtGui import QColor, QPen, QBrush
+
 def generate_vva(filepath, metadata):
     FUNCTION_VERSION = 1.0
     vva_path = filepath.with_suffix(filepath.suffix + ".vva")
@@ -273,7 +276,7 @@ def load_vva_files(flight_dir="flight"):
         flight["metadata"] = read_vva_metadata(file)
         flight["file_name"] = file.name
         flight["file_path"] = file
-
+        flight["plot"]["roi_polar"] = read_vva_section(file, "roi_polar")
         origin_file = file.with_suffix("")
         if origin_file.exists():
             flight["origin_file_path"] = origin_file
@@ -281,3 +284,53 @@ def load_vva_files(flight_dir="flight"):
             logger.info(f"{file} has no origin file")
         data.append(flight)
     return data
+
+def read_vva_section(vva_filepath, section_type):
+    """
+    Read section (polar or emagram) from the specified vva file. 
+    For Polar section, it creates a Linear region Item accordingly and save it 
+    It returns a list of roi_data list. roi_data = [roi_item, ias_avg, vx_avg, vz_avg, glide_avg]. 
+    ias_avg, vx_avg, vz_avg, glide_avg will be previously calculated in "update_values" in plot.py.
+
+    """
+    roi_polar_list = []
+    with open(vva_filepath, "r", encoding="utf-8") as file:
+        for line in file:
+            line = line.strip()
+
+            if line.startswith(f"{section_type}"): #Fetch the x_min and x_max and create the roi accordingly
+                x_min, x_max = line.split(':')[1].split(',')
+                roi = pg.LinearRegionItem((float(x_min), float(x_max)))
+                roi.setMovable(True)
+                roi.setBrush(QColor(100, 100, 100, 25)) 
+                roi.setZValue(10)
+                roi_polar_list.append([roi, None, None, None, None])
+    file.close()
+    return roi_polar_list
+
+def save_section_to_vva(flight_dic, section_type):
+
+    if section_type == 'roi_polar':
+        for flight in flight_dic:
+            if flight['is_data_processed']:
+                
+                with open(flight['file_path'], "r", encoding="utf-8") as file:
+                    lines = file.readlines()
+                
+                lines = [l for l in lines if not l.startswith(section_type)]
+                
+                with open(flight['file_path'], "w", encoding="utf-8") as file:
+                    file.writelines(lines)
+                
+                    for i, roi in enumerate(flight['plot'][section_type]):
+                        x_min, x_max = roi[0].getRegion()
+                        file.write(f"{section_type}_{i}:{x_min},{x_max}\n")
+                file.close()
+
+    QMessageBox.information(
+        None,
+        "Saved",
+        f"The {section_type} sections have been saved successfully."
+    )
+      
+            

@@ -9,16 +9,17 @@ import datetime
 from units import convert_array_to_unit , get_unit
 from table_handler import create_polar_table
 import math
+
 pg.setConfigOptions(useOpenGL=True)
 pg.setConfigOptions(antialias=True)
 
 colors = [
    QColor(253, 50, 22),     
    QColor(128, 204, 0),
-   QColor(255, 235, 59),
-   QColor(3, 169, 244),     
+   QColor(156, 85, 31),
+   QColor(4, 128, 184),     
    QColor(156, 39, 176),
-   QColor(255, 138, 101)
+   QColor(194, 23, 154)
    
    ]
 
@@ -343,7 +344,8 @@ def update_wind_barbs_2D(flight_dic, list_widget_flight, plot_widget, checkbox_w
                         
 def update_polartab_timeserie_plot(flight_dic, comboBox_flight, combobox_var, plot_widget):
     """
-    Same function than 1D plot, but it takes only one var as input
+    Same function than 1D plot, but it takes only one var as input.
+    It also load the existing ROI
     """
     
     variable = combobox_var.currentText()
@@ -368,9 +370,9 @@ def update_polartab_timeserie_plot(flight_dic, comboBox_flight, combobox_var, pl
             plot_widget.plot(x, y, pen=pen1,  name=variable)
             plot_widget.autoRange()
 
-def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight):
+def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz):
     """
-    Creating a new ROI
+    Creating a new ROI -> meaning a new polar point
     """
     for row, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == combobox_flight.currentText():
@@ -380,8 +382,8 @@ def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget
             roi.setZValue(10)  # Stay on top
             plot_widget_time.addItem(roi)
             flight['plot']['roi_polar'].append([roi, None, None, None, None]) #And we add the ROI to the dic,
-            update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight)
-            roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight))
+            update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz)
+            roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz))
 
             
             
@@ -437,32 +439,61 @@ def calculate_roi(flight, edge):
         return int(t0)
     else:
         return int(t_end)
-
-            
-
-def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight):
     
-    for row, flight in enumerate(flight_dic):
+    
+def load_roi_from_flight(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_widget, combobox_flight , legend_vxvz):
+    plot_widget_time.clear()
+    for flight in flight_dic:
+        if flight['is_data_processed']:
+            if len(flight['plot']['roi_polar']) > 0:
+                for roi_data in flight['plot']['roi_polar']:
+                    roi = roi_data[0]
+                    plot_widget_time.addItem(roi)
+                    roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz))
+        update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz)
+
+
+def remove_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz):
+    row = table_polar_widget.currentRow() #the row selected 
+    for flight in flight_dic:
         if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+            if row >= len(flight['plot']['roi_polar']):
+                return
+            else:
+                for i, roi_data in enumerate(flight['plot']['roi_polar']):
+                    if i == row:
+                        plot_widget_time.removeItem(roi_data[0])
+                        flight['plot']['roi_polar'].pop(i)
+    update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz)
+
+def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight, legend_vxvz):
+    for row, flight in enumerate(flight_dic):
+        # if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+        if flight['is_data_processed']:
             if len(flight['plot']['roi_polar']) > 0:
                 for roi_data in flight['plot']['roi_polar']:
                     x_min, x_max = roi_data[0].getRegion()
                     if x_min != x_max:
                         with np.errstate(divide='ignore', invalid='ignore'):
-                            vx = np.sqrt(np.subtract(np.square(flight['data']['IAS']), np.square(flight['data']['VarioIAS'])))
-                            glide_ratio = np.divide(vx, flight['data']['VarioIAS'])
-                            glide_ratio_avg = round(np.nanmean(glide_ratio[int(x_min):int(x_max)]),2)
-                            vx_avg = round(np.nanmean(vx[int(x_min):int(x_max)]),2)
-                            ias_avg = round(np.nanmean(flight['data']['IAS'][int(x_min):int(x_max)]),2)
-                            vario_avg = round(np.nanmean(flight['data']['VarioIAS'][int(x_min):int(x_max)]),2)
+                            #The array are converted into the desired unit
+                            ias = convert_array_to_unit(flight['data']['IAS'], 'IAS')
+                            vario_ias = convert_array_to_unit(flight['data']['VarioIAS'], 'VarioIAS')
+                            vx = np.sqrt(np.subtract(np.square(ias), np.square(vario_ias)))
+                            glide_ratio = np.divide(vx, vario_ias)
                             
-                            roi_data[1] =  ias_avg
+                            glide_ratio_avg = round(np.nanmean(glide_ratio[int(x_min):int(x_max)]),2)
+
+                            vx_avg = round(np.nanmean(vx[int(x_min):int(x_max)]),2)
+                            ias_avg = round(np.nanmean(ias[int(x_min):int(x_max)]),2)
+                            vario_avg = round(np.nanmean(vario_ias[int(x_min):int(x_max)]),2)
+                            
+                            roi_data[1] = ias_avg
                             roi_data[2] = vx_avg
                             roi_data[3] = vario_avg
                             roi_data[4] = glide_ratio_avg
                             
-    update_vxvz_graph(flight_dic, plot_widget)
     create_polar_table(flight_dic, table_widget, combobox_flight)
+    update_vxvz_graph(flight_dic, plot_widget, legend_vxvz)
         
 def display_rois(flight_dic, plot_widget, combobox_flight):
     """
@@ -490,35 +521,40 @@ def reset_highlights(flight_dic, plot_widget):
                 plot_widget.removeItem(flight['plot']['crosshair_v'])
                 plot_widget.removeItem(flight['plot']['crosshair_h'])  
 
-def update_vxvz_graph(flight_dic, plot_widget):
+def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
     
     plot_widget.clear()
-    plot_widget.enableAutoRange(True)
+    legend_vxvz.clear()  
     plot_widget.setAspectLocked(True)
-    
-    for row, flight in enumerate(flight_dic):
-        if flight['is_data_processed']: 
-            if len(flight['plot']['roi_polar']) > 0:
-                scatter_polar_vx = []
-                scatter_polar_vz = []
-                for roi_data in flight['plot']['roi_polar']:
-                    scatter_polar_vx.append(roi_data[2])
-                    scatter_polar_vz.append(roi_data[3])
+    plot_widget.setLabel("top", f"Vx {get_unit('IAS')}")
+    plot_widget.setLabel("left", f"Vz {get_unit('IAS')}")
+    for flight in flight_dic:
+        
+        if flight['is_data_processed'] and len(flight['plot']['roi_polar']) > 0:
+            
+            scatter_polar_vx = []
+            scatter_polar_vz = []
+            for roi_data in flight['plot']['roi_polar']:
+                scatter_polar_vx.append(roi_data[2])
+                scatter_polar_vz.append(roi_data[3])
+            pen = pg.mkPen(flight['plot']['plot_color'], width=4)
+            
+            
+            scatter = pg.ScatterPlotItem(
+                x=scatter_polar_vx,
+                y=scatter_polar_vz,
+                size=6,
+                pen=pen,
+                brush=None
+            )
+
+            plot_widget.addItem(scatter)
+
+            label = flight['file_name'].split(".")[0]
+            legend_vxvz.addItem(scatter, label)
                 
-                    pen = pg.mkPen(flight['plot']['plot_color'], width=2)
-                    brush = None
-                    scatter = pg.ScatterPlotItem(
-                        x=scatter_polar_vx,
-                        y=scatter_polar_vz,
-                        brush=brush,
-                        size=2,
-                        pen=pen
-                    )
-                    plot_widget.addItem(scatter)
-                    plot_widget.autoRange()
-                    
-        
-        
+
+
         
         
         

@@ -207,8 +207,15 @@ def fetch_raw_igc(flight_dic, progress_callback):
         raw_data["T_sensor"] = np.full(len(raw_data["GNSS_time"]),np.nan)
 
         raw_data["P_stat"] = np.round(np.multiply(101325, np.power(np.subtract(1, np.divide(raw_data["QNS_alt"],44109.12)),5.255)))
-        raw_data["vario"] = np.multiply(np.divide(np.add(np.diff(raw_data["QNS_alt"],append=0), np.diff(raw_data["GNSS_alt"], append=0)),2), dt)
-                
+        raw_data["vario"] = np.multiply(
+            (
+                np.diff(raw_data["QNS_alt"], append=raw_data["QNS_alt"][-1]) +
+                np.diff(raw_data["GNSS_alt"], append=raw_data["GNSS_alt"][-1])
+            ) / 2,
+            dt
+        )
+        #raw_data["vario"] = np.multiply(np.divide(np.add(np.diff(raw_data["QNS_alt"]), np.diff(raw_data["GNSS_alt"])),2), dt)
+        #raw_data["vario"] = np.append(raw_data["vario"],raw_data["vario"][-1])
         raw_data["AirES"],raw_data["AirE"],raw_data["AirW"], raw_data["AirTd"], raw_data["LCL"], raw_data["AirTheta"], raw_data["AirRho"], raw_data["VarioIAS"], raw_data["TAS"] = additional_data_process(raw_data,progress_callback )
         flight_dic["data"] = raw_data       
         

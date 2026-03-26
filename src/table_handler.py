@@ -12,7 +12,7 @@ from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
 from moulinette import fetch_raw_csv, fetch_raw_igc
 import sys
 from pathlib  import Path 
-
+from units import get_unit
 
 def update_vva_table(data, table_widget):
     
@@ -110,6 +110,7 @@ def create_polar_table(flight_dic, table_widget, combobox_flight):
     The rows display Vx, Vz , Glide and IAS 
     """
     table_widget.setRowCount(0)  # Clear the table
+    table_widget.setHorizontalHeaderLabels([f"Vx {get_unit('IAS')}", f"Vz {get_unit('IAS')}", "Glide", f"IAS {get_unit('IAS')}"])
     for i, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == combobox_flight.currentText():
             for row, roi_data in enumerate(flight['plot']['roi_polar']):

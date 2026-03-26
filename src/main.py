@@ -6,13 +6,13 @@ from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, Q
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
-from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
+from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
 from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table, on_table_cell_clicked
 from PyQt6.QtCore import QThread, QThreadPool, QSettings
 from moulinette_worker import MoulinetteWorker
 from pyqtgraph import ErrorBarItem 
 import pyqtgraph as pg
-from export import export_file_csv
+from export import export_file_csv, export_file_kml
 import sys
 from pathlib  import Path 
 import pprint
@@ -33,6 +33,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_polartab_timeserie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
+        self.unit_dialog.unitsChanged.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
+        self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
@@ -65,7 +67,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_delete_entry.clicked.connect(self.on_button_delete_entries)
         self.pushButton_analyze_entry.clicked.connect(self.on_button_analyze_entries)
         self.pushButton_export_entry_csv.clicked.connect(self.on_button_export_entries_csv)
-        
+        self.pushButton_export_entry_kml.clicked.connect(self.on_button_export_entries_kml)
         self.logbox_handler = QTextEditLogger(self.textEdit_log)
         self.textEdit_log.verticalScrollBar().setValue(self.textEdit_log.verticalScrollBar().maximum())
         logger.addHandler(self.logbox_handler) 
@@ -85,7 +87,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tableWidget_database.horizontalHeader().setStretchLastSection(True)
         self.tableWidget_database.resizeColumnsToContents()
-        self.tableWidget_database.itemChanged.connect(lambda : update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget))
+        self.tableWidget_database.itemChanged.connect(lambda : update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget))
 
         
         self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
@@ -164,11 +166,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableView_polar_points.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.tableView_polar_points.cellClicked.connect(lambda row, column: on_table_cell_clicked(row, self.flight, self.comboBox_flight_select_polartab, self.tableView_polar_points, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.pushButton_remove_polar_point))
         self.graph_tabpolar_vxvz.setBackground("w")
-        self.graph_tabpolar_vxvz.setLabel('left', 'Vz (m/s)')
-        self.graph_tabpolar_vxvz.setLabel('bottom', 'Vx (m/s)')
+        self.graph_tabpolar_vxvz.setXRange(0, 30, padding=0)
+        self.graph_tabpolar_vxvz.setYRange(-10, 2, padding=0)
         self.graph_tabpolar_vxvz.setTitle("Vx vs Vz")
         self.graph_tabpolar_vxvz.showGrid(x=True, y=True, alpha=0.3)
         self.graph_tabpolar_vxvz.setEnabled(True)
+
+        self.graph_tabpolar_legend_vxvz = pg.LegendItem()
+        self.graph_tabpolar_legend_vxvz.setParentItem(self.graph_tabpolar_vxvz.getPlotItem())
+        self.graph_tabpolar_legend_vxvz.anchor(itemPos=(1, 0), parentPos=(1, 0), offset=(-10, 10))
+        
         self.graph_tabpolar_timeserie.setBackground("w")
         self.graph_tabpolar_timeserie.setLabel("bottom", "Sample")
         self.graph_tabpolar_timeserie.addLegend()
@@ -176,16 +183,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph_tabpolar_timeserie.setEnabled(True)
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda choice: self.populate_combobox_polar_variable(self.flight, self.comboBox_variable_select_polartab, choice))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_tabpolar_timeserie, None))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.load_roi_from_flight(self.flight, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz,  self.tableView_polar_points,  self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz ))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda:plot.update_polartab_timeserie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.update_polartab_timeserie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.reset_highlights(self.flight, self.graph_tabpolar_vxvz ))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda :create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
-        self.pushButton_add_polar_point.clicked.connect(lambda : plot.create_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab))
+        self.pushButton_add_polar_point.clicked.connect(lambda : plot.create_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
         self.pushButton_add_polar_point.clicked.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
-        
-
+        self.pushButton_remove_polar_point.clicked.connect(lambda : plot.remove_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
+        self.pushButton_save_polar.clicked.connect(lambda : save_section_to_vva(self.flight, 'roi_polar'))
+                                                           
     def resource_path(self, relative_path):
         """
         Get absolute path to resource (for PyInstaller and development) 
@@ -297,7 +306,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.flight = load_vva_files()
         update_vva_table(self.flight, self.tableWidget_database)
-        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
@@ -326,7 +335,7 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info("File deletion aborted")
             return  
         delete_table_entries(self.flight, self.tableWidget_database)
-        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_flight_list_tab_2D(self.flight, self.listWidget_flights_plot2D)
@@ -377,7 +386,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def analysis_finished(self, flight_dic):
         logger.info(f"Finished {flight_dic['file_name']}")
         flight_dic["is_data_processed"] = True 
-        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_ge, self.tab_list, self.tabWidget)
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
         self.start_next_analysis_thread(self.pushButton_analyze_entry)
        
         
@@ -390,6 +399,12 @@ class MainWindow(QtWidgets.QMainWindow):
         row_to_export = return_selected_row(self.flight, self.tableWidget_database)
         for row in row_to_export:
             export_file_csv(self.flight[row])
+            
+    def on_button_export_entries_kml(self):
+        
+        row_to_export = return_selected_row(self.flight, self.tableWidget_database)
+        for row in row_to_export:
+            export_file_kml(self.flight[row])
             
     def populate_combobox_flight(self, data, combo_box_flight):
         """
@@ -603,13 +618,19 @@ class MainWindow(QtWidgets.QMainWindow):
               
   
     def populate_combobox_polar_variable(self, flight_dic, combobox_var, choice):
-        
+        """
+        This function populate the variable according to the flight selected in the combobox. 
+        It also set a prioritarization of the variable IAS
+        """
         combobox_var.clear()
-        for row, flight in enumerate(flight_dic):
+        
+        for flight in flight_dic:
             if flight['file_name'].split(".")[0] == choice:
                 if flight['is_data_processed'] and flight['data']:
-                    for index, variable in enumerate(flight['data']):
-                        if variable == 'IAS' or variable == 'GNSS_alt' :                       
+                    priority_vars = ['IAS', 'GNSS_alt']
+    
+                    for variable in priority_vars:
+                        if variable in flight['data']:
                             if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
                                 combobox_var.addItem(variable)
                                 
@@ -618,6 +639,9 @@ class MainWindow(QtWidgets.QMainWindow):
         for row, flight in enumerate(flight_dic):
             if flight['is_data_processed']: 
                 flight['plot']['plot_color'] = plot.colors[row % len(plot.colors)]
+    
+    
+    
         
         
     def display_unit_window(self): #Call the unit window
