@@ -152,7 +152,7 @@ def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flig
     """
     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
     """
-    
+   
     plot_widget.enableAutoRange(True)
     plot_widget.setAspectLocked(True)
     
@@ -165,6 +165,9 @@ def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flig
     
     
     plot_widget.clear()
+    
+    
+    
     
     for row, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] in flights:
@@ -548,9 +551,10 @@ def reset_highlights(flight_dic, plot_widget):
 
 def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
     
-    plot_widget.clear()
+    #plot_widget.clear()
     legend_vxvz.clear()  
     plot_widget.setAspectLocked(True)
+    plot_widget.enableAutoRange(True)
     plot_widget.setLabel("top", f"Vx {get_unit('IAS')}")
     plot_widget.setLabel("left", f"Vz {get_unit('IAS')}")
     for flight in flight_dic:
@@ -574,6 +578,7 @@ def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
             )
 
             plot_widget.addItem(scatter)
+            plot_widget.autoRange()
 
             label = flight['file_name'].split(".")[0]
             legend_vxvz.addItem(scatter, label)

@@ -77,3 +77,20 @@ def convert_array_to_unit(array, variable):
         
 
     return array_converted
+
+
+def convert_gps_coords_DDM_to_DD(lat_DDM, lon_DDM):
+    lat_degrees = int(lat_DDM)
+    lat_minutes_dec = (lat_DDM - lat_degrees)*100
+    lat_secondes = (lat_minutes_dec - int(lat_minutes_dec)) *60
+                                
+    lat_DD = lat_degrees + int(lat_minutes_dec)/60 + (lat_secondes/3600)
+    
+    lon_degrees = int(lon_DDM)
+    lon_minutes_dec = (lon_DDM - lon_degrees)*100
+    lon_secondes = (lon_minutes_dec - int(lon_minutes_dec)) *60
+                                
+    lon_DD = lon_degrees + int(lon_minutes_dec)/60 + (lon_secondes/3600)
+
+    
+    return lat_DD, lon_DD
