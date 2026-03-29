@@ -41,7 +41,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
-        self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
+        self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.graph_tabpolar_vxvz , self.polar_generated_curve, self.graph_tabpolar_vxvz))
         
@@ -201,16 +201,16 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda choice: self.populate_combobox_variable(self.flight, self.comboBox_variable_select_polartab, choice, 'polar'))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_tabpolar_timeserie, None))
-        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.load_polar_roi(self.flight, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz,  self.tableView_polar_points,  self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz ))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.load_polar_roi(self.flight, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz,  self.tableView_polar_points,  self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp.value() ))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda:plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab , 'roi_polar'))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab, 'roi_polar'))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.reset_highlights(self.flight, self.graph_tabpolar_vxvz ))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda :create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
-        self.pushButton_add_polar_point.clicked.connect(lambda : plot.create_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
+        self.pushButton_add_polar_point.clicked.connect(lambda : plot.create_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp.value()))
         self.pushButton_add_polar_point.clicked.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
-        self.pushButton_remove_polar_point.clicked.connect(lambda : plot.remove_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
+        self.pushButton_remove_polar_point.clicked.connect(lambda : plot.remove_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp.value()))
         self.pushButton_save_polar.clicked.connect(lambda : save_section_to_vva(self.flight, 'roi_polar'))
         
         #Polar Generator
@@ -219,33 +219,49 @@ class MainWindow(QtWidgets.QMainWindow):
             [],
             [],
             pen=pg.mkPen('r', width=2),
-            symbol='o'
+            symbol=None
         )
         
         
-        self.radioButton_display_generated_polar.toggled.connect(lambda toggle: self.on_radiobutton_dis_gen_pol(toggle,self.polar_generated_curve, self.graph_tabpolar_vxvz ))
+        self.checkBox_display_generated_polar.stateChanged.connect(lambda state: self.on_radiobutton_dis_gen_pol(state,self.polar_generated_curve, self.graph_tabpolar_vxvz ))
+        self.checkBox_ias_offset.stateChanged.connect(lambda state: self.on_radiobutton_comp_ias(state, self.widget_ias_compensation, self.horizontalSlider_ias_comp, self.graph_tabpolar_vxvz))
         self.horizontalSlider_sproj.valueChanged.connect(self.spinBox_sproj.setValue)
         self.spinBox_sproj.valueChanged.connect(self.horizontalSlider_sproj.setValue)
         self.horizontalSlider_auw.valueChanged.connect(self.spinBox_auw.setValue)
         self.spinBox_auw.valueChanged.connect(self.horizontalSlider_auw.setValue)
         self.horizontalSlider_ar.valueChanged.connect(self.spinBox_ar.setValue)
         self.spinBox_ar.valueChanged.connect(self.horizontalSlider_ar.setValue)
+        self.horizontalSlider_ias_comp.valueChanged.connect(self.spinBox_ias_comp.setValue)
+        self.spinBox_ias_comp.valueChanged.connect(self.horizontalSlider_ias_comp.setValue)
+        
         self.horizontalSlider_sproj.setRange(8,45)
         self.spinBox_sproj.setRange(8,45)
         self.horizontalSlider_auw.setRange(40, 250)
         self.spinBox_auw.setRange(40, 250)
         self.horizontalSlider_ar.setRange(30,80)
         self.spinBox_ar.setRange(30,80)
+        self.horizontalSlider_ias_comp.setRange(-15,15)
+        self.spinBox_ias_comp.setRange(-15,15)
+        
         self.horizontalSlider_sproj.setSingleStep(1)
         self.horizontalSlider_auw.setSingleStep(1)
         self.horizontalSlider_ar.setSingleStep(1)
         
+        self.horizontalSlider_sproj.setSliderPosition(20) 
+        self.horizontalSlider_auw.setSliderPosition(90) 
+        self.horizontalSlider_ar.setSliderPosition(60) 
+        self.horizontalSlider_ias_comp.setSliderPosition(0) 
+        
         self.horizontalSlider_sproj.valueChanged.connect(lambda sproj: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), sproj, self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
         self.horizontalSlider_auw.valueChanged.connect(lambda auw: update_polar_generator_values(auw, self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
         self.horizontalSlider_ar.valueChanged.connect(lambda ar: update_polar_generator_values(self.horizontalSlider_auw.value(), ar, self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
-        self.radioButton_display_generated_polar.toggled.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
+        self.horizontalSlider_ias_comp.valueChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
+
+        self.checkBox_display_generated_polar.stateChanged.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
         for button in self.widget_harness_polar.findChildren(QRadioButton):
             button.toggled.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve , self.graph_tabpolar_vxvz))
+        
+        self.checkBox_display_generated_polar.stateChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
         
         """
         Widgets tab EMAGRAM
@@ -704,14 +720,11 @@ class MainWindow(QtWidgets.QMainWindow):
                 if flight['is_data_processed'] and flight['data']:
                     if tab == 'polar':
                         priority_vars = ['IAS', 'GNSS_alt']
-                        print("populate polar")
                         for variable in priority_vars:
                             if variable in flight['data']:
                                 if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
                                     combobox_var.addItem(variable)
                     elif tab == 'emagram':
-                        print("populate emagram")
-
                         for variable in flight['data']:
                             if variable != 'GNSS_time':
                                 if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
@@ -737,17 +750,23 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.unit_dialog.show()
             
-    def on_radiobutton_dis_gen_pol(self, toggle, scatter_polar, plot_widget_vxvz): 
+    def on_radiobutton_dis_gen_pol(self, state, scatter_polar, plot_widget_vxvz): 
         """
         Display or not the polar generated and the widgets associated
         """
-        self.widget_harness_polar.setEnabled(toggle)
-        self.widget_sliders_polar.setEnabled(toggle)
-        if toggle:
+        self.widget_harness_polar.setEnabled(state)
+        self.widget_sliders_polar.setEnabled(state)
+        if state:
             scatter_polar.show()
         else:
             scatter_polar.hide()
         
+        plot_widget_vxvz.autoRange()
+        
+    def on_radiobutton_comp_ias(self, state, widget, slider, plot_widget_vxvz):
+        widget.setEnabled(state)
+        if not state:
+            slider.setValue(0)
         plot_widget_vxvz.autoRange()
         
 if __name__ == "__main__":

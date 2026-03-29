@@ -30,18 +30,19 @@ def update_polar_generator_values(auw, ar, sproj, widget_harness, curve, plot_wi
             elif text == "SUB":
                 harness = SUB
          
-    Cl0 =  0.0899 * (ar/100) + 0.3391
+    Cl0 =  0.0899 * (ar/10) + 0.3391
     scatter_vx = []
     scatter_vz = []
     for CI in np.arange(0.3, Cl0, increment_ci):
-        Cd = harness + A0P - (KAR * (ar/100)) + A1P * CI + A2P *np.square(CI) / (ar/100)
+        Cd = harness + A0P - (KAR * (ar/10)) + A1P * CI + A2P *np.square(CI) / (ar/10)
         Vx = np.sqrt((2*auw * 9.81)/(1.225 * CI *sproj))
-        Vz = - np.sqrt((2*auw * 9.81)/(1.225 * Cd *sproj))
+        Vz = - Vx * Cd /CI
+        #Vz = - np.sqrt((2*auw * 9.81)/(1.225 * Cd *sproj))
         scatter_vx.append(Vx)
         scatter_vz.append(Vz)
     
     scatter_vx =  convert_array_to_unit(scatter_vx, 'GNSS_speed')
-    scatter_vz = convert_array_to_unit(scatter_vz, 'GNSS_speed' )
+    
 
 
     curve.setData(scatter_vx, scatter_vz)
