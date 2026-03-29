@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
-from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table, on_table_cell_clicked
+from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table
 from PyQt6.QtCore import QThread, QThreadPool, QSettings
 from moulinette_worker import MoulinetteWorker
 from pyqtgraph import ErrorBarItem 
@@ -43,7 +43,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unit_dialog.unitsChanged.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
-        self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.graph_tabpolar_vxvz , self.polar_generated_curve, self.graph_tabpolar_vxvz))
+        self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.graph_tabpolar_vxvz , self.polar_generated_curve, self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
@@ -181,7 +181,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         self.tableView_polar_points.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView_polar_points.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        self.tableView_polar_points.cellClicked.connect(lambda row, column: on_table_cell_clicked(row, self.flight, self.comboBox_flight_select_polartab, self.tableView_polar_points, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.pushButton_remove_polar_point))
+        self.tableView_polar_points.cellClicked.connect(lambda row, column: self.on_table_cell_clicked(row, self.flight, self.comboBox_flight_select_polartab, self.tableView_polar_points, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.pushButton_remove_polar_point))
         self.graph_tabpolar_vxvz.setBackground("w")
         self.graph_tabpolar_vxvz.setXRange(0, 30, padding=0)
         self.graph_tabpolar_vxvz.setYRange(-10, 2, padding=0)
@@ -218,12 +218,28 @@ class MainWindow(QtWidgets.QMainWindow):
         self.polar_generated_curve = self.graph_tabpolar_vxvz.plot(
             [],
             [],
-            pen=pg.mkPen('r', width=2),
+            pen=pg.mkPen(QColor(116, 97, 194), width=2),
             symbol=None
         )
         
+        self.crosshair_trim_speed = pg.InfiniteLine(
+            angle=90,
+            movable=False,
+            pen=pg.mkPen(QColor(116, 97, 194), width=1, style=QtCore.Qt.PenStyle.DashLine),
+            label='TrimSpeed = {value:.2f}',
+            markers= '>|',
+            labelOpts={
+            'position':  0.1,          
+            'color': (150, 150, 150), 
+            'fill': None,             
+            'border': None,           
+            'anchor': (1, -0.5)        
+            })
         
-        self.checkBox_display_generated_polar.stateChanged.connect(lambda state: self.on_radiobutton_dis_gen_pol(state,self.polar_generated_curve, self.graph_tabpolar_vxvz ))
+        self.graph_tabpolar_vxvz.addItem(self.crosshair_trim_speed)
+        self.crosshair_trim_speed.hide()
+        
+        self.checkBox_display_generated_polar.stateChanged.connect(lambda state: self.on_radiobutton_dis_gen_pol(state,self.polar_generated_curve, self.graph_tabpolar_vxvz , self.crosshair_trim_speed))
         self.checkBox_ias_offset.stateChanged.connect(lambda state: self.on_radiobutton_comp_ias(state, self.widget_ias_compensation, self.horizontalSlider_ias_comp, self.graph_tabpolar_vxvz))
         self.horizontalSlider_sproj.valueChanged.connect(self.spinBox_sproj.setValue)
         self.spinBox_sproj.valueChanged.connect(self.horizontalSlider_sproj.setValue)
@@ -252,16 +268,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalSlider_ar.setSliderPosition(60) 
         self.horizontalSlider_ias_comp.setSliderPosition(0) 
         
-        self.horizontalSlider_sproj.valueChanged.connect(lambda sproj: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), sproj, self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
-        self.horizontalSlider_auw.valueChanged.connect(lambda auw: update_polar_generator_values(auw, self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
-        self.horizontalSlider_ar.valueChanged.connect(lambda ar: update_polar_generator_values(self.horizontalSlider_auw.value(), ar, self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
+        self.horizontalSlider_sproj.valueChanged.connect(lambda sproj: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), sproj, self.widget_harness_polar , self.polar_generated_curve, self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
+        self.horizontalSlider_auw.valueChanged.connect(lambda auw: update_polar_generator_values(auw, self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve,self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
+        self.horizontalSlider_ar.valueChanged.connect(lambda ar: update_polar_generator_values(self.horizontalSlider_auw.value(), ar, self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve,self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         self.horizontalSlider_ias_comp.valueChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
 
-        self.checkBox_display_generated_polar.stateChanged.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
+        self.checkBox_display_generated_polar.stateChanged.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve,self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         for button in self.widget_harness_polar.findChildren(QRadioButton):
-            button.toggled.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve , self.graph_tabpolar_vxvz))
+            button.toggled.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve , self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         
         self.checkBox_display_generated_polar.stateChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
+        
+        self.graph_tabpolar_timeserie.scene().sigMouseClicked.connect(
+        lambda pos: self.on_roi_clicked(pos, self.flight, self.graph_tabpolar_timeserie, self.tableView_polar_points, self.graph_tabpolar_vxvz)
+        )
+        self.graph_tabpolar_vxvz.scene().sigMouseClicked.connect(lambda event: self.on_polar_point_clicked(event, self.flight, self.graph_tabpolar_timeserie, self.tableView_polar_points, self.graph_tabpolar_vxvz, self.comboBox_flight_select_polartab))
         
         """
         Widgets tab EMAGRAM
@@ -750,7 +771,7 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             self.unit_dialog.show()
             
-    def on_radiobutton_dis_gen_pol(self, state, scatter_polar, plot_widget_vxvz): 
+    def on_radiobutton_dis_gen_pol(self, state, scatter_polar, plot_widget_vxvz, line): 
         """
         Display or not the polar generated and the widgets associated
         """
@@ -758,8 +779,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.widget_sliders_polar.setEnabled(state)
         if state:
             scatter_polar.show()
+            line.show()
         else:
             scatter_polar.hide()
+            line.hide()
+
         
         plot_widget_vxvz.autoRange()
         
@@ -768,6 +792,69 @@ class MainWindow(QtWidgets.QMainWindow):
         if not state:
             slider.setValue(0)
         plot_widget_vxvz.autoRange()
+    
+    def on_table_cell_clicked(self, row, flight_dic, combobox_flight, table_widget, plot_time_widget, plot_vxvz_widget, button_remove):
+        """
+        When a table cell is clicked, it will display a cross in the vx vz graph pointing the current point, and highlight the matching ROI 
+        """
+        for i, flight in enumerate(flight_dic):
+            if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+                if row >= len(flight['plot']['roi_polar']):
+                    return
+                for i, roi_data in enumerate(flight['plot']['roi_polar']):
+                    if i == row:
+                        plot.highlights_polar_tab(i, flight, table_widget, plot_vxvz_widget)
+                    
+                    button_remove.setEnabled(True)
+
+        
+    def on_roi_clicked(self, event, flight_dic, plot_widget_timeserie, table_polar_points, plot_widget_vxvz):
+        """
+        Just like 'on_table_cell_clicked'. This function detects the position of the click
+        and retrieves the roi associated, highlights it and create if necessary the crosshair 
+        """ 
+        vb = plot_widget_timeserie.getViewBox()
+        click_pos = vb.mapSceneToView(event.scenePos())
+        x = click_pos.x()
+     
+        for flight in flight_dic:
+            if not flight['is_data_processed']:
+                continue
+     
+            for i, roi_data in enumerate(flight['plot']['roi_polar']):
+                x_min, x_max = roi_data[0].getRegion()
+     
+                if x_min <= x <= x_max:
+                    plot.highlights_polar_tab(i, flight, table_polar_points, plot_widget_vxvz)
+                    return
+    
+    
+    def on_polar_point_clicked(self, event, flight_dic, plot_widget_timeserie, table_polar_points, plot_widget_vxvz, combobox_flight):
+        """
+        Just like 'on_table_cell_clicked'. This function detects the position of the click
+        and retrieves the polar point associated, highlights its roi and create if necessary the crosshair 
+        """ 
+        vb = plot_widget_vxvz.getViewBox()
+        click_pos = vb.mapSceneToView(event.scenePos())
+
+
+        distances = []
+        for i, flight in enumerate(flight_dic):
+            if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+                for index, roi_data in enumerate(flight['plot']['roi_polar']):
+                    x_click = click_pos.x()
+                    y_click = click_pos.y()
+                    x_point = roi_data[2]
+                    y_point = roi_data[3]
+                    d = np.absolute(np.sqrt(np.add((np.square(np.subtract(x_click, x_point))), np.square(np.subtract(y_click, y_point)))))
+                    distances.append(d)
+                
+                distance_closer = min(distances)
+                if distance_closer <= 0.5:
+                    index_closer = distances.index(min(distances))
+                    plot.highlights_polar_tab(index_closer, flight, table_polar_points, plot_widget_vxvz)
+                else:
+                    return
         
 if __name__ == "__main__":
    #try:

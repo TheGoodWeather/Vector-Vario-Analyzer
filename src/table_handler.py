@@ -2,7 +2,6 @@
 import os
 import shutil
 import pyqtgraph as pg
-
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
 from PyQt6.QtWidgets import QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -132,45 +131,4 @@ def create_polar_table(flight_dic, table_widget, combobox_flight):
                 
     
     
-def on_table_cell_clicked(row, flight_dic, combobox_flight, table_widget, plot_time_widget, plot_vxvz_widget, button_remove):
-    """
-    When a table cell is clicked, it will display a cross in the vx vz graph pointing the current point, and highlight the matching ROI 
-    """
-    for i, flight in enumerate(flight_dic):
-        if flight['file_name'].split(".")[0] == combobox_flight.currentText():
-            if row >= len(flight['plot']['roi_polar']):
-                return
-            for i, roi_data in enumerate(flight['plot']['roi_polar']):
-                if i == row:
-                    roi_data[0].setBrush(QColor(100, 100, 100, 50)) #Highlight ROI 
-                    roi_data[0].setZValue(20) 
-                    
-                    if flight['plot']['crosshair_v']:
-                        plot_vxvz_widget.removeItem(flight['plot']['crosshair_v'])
-                        plot_vxvz_widget.removeItem(flight['plot']['crosshair_h'])
-                        
-                    crosshair_v = pg.InfiniteLine(
-                        angle=90,
-                        movable=False,
-                        pen=pg.mkPen(flight['plot']['plot_color'], width=1, style=QtCore.Qt.PenStyle.DashLine))
-                    
-                    crosshair_h = pg.InfiniteLine(
-                        angle=0,
-                        movable=False,
-                        pen=pg.mkPen(flight['plot']['plot_color'], width=1, style=QtCore.Qt.PenStyle.DashLine))
-                    
-                    plot_vxvz_widget.addItem(crosshair_v)
-                    plot_vxvz_widget.addItem(crosshair_h)
-                    
-                    crosshair_v.setValue(roi_data[2])
-                    crosshair_h.setValue(roi_data[3])
-                    
-                    flight['plot']['crosshair_v'] = crosshair_v
-                    flight['plot']['crosshair_h'] = crosshair_h
-                    
-                else :
-                    roi_data[0].setBrush(QColor(100, 100, 100, 25)) 
-                    roi_data[0].setZValue(10) 
-                
-                button_remove.setEnabled(True)
 

@@ -16,8 +16,11 @@ increment_ci = 0.01
 
 
 
-def update_polar_generator_values(auw, ar, sproj, widget_harness, curve, plot_widget_vxvz):
-    
+def update_polar_generator_values(auw, ar, sproj, widget_harness, curve, crosshair_trimspeed, plot_widget_vxvz):
+    """
+    Creating the polar generated 
+    It also sets the line "Trim speed" according to the first ias values generated
+    """
     for radiobutton in widget_harness.findChildren(QRadioButton):
         if radiobutton.isChecked():
             
@@ -43,8 +46,8 @@ def update_polar_generator_values(auw, ar, sproj, widget_harness, curve, plot_wi
     
     scatter_vx =  convert_array_to_unit(scatter_vx, 'GNSS_speed')
     
-
-
+    
+    crosshair_trimspeed.setValue(scatter_vx[-1])
     curve.setData(scatter_vx, scatter_vz)
     plot_widget_vxvz.autoRange()
     

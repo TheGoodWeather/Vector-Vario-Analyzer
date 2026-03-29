@@ -387,7 +387,7 @@ def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget
             flight['plot']['roi_polar'].append([roi, None, None, None, None, None]) #And we add the ROI to the dic,
             update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp)
             roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp))
-
+            
             
             
 def calculate_roi(flight, edge):
@@ -511,6 +511,10 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
                             roi_data[3] = vario_avg
                             roi_data[4] = glide_ratio_avg
                             
+                            if flight['plot']['crosshair_v']:
+                                flight['plot']['crosshair_v'].hide()
+                                flight['plot']['crosshair_h'].hide()
+            
     create_polar_table(flight_dic, table_widget, combobox_flight)
     update_vxvz_graph(flight_dic, plot_widget, legend_vxvz)
         
@@ -602,9 +606,52 @@ def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
                 plot_widget.removeItem(flight['plot']['scatter_vxvz'])
                 flight['plot']['scatter_vxvz'] = None  #delete
                 
-            plot_widget.autoRange()
+    plot_widget.autoRange()
 
+
+def highlights_polar_tab(index, flight, table_polar_points, plot_widget_vxvz):
+    """
+    This function highlights the ROI, moves or create the crosshair, and highlights the
+    correspond table row
+    """
+    for i, roi_data in enumerate(flight['plot']['roi_polar']):
+
+        if i == index:
+            roi_data[0].setBrush(QColor(100, 100, 100, 50)) #Highlight ROI 
+            roi_data[0].setZValue(20) 
             
+            if flight['plot']['crosshair_v']: #if the crosshair already exists, no need to create them again
+                flight['plot']['crosshair_v'].show()
+                flight['plot']['crosshair_h'].show()
+                flight['plot']['crosshair_v'].setValue(roi_data[2])
+                flight['plot']['crosshair_h'].setValue(roi_data[3])
+            
+            else:
+                
+                crosshair_v = pg.InfiniteLine(
+                    angle=90,
+                    movable=False,
+                    pen=pg.mkPen(flight['plot']['plot_color'], width=1, style=QtCore.Qt.PenStyle.DashLine))
+                
+                crosshair_h = pg.InfiniteLine(
+                    angle=0,
+                    movable=False,
+                    pen=pg.mkPen(flight['plot']['plot_color'], width=1, style=QtCore.Qt.PenStyle.DashLine))
+            
+                plot_widget_vxvz.addItem(crosshair_v)
+                plot_widget_vxvz.addItem(crosshair_h)
+                flight['plot']['crosshair_v'] = crosshair_v
+                flight['plot']['crosshair_h'] = crosshair_h
+                flight['plot']['crosshair_v'].setValue(roi_data[2])
+                flight['plot']['crosshair_h'].setValue(roi_data[3])
+            
+            table_polar_points.selectRow(i) #highlights the corresponding row
+            
+        else :
+            roi_data[0].setBrush(QColor(100, 100, 100, 25)) 
+            roi_data[0].setZValue(10) 
+
+    
                 
 
 

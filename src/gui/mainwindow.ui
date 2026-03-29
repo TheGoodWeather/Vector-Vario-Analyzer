@@ -886,7 +886,7 @@
               <item>
                <widget class="QCheckBox" name="checkBox_ias_offset">
                 <property name="text">
-                 <string>IAS offseting</string>
+                 <string>IAS adjusting</string>
                 </property>
                </widget>
               </item>
@@ -902,7 +902,7 @@
                     <item>
                      <widget class="QLabel" name="label_18">
                       <property name="text">
-                       <string>Offset (%)</string>
+                       <string>Adjust (%)</string>
                       </property>
                      </widget>
                     </item>
