@@ -3,7 +3,7 @@ import os
 import shutil
 from pyqtgraph_gis import MapWidget
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QMainWindow
+from PyQt6.QtWidgets import QListWidgetItem, QRadioButton, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QMainWindow
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
@@ -43,7 +43,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unit_dialog.unitsChanged.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
-        self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(), harness_value, self.graph_tabpolar_vxvz , self.polar_generated_curve))
+        self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.graph_tabpolar_vxvz , self.polar_generated_curve, self.graph_tabpolar_vxvz))
         
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
@@ -221,7 +221,9 @@ class MainWindow(QtWidgets.QMainWindow):
             pen=pg.mkPen('r', width=2),
             symbol='o'
         )
-  
+        
+        
+        self.radioButton_display_generated_polar.toggled.connect(lambda toggle: self.on_radiobutton_dis_gen_pol(toggle,self.polar_generated_curve, self.graph_tabpolar_vxvz ))
         self.horizontalSlider_sproj.valueChanged.connect(self.spinBox_sproj.setValue)
         self.spinBox_sproj.valueChanged.connect(self.horizontalSlider_sproj.setValue)
         self.horizontalSlider_auw.valueChanged.connect(self.spinBox_auw.setValue)
@@ -237,17 +239,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalSlider_sproj.setSingleStep(1)
         self.horizontalSlider_auw.setSingleStep(1)
         self.horizontalSlider_ar.setSingleStep(1)
-        if self.radioButton_harness_open.isChecked():
-            harness_value = OPEN
-        elif self.radioButton_harness_pod.isChecked():
-            harness_value = POD
-        elif self.radioButton_harness_sub.isChecked():
-            harness_value = SUB
-        self.horizontalSlider_sproj.valueChanged.connect(lambda sproj: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), sproj, harness_value , self.polar_generated_curve))
-        self.horizontalSlider_auw.valueChanged.connect(lambda auw: update_polar_generator_values(auw, self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(), harness_value, self.polar_generated_curve))
-        self.horizontalSlider_ar.valueChanged.connect(lambda ar: update_polar_generator_values(self.horizontalSlider_auw.value(), ar, self.horizontalSlider_sproj.value(), harness_value, self.polar_generated_curve))
         
-   
+        self.horizontalSlider_sproj.valueChanged.connect(lambda sproj: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), sproj, self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
+        self.horizontalSlider_auw.valueChanged.connect(lambda auw: update_polar_generator_values(auw, self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
+        self.horizontalSlider_ar.valueChanged.connect(lambda ar: update_polar_generator_values(self.horizontalSlider_auw.value(), ar, self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
+        self.radioButton_display_generated_polar.toggled.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.graph_tabpolar_vxvz))
+        for button in self.widget_harness_polar.findChildren(QRadioButton):
+            button.toggled.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve , self.graph_tabpolar_vxvz))
         
         """
         Widgets tab EMAGRAM
@@ -738,7 +736,20 @@ class MainWindow(QtWidgets.QMainWindow):
             self.unit_dialog.hide()
         else:
             self.unit_dialog.show()
-
+            
+    def on_radiobutton_dis_gen_pol(self, toggle, scatter_polar, plot_widget_vxvz): 
+        """
+        Display or not the polar generated and the widgets associated
+        """
+        self.widget_harness_polar.setEnabled(toggle)
+        self.widget_sliders_polar.setEnabled(toggle)
+        if toggle:
+            scatter_polar.show()
+        else:
+            scatter_polar.hide()
+        
+        plot_widget_vxvz.autoRange()
+        
 if __name__ == "__main__":
    #try:
     if not QtWidgets.QApplication.instance():

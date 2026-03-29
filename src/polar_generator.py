@@ -1,7 +1,7 @@
 import numpy as np
 import pyqtgraph as pg
 from units import convert_array_to_unit
-
+from PyQt6.QtWidgets import QRadioButton
 #constants
 
 
@@ -16,10 +16,20 @@ increment_ci = 0.01
 
 
 
-def update_polar_generator_values(auw, ar, sproj, harness, curve):
+def update_polar_generator_values(auw, ar, sproj, widget_harness, curve, plot_widget_vxvz):
     
-    
-    
+    for radiobutton in widget_harness.findChildren(QRadioButton):
+        if radiobutton.isChecked():
+            
+            text = radiobutton.text().upper()
+            
+            if text == "OPEN":
+                harness = OPEN
+            elif text == "POD":
+                harness = POD
+            elif text == "SUB":
+                harness = SUB
+         
     Cl0 =  0.0899 * (ar/100) + 0.3391
     scatter_vx = []
     scatter_vz = []
@@ -35,5 +45,5 @@ def update_polar_generator_values(auw, ar, sproj, harness, curve):
 
 
     curve.setData(scatter_vx, scatter_vz)
+    plot_widget_vxvz.autoRange()
     
-    #plot_widget.autoRange()

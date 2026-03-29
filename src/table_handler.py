@@ -128,9 +128,6 @@ def create_polar_table(flight_dic, table_widget, combobox_flight):
                 glide_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
                 table_widget.setItem(row, 2, glide_item)
                 
-                ias_item = QTableWidgetItem(str(roi_data[1]))
-                ias_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
-                table_widget.setItem(row, 3, ias_item)
                 
                 
     
@@ -174,10 +171,6 @@ def on_table_cell_clicked(row, flight_dic, combobox_flight, table_widget, plot_t
                 else :
                     roi_data[0].setBrush(QColor(100, 100, 100, 25)) 
                     roi_data[0].setZValue(10) 
-                    
-                
-                
                 
                 button_remove.setEnabled(True)
-# def update_polar_table(flight_dic, table_widget, combobox):
-#     self.points_glide_table.setItem(row, 1 , QTableWidgetItem(str(point["IAS_a"])))
+

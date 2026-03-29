@@ -1,4 +1,3 @@
-from pyqtgraph import ErrorBarItem 
 import pyqtgraph as pg
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
 from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox
@@ -385,7 +384,7 @@ def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget
             roi.setBrush(QColor(100, 100, 100, 25)) 
             roi.setZValue(10)  # Stay on top
             plot_widget_time.addItem(roi)
-            flight['plot']['roi_polar'].append([roi, None, None, None, None]) #And we add the ROI to the dic,
+            flight['plot']['roi_polar'].append([roi, None, None, None, None, None]) #And we add the ROI to the dic,
             update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz)
             roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz))
 
@@ -477,7 +476,11 @@ def remove_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget
                     if i == row:
                         plot_widget_time.removeItem(roi_data[0])
                         flight['plot']['roi_polar'].pop(i)
+                plot_widget_vxvz.removeItem(flight['plot']['crosshair_v'])
+                plot_widget_vxvz.removeItem(flight['plot']['crosshair_h'])
+                
     update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz)
+
 
 def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight, legend_vxvz):
     for row, flight in enumerate(flight_dic):
@@ -557,31 +560,48 @@ def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
     plot_widget.enableAutoRange(True)
     plot_widget.setLabel("top", f"Vx {get_unit('IAS')}")
     plot_widget.setLabel("left", f"Vz {get_unit('IAS')}")
+    
     for flight in flight_dic:
-        
         if flight['is_data_processed'] and len(flight['plot']['roi_polar']) > 0:
+            if not flight['plot']['scatter_vxvz']: #if no scatter exists yet
+                scatter_polar_vx = []
+                scatter_polar_vz = []
+                for roi_data in flight['plot']['roi_polar']:
+                    scatter_polar_vx.append(roi_data[2])
+                    scatter_polar_vz.append(roi_data[3])
+                pen = pg.mkPen(flight['plot']['plot_color'], width=4)
+                scatter = pg.ScatterPlotItem(
+                    x=scatter_polar_vx,
+                    y=scatter_polar_vz,
+                    size=6,
+                    pen=pen,
+                    brush=None
+                )
+                
+                plot_widget.addItem(scatter)
+                flight['plot']['scatter_vxvz'] = scatter
             
-            scatter_polar_vx = []
-            scatter_polar_vz = []
-            for roi_data in flight['plot']['roi_polar']:
-                scatter_polar_vx.append(roi_data[2])
-                scatter_polar_vz.append(roi_data[3])
-            pen = pg.mkPen(flight['plot']['plot_color'], width=4)
+            else:
+                scatter_polar_vx = []
+                scatter_polar_vz = []
+                for roi_data in flight['plot']['roi_polar']:
+                    scatter_polar_vx.append(roi_data[2])
+                    scatter_polar_vz.append(roi_data[3])
+                scatter = flight['plot']['scatter_vxvz']
+                scatter.setData(scatter_polar_vx, scatter_polar_vz)
+        
             
-            
-            scatter = pg.ScatterPlotItem(
-                x=scatter_polar_vx,
-                y=scatter_polar_vz,
-                size=6,
-                pen=pen,
-                brush=None
-            )
-
-            plot_widget.addItem(scatter)
-            plot_widget.autoRange()
-
             label = flight['file_name'].split(".")[0]
             legend_vxvz.addItem(scatter, label)
+            
+        elif len(flight['plot']['roi_polar']) == 0:
+            if flight['plot']['scatter_vxvz']: 
+                plot_widget.removeItem(flight['plot']['scatter_vxvz'])
+                flight['plot']['scatter_vxvz'] = None  #delete
+                
+            plot_widget.autoRange()
+
+            
                 
 
 
