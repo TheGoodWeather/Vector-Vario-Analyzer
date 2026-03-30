@@ -58,8 +58,100 @@ class UnitDialog(QtWidgets.QDialog):
         
         
     
-        
-        
-    
 
+class ColorButton(QtWidgets.QPushButton):
+    '''
+    Custom Qt Widget to show a chosen color.
+
+    Left-clicking the button shows the color-chooser, while
+    right-clicking resets the color to None (no-color).
+    '''
+
+    colorChanged = pyqtSignal(object)
+
+    def __init__(self, *args, color=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._color = None
+        self._default = color
+        self.pressed.connect(self.onColorPicker)
+
+        # Set the initial/default state.
+        self.setColor(self._default)
+
+    def setColor(self, color):
+        if color != self._color:
+            self._color = color
+            self.colorChanged.emit(color)
+
+        if self._color:
+            self.setStyleSheet("background-color: %s;" % self._color)
+        else:
+            self.setStyleSheet("")
+
+    def color(self):
+        return self._color
+
+    def onColorPicker(self):
+        '''
+        Show color-picker dialog to select color.
+
+        Qt will use the native dialog by default.
+
+        '''
+        dlg = QtWidgets.QColorDialog(self)
+        if self._color:
+            dlg.setCurrentColor(QtGui.QColor(self._color))
+
+        if dlg.exec():
+            self.setColor(dlg.currentColor().name())
+
+    def mousePressEvent(self, e):
+        if e.button() == Qt.MouseButton.RightButton:
+            self.setColor(self._default)
+
+        return super().mousePressEvent(e)        
+
+
+class ColorDialog(QtWidgets.QDialog):
+    
+    
+    colorWindBarbsChanged = pyqtSignal()
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent = parent
+
+        def resource_path(relative_path):
+            #Get absolute path to resource (for PyInstaller and development) , I don't really understand but it seems useful for lauching as a onefile exe
+            if hasattr(sys, '_MEIPASS'):
+                return Path(sys._MEIPASS) / relative_path
+            return Path(__file__).parent / relative_path
+
+        uic.loadUi(resource_path("gui/colorwindow.ui"), self)  # Load the .ui file directly
+        self.settings = QSettings("Vector Vario", "VVA")
+        self.color_button_windbarb = ColorButton(color="#ff0000")  # Start with red as default
+        self.windbarbs_color_widget.layout().addWidget(self.color_button_windbarb)
+        
+        
+        self.read_settings()
+        self.buttonBox.accepted.connect(self.write_settings)    
+        
+
+        
+    def write_settings(self):
+        self.settings.beginGroup("colors")
+        self.settings.setValue("windbarbs", self.color_button_windbarb.color())
+
+        self.settings.endGroup()
+        self.colorWindBarbsChanged.emit()
+        self.close()
+        
+    def read_settings(self):
+        
+        
+        self.settings.beginGroup("colors")
+        self.color_button_windbarb.setColor(self.settings.value("windbarbs"))
+
+        self.settings.endGroup()
         

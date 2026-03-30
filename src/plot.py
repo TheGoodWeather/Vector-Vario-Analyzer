@@ -9,6 +9,9 @@ from units import convert_array_to_unit , get_unit
 from table_handler import create_polar_table
 import math
 
+
+settings = QSettings("Vector Vario", "VVA") #Initialize settings
+
 pg.setConfigOptions(useOpenGL=True)
 pg.setConfigOptions(antialias=True)
 
@@ -76,6 +79,19 @@ def get_checked_variables(list_widget):
             checked_vars.append(item.text())
 
     return checked_vars
+
+def get_flight_variable_2D(table_widget):
+    flights_selected = []
+    for row in range(table_widget.rowCount()):
+        checkbox_item = table_widget.item(row, 0)
+        if checkbox_item.checkState() == Qt.CheckState.Checked:
+            flight_name = checkbox_item.text()
+            if table_widget.cellWidget(row, 1).currentText() != 'None':
+                variable = table_widget.cellWidget(row, 1).currentText() #fetch the associated variable
+            else:
+                variable = None
+            flights_selected.append((flight_name,variable))
+    return flights_selected
 
 def save_checked_variables_1D(flight_dic, comboBox_flight, list_widget1, list_widget2):
     """
@@ -147,7 +163,7 @@ def toggle_x_link(plot1, plot2, checkbox):
         plot2.setXLink(None)
 
 
-def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flight, plot_widget, color_bar):
+def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
     """
     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
     """
@@ -155,35 +171,40 @@ def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flig
     plot_widget.enableAutoRange(True)
     plot_widget.setAspectLocked(True)
     
-    flights = get_checked_variables(list_widget_flight)
-    if len(flights) == 0:
+    flight_selected = get_flight_variable_2D(tab_widget_flight)
+    if len(flight_selected) == 0:
         plot_widget.clear()
-
-        
         return
-    
     
     plot_widget.clear()
     
-    
-    
-    
     for row, flight in enumerate(flight_dic):
-        if flight['file_name'].split(".")[0] in flights:
-            #setting the color mapping 
-            if checkbox_color is None:
-                color = flight['plot']['plot_color']
-                pen = pg.mkPen(color, width=2)
-                brush = None
-                color_bar.setOpacity(0)
-            else:
-                if checkbox_color.isChecked():
+        for flight_to_plot, variable in flight_selected:
+            if flight['file_name'].split(".")[0] == flight_to_plot:
+                    
+                x = flight['data']['GNSS_lon']
+                y = flight['data']['GNSS_lat']
+                
+                #setting the color mapping 
+                if not variable:
+                    color = flight['plot']['plot_color']
+                    pen = pg.mkPen(color, width=2)
+                    brush = None
+                    
+                    trajectory = plot_widget.plot(
+                        x=x,
+                        y=y,
+                        brush=brush,
+                        size=2,
+                        pen=pen,
+                        symbol= None
+                    )
+                else:
                     cmap = pg.colormap.get('turbo')
-                    z = flight['data'][variable_color]
+                    z = flight['data'][variable]
                 
                     z_min, z_max = np.nanmin(z), np.nanmax(z)
                     
-                    color_bar.setLevels((z_min, z_max))
                     if z_max - z_min == 0:
                         norm = np.zeros_like(z)
                     else:
@@ -191,125 +212,83 @@ def update_2D_plot(flight_dic, checkbox_color, variable_color , list_widget_flig
                     
                     brush = cmap.map(norm, mode='qcolor')
                     pen = None
-                    color_bar.setOpacity(1)
-                elif not checkbox_color.isChecked():
-                    color = flight['plot']['plot_color']
-                    pen = pg.mkPen(color, width=2)
-                    brush = None
-                    color_bar.setOpacity(0)
- 
-            #main scatter
-            
-            x = flight['data']['GNSS_lon']
-            y = flight['data']['GNSS_lat']
-            
-            
-            scatter = pg.ScatterPlotItem(
-                x=x,
-                y=y,
-                brush=brush,
-                size=2,
-                pen=pen
-            )
-            plot_widget.setTitle(f"{flight['file_name'].split('.')[0]} flight trajectory")
-            
-            
-            #scatter start
-            start = pg.ScatterPlotItem(
-            x=[x[0]], y=[y[0]],
-            brush=pg.mkBrush('black'),
-            size=3,
-            symbol='o'
-            )
-        
-            # scatter finish 
-            end = pg.ScatterPlotItem(
-                x=[x[-1]], y=[y[-1]],
+                    
+                    
+                    trajectory = pg.ScatterPlotItem(
+                        x=x,
+                        y=y,
+                        brush=brush,
+                        size=2,
+                        pen=pen
+                    )
+                    plot_widget.addItem(trajectory)
+
+                
+                plot_widget.setTitle(f"{flight['file_name'].split('.')[0]} flight trajectory")
+                
+                #scatter start
+                start = pg.ScatterPlotItem(
+                x=[x[0]], y=[y[0]],
                 brush=pg.mkBrush('black'),
                 size=3,
-                symbol='x'
-            )
+                symbol='o'
+                )
             
+                # scatter finish 
+                end = pg.ScatterPlotItem(
+                    x=[x[-1]], y=[y[-1]],
+                    brush=pg.mkBrush('black'),
+                    size=3,
+                    symbol='x'
+                )
+                
             
-            text_start = pg.TextItem("Start", color='black')
-            text_start.setPos(x[0], y[0])
-            
-            text_end = pg.TextItem("Finish", color='black')
-            text_end.setPos(x[-1], y[-1])
-            plot_widget.addItem(text_start)
-            plot_widget.addItem(text_end)
-            plot_widget.addItem(scatter)
-            plot_widget.addItem(start)
-            plot_widget.addItem(end)
-            plot_widget.autoRange()
-
-            
+                text_start = pg.TextItem("Start", color='black')
+                text_start.setPos(x[0], y[0])
+                
+                text_end = pg.TextItem("Finish", color='black')
+                text_end.setPos(x[-1], y[-1])
+                plot_widget.addItem(text_start)
+                plot_widget.addItem(text_end)
+                plot_widget.addItem(start)
+                plot_widget.addItem(end)
+                plot_widget.autoRange()
+    
+        
 
 
   
-def update_wind_barbs_2D(flight_dic, list_widget_flight, plot_widget, checkbox_wind, slider, res):
+def update_wind_barbs_2D(flight_dic, table_widget_flight, plot_widget, radiobutton_wind, slider_density, slider_size):
     """
     This function creates or removes windbarbs on the graph according to the checkbox wind barbs state
     """
-    increment = int((res - 1) * (20 - 200) // (100 - 1) + 200) #mapping the res of the slider into a increment that goes to a barb every 20 points to every 200 points  
-    flights = get_checked_variables(list_widget_flight)
+    
+    settings.beginGroup("colors")
+    color = QColor(settings.value("windbarbs"))
+    settings.endGroup()
+    density = slider_density.value()
+    size_coeff = slider_size.value()
+    increment = int((density - 1) * (20 - 200) // (100 - 1) + 200) #mapping the res of the slider into a increment that goes to a barb every 20 points to every 200 points  
+    flight_selected = get_flight_variable_2D(table_widget_flight)
+    if len(flight_selected) == 0:
+        return
+    
     for row, flight in enumerate(flight_dic):
-        if flight['file_name'].split(".")[0] in flights:
-            vel_max = np.nanmax(flight['data']['wind_vel'])
-            vel_min = np.nanmin(flight['data']['wind_vel'])    
-            #slider.setMaximum(int(round(len(flight['data']['GNSS_lon'])/3)))
-            if len(flight['plot']['windbarbs_2D']) != round((len(flight['data']['GNSS_lon']) / res)): #If the numbers of windbarbs has changed
-                if checkbox_wind.isChecked():
-                    #First we delete the previous windbarbs
-                    if len(flight['plot']['windbarbs_2D']) > 0:
-                        for arrow in flight['plot']['windbarbs_2D']:
-                            plot_widget.removeItem(arrow)
-                        flight['plot']['windbarbs_2D']= [] 
-
-
-                    #Then we build again the windbarbs
-                    for i in range(0, len(flight['data']['GNSS_lon']), increment):
-                    
-                        lon = flight['data']['GNSS_lon'][i]
-                        lat = flight['data']['GNSS_lat'][i]
-                        wind_dir = (flight['data']['wind_origin'][i]  + 90 ) % 360  #+90 because the item arrow is offseted by 90
-                        wind_speed = flight['data']['wind_vel'][i]
-                        
-                
-                        size = 10 + ( 50* ((wind_speed - vel_min) / (vel_max - vel_min)))
-                        
-                        
-                
-                        arrow = pg.ArrowItem(
-                            pos=(lon , lat ),
-                            angle=wind_dir,
-                            headLen=0,
-                            headWidth = 0,
-                            tipAngle=25,
-                            tailLen = size ,
-                            tailWidth = 1,
-                            brush='black',
-                            pen=pg.mkPen('black')
-                        )
-                    
-                        plot_widget.addItem(arrow)
-                        flight['plot']['windbarbs_2D'].append(arrow)
-
-                else: #Else we remove every windbarbs
-                    if len(flight['plot']['windbarbs_2D']) > 0:
-                        for arrow in flight['plot']['windbarbs_2D']:
-                            plot_widget.removeItem(arrow)
-                        flight['plot']['windbarbs_2D']= [] 
-
-                    else:
-                        return
-                
-            else: 
-                if checkbox_wind.isChecked(): #If the numbers of windbarbs hasn't changed , we need to rebuild because it may has been previously deleted
-                    if len(flight['plot']['windbarbs_2D']) > 0:
-                        for arrow in flight['plot']['windbarbs_2D']:
-                            plot_widget.addItem(arrow)
-                    elif not flight['plot']['windbarbs_2D']:
+        for flight_to_plot, variable in flight_selected:
+            if flight['file_name'].split(".")[0] == flight_to_plot:
+                vel_max = np.nanmax(flight['data']['wind_vel'])
+                vel_min = np.nanmin(flight['data']['wind_vel'])    
+                #slider.setMaximum(int(round(len(flight['data']['GNSS_lon'])/3)))
+                if len(flight['plot']['windbarbs_2D']) != round((len(flight['data']['GNSS_lon']) / density)): #If the numbers of windbarbs has changed
+                    if radiobutton_wind.isChecked():
+                        #First we delete the previous windbarbs
+                        if len(flight['plot']['windbarbs_2D']) > 0:
+                            for arrow in flight['plot']['windbarbs_2D']:
+                                plot_widget.removeItem(arrow)
+                            flight['plot']['windbarbs_2D']= [] 
+    
+    
+                        #Then we build again the windbarbs
                         for i in range(0, len(flight['data']['GNSS_lon']), increment):
                         
                             lon = flight['data']['GNSS_lon'][i]
@@ -318,7 +297,7 @@ def update_wind_barbs_2D(flight_dic, list_widget_flight, plot_widget, checkbox_w
                             wind_speed = flight['data']['wind_vel'][i]
                             
                     
-                            size = 10 + ( 50* ((wind_speed - vel_min) / (vel_max - vel_min)))
+                            size = 5 + ( size_coeff * ((wind_speed - vel_min) / (vel_max - vel_min)))
                             
                             
                     
@@ -331,17 +310,60 @@ def update_wind_barbs_2D(flight_dic, list_widget_flight, plot_widget, checkbox_w
                                 tailLen = size ,
                                 tailWidth = 1,
                                 brush='black',
-                                pen=pg.mkPen('black')
+                                pen=pg.mkPen(color)
                             )
                         
                             plot_widget.addItem(arrow)
                             flight['plot']['windbarbs_2D'].append(arrow)
-                else: #Or if it's the same number but the windbarbs checkbox is unchecked
-                    if len(flight['plot']['windbarbs_2D']) > 0:
-                        for arrow in flight['plot']['windbarbs_2D']:
-                            plot_widget.removeItem(arrow)
+    
+                    else: #Else we remove every windbarbs
+                        if len(flight['plot']['windbarbs_2D']) > 0:
+                            for arrow in flight['plot']['windbarbs_2D']:
+                                plot_widget.removeItem(arrow)
+                            flight['plot']['windbarbs_2D']= [] 
+    
+                        else:
+                            return
+                    
+                else: 
+                    if radiobutton_wind.isChecked(): #If the numbers of windbarbs hasn't changed , we need to rebuild because it may has been previously deleted
+                        if len(flight['plot']['windbarbs_2D']) > 0:
+                            for arrow in flight['plot']['windbarbs_2D']:
+                                # plot_widget.addItem(arrow)
+                                pass
+                        elif not flight['plot']['windbarbs_2D']:
+                            for i in range(0, len(flight['data']['GNSS_lon']), increment):
                             
-                        flight['plot']['windbarbs_2D']= []
+                                lon = flight['data']['GNSS_lon'][i]
+                                lat = flight['data']['GNSS_lat'][i]
+                                wind_dir = (flight['data']['wind_origin'][i]  + 90 ) % 360  #+90 because the item arrow is offseted by 90
+                                wind_speed = flight['data']['wind_vel'][i]
+                                
+                        
+                                size = 10 + ( 50* ((wind_speed - vel_min) / (vel_max - vel_min)))
+                                
+                                
+                        
+                                arrow = pg.ArrowItem(
+                                    pos=(lon , lat ),
+                                    angle=wind_dir,
+                                    headLen=0,
+                                    headWidth = 0,
+                                    tipAngle=25,
+                                    tailLen = size ,
+                                    tailWidth = 1,
+                                    brush='black',
+                                    pen=pg.mkPen(color)
+                                )
+                            
+                                plot_widget.addItem(arrow)
+                                flight['plot']['windbarbs_2D'].append(arrow)
+                    else: #Or if it's the same number but the windbarbs checkbox is unchecked
+                        if len(flight['plot']['windbarbs_2D']) > 0:
+                            for arrow in flight['plot']['windbarbs_2D']:
+                                plot_widget.removeItem(arrow)
+                                
+                            flight['plot']['windbarbs_2D']= []
 
                         
 def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_widget):
