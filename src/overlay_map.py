@@ -133,10 +133,10 @@ class OSMTileOverlay(QtCore.QObject):
         self._debounce_timer.timeout.connect(self._refresh_tiles)
  
         # Signal interne émis depuis les threads de DL
-        self._tile_ready.connect(self._on_tile_ready, QtCore.Qt.ConnectionType.QueuedConnection)
+        #self._tile_ready.connect(self._on_tile_ready, QtCore.Qt.ConnectionType.QueuedConnection)
  
         # Connexion au signal de changement de vue
-        self._view.sigRangeChanged.connect(self._on_range_changed)
+        #self._view.sigRangeChanged.connect(self._on_range_changed)
  
         # Premier rendu
         QtCore.QTimer.singleShot(100, self._refresh_tiles)

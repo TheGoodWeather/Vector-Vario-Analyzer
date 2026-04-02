@@ -27,6 +27,7 @@ def generate_vva(filepath, metadata):
             f.write(f"avg_windspeed:{metadata['avg_windspeed']}\n")
             f.write(f"avg_winddir:{metadata['avg_winddir']}\n")
             f.write(f"comment:{metadata['comment']}\n")
+            f.write(f"alias:{metadata['alias']}\n")
             
             logger.info(f".vva file created at {vva_path}")
             
@@ -34,7 +35,7 @@ def generate_vva(filepath, metadata):
              logger.info(f"An error occurred: {e}")
 
      
-def igc2vva(igc_filepath, widget_comment):
+def igc2vva(igc_filepath):
     
     metadata = {
         "vv_sn" : None,
@@ -48,7 +49,8 @@ def igc2vva(igc_filepath, widget_comment):
         "altitude_start" : None,
         "avg_windspeed" : None,
         "avg_winddir" : None,
-        "comment" : ""}
+        "comment" : "",
+        "alias":""}
 
 
     
@@ -90,14 +92,14 @@ def igc2vva(igc_filepath, widget_comment):
         altitude_start = gps_altitude[0]
         avg_winddir = sum(winddir) / len(winddir)
         avg_windspeed = sum(windspeed) / len(windspeed)
-        comment = widget_comment.text()
-        
+ 
         date = datetime.strptime(date_wo_hour + hour[0],"%d%m%y%H%M%S" ).strftime("%Y-%m-%d %H.%M")
         metadata["date"] = date
         metadata["altitude_max"] = altitude_max
         metadata["altitude_min"] = altitude_min
         metadata["altitude_start"] = altitude_start
-        metadata["comment"] = comment
+
+        
         
         if avg_windspeed is not None:
             metadata["avg_windspeed"] = round(avg_windspeed,2)
@@ -108,7 +110,7 @@ def igc2vva(igc_filepath, widget_comment):
         return metadata
 
 
-def csv2vva(csv_filepath, widget_comment):
+def csv2vva(csv_filepath):
     """
     
 
@@ -136,7 +138,8 @@ def csv2vva(csv_filepath, widget_comment):
         "altitude_start" : None,
         "avg_windspeed" : None,
         "avg_winddir" : None,
-        "comment" : ""
+        "comment" : "",
+        "alias": ""
         }
 
     
@@ -187,7 +190,7 @@ def csv2vva(csv_filepath, widget_comment):
     metadata["altitude_max"] = altitude_max
     metadata["altitude_min"] = altitude_min
     metadata["altitude_start"] = altitude_start
-    metadata["comment"] = widget_comment.text()
+    
     
     if avg_windspeed is not None:
         metadata["avg_windspeed"] = round(avg_windspeed,2)
@@ -216,7 +219,8 @@ def read_vva_metadata(vva_filepath):
         "altitude_start" : None,
         "avg_windspeed" : None,
         "avg_winddir" : None,
-        "comment" : ""
+        "comment" : "",
+        "alias": ""
         }
     
     with open(vva_filepath, "r", encoding="utf-8") as file:
@@ -252,6 +256,8 @@ def read_vva_metadata(vva_filepath):
                 metadata["avg_winddir"] = line.split(":")[1]  
             if line.startswith("comment"):
                 metadata["comment"] = line.split(":")[1] 
+            if line.startswith("alias"):
+                metadata["alias"] = line.split(":")[1] 
     file.close()
     return metadata
 
@@ -271,10 +277,17 @@ def load_vva_files(flight_dir="flight"):
                      "windbarbs_2D" : [],
                      "roi_polar": [],
                      "scatter_vxvz": None,
+                     "scatter_map": None,
+                     "text_map_start": None,
+                     "text_map_end" : None,
                      "roi_emagram": [],
                      "plot_color" : None,
-                     "crosshair_v": None,
-                     "crosshair_h": None}}
+                     "crosshair_v_polar": None,
+                     "crosshair_h_polar": None,
+                     "crosshair_v_map": None,
+                     "crosshair_h_map": None,
+                     "crosshair_v_time_1": None,
+                     "crosshair_h_time_2": None}}
         flight["metadata"] = read_vva_metadata(file)
         flight["file_name"] = file.name
         flight["file_path"] = file
@@ -335,4 +348,39 @@ def save_section_to_vva(flight_dic, section_type):
         f"The {section_type} sections have been saved successfully."
     )
       
-            
+    
+def save_alias_comment_to_vva(vva_file_path, comment="", alias=""):
+    """
+    Write the comment and alias into vva file after being edited
+    """
+    with open(vva_file_path, "r", encoding="utf-8") as file:
+        lines = file.readlines()
+
+    new_lines = []
+    comment_found = False
+    alias_found = False
+
+    for line in lines:
+        if line.startswith("comment:"):
+            new_lines.append(f"comment:{comment}\n")
+            comment_found = True
+        elif line.startswith("alias:"):
+            new_lines.append(f"alias:{alias}\n")
+            alias_found = True
+        else:
+            new_lines.append(line)
+
+    if not comment_found:
+        new_lines.append(f"comment:{comment}\n")
+
+    if not alias_found:
+        new_lines.append(f"alias:{alias}\n")
+
+    with open(vva_file_path, "w", encoding="utf-8") as file:
+        file.writelines(new_lines)
+        
+    QMessageBox.information(
+        None,
+        "Saved",
+        "The modifications have been saved successfully."
+    )

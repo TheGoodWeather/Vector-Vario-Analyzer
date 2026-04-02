@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import QApplication, QLineEdit, QWidget, QVBoxLayout,QTable
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
-from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files
+from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_alias_comment_to_vva
 from moulinette import fetch_raw_csv, fetch_raw_igc
 import sys
 from pathlib  import Path 
@@ -17,7 +17,7 @@ def update_vva_table(data, table_widget):
     
     table_widget.blockSignals(True)
     table_widget.setRowCount(0)
-
+   
     for row, flight in enumerate(data):
         table_widget.insertRow(row)
 
@@ -26,11 +26,19 @@ def update_vva_table(data, table_widget):
         Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsUserCheckable)
         checkbox_item.setCheckState(Qt.CheckState.Unchecked)
         table_widget.setItem(row, 0, checkbox_item)
-        table_widget.setItem(row, 1, QtWidgets.QTableWidgetItem(flight["metadata"]["date"]))
-        table_widget.setItem(row, 2, QtWidgets.QTableWidgetItem(str(flight["metadata"]["altitude_start"])))
-        table_widget.setItem(row, 3, QtWidgets.QTableWidgetItem(str(flight["metadata"]["altitude_max"])))
-        table_widget.setItem(row, 4, QtWidgets.QTableWidgetItem(str(flight["metadata"]["pilot"])))
-        table_widget.setItem(row, 5, QtWidgets.QTableWidgetItem(str(flight["metadata"]["comment"])))
+        table_widget.setItem(row, 1, QtWidgets.QTableWidgetItem(str(flight["file_name"].split('.')[0])))
+        table_widget.setItem(row, 2, QtWidgets.QTableWidgetItem(flight["metadata"]["date"]))
+        table_widget.setItem(row, 3, QtWidgets.QTableWidgetItem(str(flight["metadata"]["altitude_start"])))
+        table_widget.setItem(row, 4, QtWidgets.QTableWidgetItem(str(flight["metadata"]["altitude_max"])))
+        table_widget.setItem(row, 5, QtWidgets.QTableWidgetItem(str(flight["metadata"]["pilot"])))
+        
+        item_comment =  QtWidgets.QTableWidgetItem(str(flight["metadata"]["comment"]))
+        item_comment.setFlags(Qt.ItemFlag.ItemIsEnabled |Qt.ItemFlag.ItemIsSelectable |Qt.ItemFlag.ItemIsEditable)
+        table_widget.setItem(row, 6,item_comment)
+        
+        item_alias = QtWidgets.QTableWidgetItem(str(flight["metadata"]["alias"]))
+        item_alias.setFlags(Qt.ItemFlag.ItemIsEnabled |Qt.ItemFlag.ItemIsSelectable |Qt.ItemFlag.ItemIsEditable)
+        table_widget.setItem(row, 7, item_alias)
         
     table_widget.resizeColumnsToContents()
     table_widget.blockSignals(False)
@@ -111,7 +119,7 @@ def create_polar_table(flight_dic, table_widget, combobox_flight):
     table_widget.setRowCount(0)  # Clear the table
     table_widget.setHorizontalHeaderLabels([f"Vx {get_unit('IAS')}", f"Vz {get_unit('IAS')}", "Glide", f"IAS {get_unit('IAS')}"])
     for i, flight in enumerate(flight_dic):
-        if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+        if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText() :
             for row, roi_data in enumerate(flight['plot']['roi_polar']):
                 table_widget.insertRow(row)
                 
@@ -130,5 +138,27 @@ def create_polar_table(flight_dic, table_widget, combobox_flight):
                 
                 
     
+def save_comment_alias(item, flight_dic, table_widget):
+    if item.column() not in [6, 7]:
+       return
+   
+    flight_selected = table_widget.item(item.row(), 1).text()
+
+    for flight in flight_dic:
+        if flight['file_name'].split(".")[0] == flight_selected or flight['metadata']['alias'] == flight_selected :
+            
+            new_value = item.text()
+
+            if item.column() == 6:  # comment
+                flight["metadata"]["comment"] = new_value
+        
+            elif item.column() == 7:  # alias
+                flight["metadata"]["alias"] = new_value    
+            
+            save_alias_comment_to_vva(flight['file_path'], flight["metadata"]["comment"], flight["metadata"]["alias"])
+            return
+            
+        
+            
     
 

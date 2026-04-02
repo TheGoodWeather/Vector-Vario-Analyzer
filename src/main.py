@@ -3,12 +3,12 @@ import os
 import shutil
 from pyqtgraph_gis import MapWidget
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QListWidgetItem,QComboBox, QRadioButton, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QMainWindow
+from PyQt6.QtWidgets import QListWidgetItem,QComboBox, QHeaderView, QRadioButton, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QMainWindow
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
-from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table
+from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table, save_comment_alias
 from PyQt6.QtCore import QThread, QThreadPool, QSettings
 from moulinette_worker import MoulinetteWorker
 from pyqtgraph import ErrorBarItem 
@@ -18,6 +18,7 @@ from plot_emagram import update_emagram_graph
 import sys
 from units import get_unit, convert_array_to_unit
 from overlay_map import OSMTileOverlay
+from dropzone import DropZone
 from polar_generator import update_polar_generator_values
 from pathlib  import Path 
 import pprint
@@ -56,6 +57,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.analyze_queue = []
         self.analyze_running = False
         
+        self.drop_zone = DropZone()
+        self.drag_and_drop_layout.layout().insertWidget(0, self.drop_zone)
+        self.drop_zone.fileDropped.connect(lambda filepath : self.on_drop_load_file(filepath))
+        
+        
+        
         self.setWindowTitle(f"Vector Vario Software Utility v{SOFTWARE_VERSION}")
         self.setFocus()  #allow the main windows to receive key press event 
         self.read_settings_main()
@@ -70,15 +77,12 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.actionUnits.triggered.connect(self.display_unit_window)
         self.actionColors.triggered.connect(self.display_color_window)
-        
+        self.actionImport_file.triggered.connect(self.on_button_load_file)
         """
         Widgets tab import  / export
         """
         
-        self.pushButton_generate_vva.setEnabled(False)
         
-        self.pushButton_load_file.clicked.connect(self.on_button_load_file)
-        self.pushButton_generate_vva.clicked.connect(self.on_button_generate_vva)
         self.pushButton_clear_log.clicked.connect(self.on_button_clear_log)
         self.pushButton_delete_entry.clicked.connect(self.on_button_delete_entries)
         self.pushButton_analyze_entry.clicked.connect(self.on_button_analyze_entries)
@@ -92,19 +96,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.progressBar.setValue(0)
         
         #Table ------------------------------------
-        headers = ["","Flight date", "Start altitude","Max altitude", "Pilot", "Comment"]
+        headers = ["","Flight Name", "Flight date", "Start altitude","Max altitude", "Pilot", "Comment", "Alias"]
         self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab, self.dynamic_tab]
         for tab in self.tab_list:
             index = self.tabWidget.indexOf(tab)
             self.tabWidget.setTabEnabled(index, False)
+            
         self.tableWidget_database.setColumnCount(len(headers))
         self.tableWidget_database.setHorizontalHeaderLabels(headers)
+        header = self.tableWidget_database.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableWidget_database.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.tableWidget_database.horizontalHeader().setStretchLastSection(True)
+        #self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+  
         self.tableWidget_database.resizeColumnsToContents()
         self.tableWidget_database.itemChanged.connect(lambda : update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget))
-
+        self.tableWidget_database.itemChanged.connect(lambda item: save_comment_alias(item, self.flight, self.tableWidget_database))
         
         self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
         update_vva_table(self.flight, self.tableWidget_database)
@@ -154,6 +161,24 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.color_gradient_bar_widget.setBackground("w")
         # self.colorbar.setOpacity(0) 
         
+        
+        #Table ------------------------------------
+        headers_table_map = ["Flight", "Variable"]
+        self.tableWidget_flights_plot2D.setColumnCount(len(headers_table_map))
+        self.tableWidget_flights_plot2D.setHorizontalHeaderLabels(headers_table_map)
+        header_table_map = self.tableWidget_flights_plot2D.horizontalHeader()
+        header_table_map.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tableWidget_flights_plot2D.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableWidget_flights_plot2D.resizeColumnsToContents()
+        
+        headers_table_map_variable = ["Variable","Value", "Unit"]
+        self.tableWidget_data_point_tab2D.setColumnCount(len(headers_table_map_variable))
+        self.tableWidget_data_point_tab2D.setHorizontalHeaderLabels(headers_table_map_variable)
+        header_table_map_variable = self.tableWidget_data_point_tab2D.horizontalHeader()
+        header_table_map_variable.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tableWidget_data_point_tab2D.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableWidget_data_point_tab2D.resizeColumnsToContents()
+        
         #signals
         self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D ))
         self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
@@ -184,7 +209,15 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Widgets tab POLAR
         """
+        
+        #Table ------------------------------------
+        headers_table_polar = ["Vx", "Vz", "Glide Ratio"]
+        self.tableView_polar_points.setColumnCount(len(headers_table_polar))
+        self.tableView_polar_points.setHorizontalHeaderLabels(headers_table_map)
+        header_table_polar = self.tableView_polar_points.horizontalHeader()
+        header_table_polar.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableView_polar_points.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableView_polar_points.resizeColumnsToContents()
         self.tableView_polar_points.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.tableView_polar_points.cellClicked.connect(lambda row, column: self.on_table_cell_clicked(row, self.flight, self.comboBox_flight_select_polartab, self.tableView_polar_points, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.pushButton_remove_polar_point))
         self.graph_tabpolar_vxvz.setBackground("w")
@@ -250,8 +283,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.spinBox_sproj.valueChanged.connect(self.horizontalSlider_sproj.setValue)
         self.horizontalSlider_auw.valueChanged.connect(self.spinBox_auw.setValue)
         self.spinBox_auw.valueChanged.connect(self.horizontalSlider_auw.setValue)
-        self.horizontalSlider_ar.valueChanged.connect(self.spinBox_ar.setValue)
-        self.spinBox_ar.valueChanged.connect(self.horizontalSlider_ar.setValue)
+        self.horizontalSlider_ar.valueChanged.connect(lambda v: self.spinBox_ar.setValue(v / 10))
+        self.spinBox_ar.valueChanged.connect(lambda v: self.horizontalSlider_ar.setValue(int(v * 10)))
         self.horizontalSlider_ias_comp.valueChanged.connect(self.spinBox_ias_comp.setValue)
         self.spinBox_ias_comp.valueChanged.connect(self.horizontalSlider_ias_comp.setValue)
         
@@ -260,14 +293,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalSlider_auw.setRange(40, 250)
         self.spinBox_auw.setRange(40, 250)
         self.horizontalSlider_ar.setRange(30,80)
-        self.spinBox_ar.setRange(30,80)
+        self.spinBox_ar.setRange(3,8)
         self.horizontalSlider_ias_comp.setRange(-15,15)
         self.spinBox_ias_comp.setRange(-15,15)
         
         self.horizontalSlider_sproj.setSingleStep(1)
         self.horizontalSlider_auw.setSingleStep(1)
         self.horizontalSlider_ar.setSingleStep(1)
-        
+        self.spinBox_ar.setSingleStep(0.1)
         self.horizontalSlider_sproj.setSliderPosition(20) 
         self.horizontalSlider_auw.setSliderPosition(90) 
         self.horizontalSlider_ar.setSliderPosition(60) 
@@ -358,14 +391,12 @@ class MainWindow(QtWidgets.QMainWindow):
     def on_button_load_file(self):
         """
         Fetching new file path and copying it into flight folder
+        Triggered from the menu bar
         """
-        self.lineEdit_file_path.clear()
-        self.lineEdit_comment.clear()
-        
+
         self.new_file_path = QtWidgets.QFileDialog.getOpenFileName(self, "Open flight file", "", ".CSV .IGC Files (*.csv *.igc)")
         if self.new_file_path[0]:
             self.new_file_path = Path(self.new_file_path[0]) 
-            self.lineEdit_file_path.setText(str(self.new_file_path))
             new_file_path_copy_name = Path(self.new_file_path).name
             new_file_path_copy = Path(os.path.join('./flight/',new_file_path_copy_name))
         else:
@@ -388,15 +419,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
             if reply != QMessageBox.StandardButton.Yes:
                 logger.info("Upload aborted")
-                self.lineEdit_file_path.clear()
-                self.pushButton_generate_vva.setEnabled(False)
+         
                 return  
         
         try:
             shutil.copy2(self.new_file_path, new_file_path_copy)
             logger.info("File copied")
             self.new_file_path = new_file_path_copy
-            self.pushButton_generate_vva.setEnabled(True)
+
         except shutil.SameFileError:
             logger.info("Source and destination represent the same file.")
         except PermissionError:
@@ -406,13 +436,11 @@ class MainWindow(QtWidgets.QMainWindow):
         except Exception as e:
             logger.info(f"An error occurred: {e}")
         
-
-    def on_button_generate_vva(self, widget_):
         if self.new_file_path.suffix == ".csv":
-            generate_vva(self.new_file_path, csv2vva(self.new_file_path, self.lineEdit_comment))
+            generate_vva(self.new_file_path, csv2vva(self.new_file_path))
             logger.info("Converting .csv file to .vva")
-        elif self.new_file_path.suffix == ".IGC":
-            generate_vva(self.new_file_path, igc2vva(self.new_file_path, self.lineEdit_comment))
+        elif self.new_file_path.suffix == ".IGC" or self.new_file_path.suffix == ".igc":
+            generate_vva(self.new_file_path, igc2vva(self.new_file_path))
             logger.info("Converting .igc file to .vva")
         else:
             logger.info(f"{self.new_file_path.suffix} files are not supported on version {SOFTWARE_VERSION}")
@@ -425,9 +453,73 @@ class MainWindow(QtWidgets.QMainWindow):
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D )
+            
+    def on_drop_load_file(self, filepath):
+        """
+        Fetching new file path and copying it into flight folder
+        Used when user drops the new file
+        """
+
         
-        self.lineEdit_file_path.clear()
-        self.lineEdit_comment.clear()
+    
+        new_file_path = Path(filepath) 
+        new_file_path_copy_name = Path(new_file_path).name
+        new_file_path_copy = Path(os.path.join('./flight/',new_file_path_copy_name))
+      
+        
+        if not os.path.exists('./flight/'):
+            logger.info("No directory 'flight' existing yet, creating it")
+            os.makedirs('./flight/')
+            
+        if new_file_path_copy.exists():
+            logger.info(f"The file « {new_file_path_copy.name} » has already been uploaded")
+            reply =  QMessageBox.question(
+            self,
+            "File already existing",
+            f"The file « {new_file_path_copy.name} » has already been uploaded\n"
+            "Do you want to overwrite it ?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No
+        )
+
+            if reply != QMessageBox.StandardButton.Yes:
+                logger.info("Upload aborted")
+                return  
+        
+        try:
+            shutil.copy2(new_file_path, new_file_path_copy)
+            logger.info("File copied")
+            new_file_path = new_file_path_copy
+            
+        except shutil.SameFileError:
+            logger.info("Source and destination represent the same file.")
+        except PermissionError:
+            logger.info("Permission denied.")
+        except FileNotFoundError:
+            logger.info("Source file not found.")
+        except Exception as e:
+            logger.info(f"An error occurred: {e}")
+        
+        
+        if new_file_path.suffix == ".csv":
+            generate_vva(new_file_path, csv2vva(new_file_path))
+            logger.info("Converting .csv file to .vva")
+        elif new_file_path.suffix == ".IGC" or new_file_path.suffix == ".igc":
+            generate_vva(new_file_path, igc2vva(new_file_path))
+            logger.info("Converting .igc file to .vva")
+        else:
+            logger.info(f"{new_file_path.suffix} files are not supported on version {SOFTWARE_VERSION}")
+            return
+        
+        self.flight = load_vva_files()
+        update_vva_table(self.flight, self.tableWidget_database)
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+        self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D )
+
+
         
         
         
@@ -536,18 +628,18 @@ class MainWindow(QtWidgets.QMainWindow):
             original_filename = Path(flight['file_name'])
             original_filename_wo_extension = original_filename.with_suffix("")
             original_filename_wo_extension = str(original_filename_wo_extension.with_suffix(""))
-            if combo_box_flight.findText(original_filename_wo_extension) >= 0 and not flight['is_data_processed'] :
-                combo_box_flight.removeItem(combo_box_flight.findText(original_filename_wo_extension))
-            elif flight['is_data_processed'] and combo_box_flight.findText(original_filename_wo_extension) < 0:
-                combo_box_flight.addItem(f"{original_filename_wo_extension}")
+            alias = self.get_alias(original_filename_wo_extension)
+            if combo_box_flight.findText(alias) >= 0 and not flight['is_data_processed'] :
+                combo_box_flight.removeItem(combo_box_flight.findText(alias))
+            elif flight['is_data_processed'] and combo_box_flight.findText(alias) < 0:
+                combo_box_flight.addItem(f"{alias}")
                 
     def populate_combobox_1D_variable(self, flight_dic, list1, list2, choice):
-        # list1.blockSignals(True)
-        # list2.blockSignals(True)
+
         list1.clear()
         list2.clear()
         for row, flight in enumerate(flight_dic):
-            if flight['file_name'].split(".")[0] == choice:
+            if (flight['file_name'].split(".")[0] == choice) or (flight['metadata']['alias'] == choice):
                 if flight['is_data_processed'] and flight['data']:
                     for index, variable in enumerate(flight['data']):
                         if variable != 'GNSS_time':                       
@@ -570,8 +662,7 @@ class MainWindow(QtWidgets.QMainWindow):
                                 list2.addItem(item2)
                             
             
-        # list1.blockSignals(False)
-        # list2.blockSignals(False)
+   
         
     def handle_checkboxes_on_widgetlist_1D(self, list_widget):
         """
@@ -653,12 +744,10 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def populate_flight_table_tab_2D(self, flight_dic, table_widget, plot_widget):
         """
-        Populating the flight table according to flight that are processed
+        Populating the flight table according to flights that are processed
 
         """
-        table_widget.horizontalHeader().setStretchLastSection(False)
-        table_widget.resizeColumnsToContents()
-        table_widget.clear()
+
         table_widget.setRowCount(0)        
         row = 0
     
@@ -666,7 +755,7 @@ class MainWindow(QtWidgets.QMainWindow):
             if flight['is_data_processed'] and flight['data']:
     
                 table_widget.insertRow(row)
-                flight_name = str(Path(flight['file_name']).with_suffix("").with_suffix(""))
+                flight_name = self.get_alias(str(Path(flight['file_name']).with_suffix("").with_suffix("")))
     
                 item = QTableWidgetItem(flight_name)
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
@@ -698,7 +787,7 @@ class MainWindow(QtWidgets.QMainWindow):
         combobox_var.clear()
         
         for flight in flight_dic:
-            if flight['file_name'].split(".")[0] == choice:
+            if flight['file_name'].split(".")[0] == choice or (flight['metadata']['alias'] == choice):
                 if flight['is_data_processed'] and flight['data']:
                     if tab == 'polar':
                         priority_vars = ['IAS', 'GNSS_alt']
@@ -766,7 +855,7 @@ class MainWindow(QtWidgets.QMainWindow):
         When a table cell is clicked, it will display a cross in the vx vz graph pointing the current point, and highlight the matching ROI 
         """
         for i, flight in enumerate(flight_dic):
-            if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+            if (flight['file_name'].split(".")[0] == combobox_flight.currentText()) or (flight['metadata']['alias'] == combobox_flight.currentText()):
                 if row >= len(flight['plot']['roi_polar']):
                     return
                 for i, roi_data in enumerate(flight['plot']['roi_polar']):
@@ -808,7 +897,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         distances = []
         for i, flight in enumerate(flight_dic):
-            if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+            if (flight['file_name'].split(".")[0] == combobox_flight.currentText()) or (flight['metadata']['alias'] == combobox_flight.currentText()):
                 for index, roi_data in enumerate(flight['plot']['roi_polar']):
                     x_click = click_pos.x()
                     y_click = click_pos.y()
@@ -829,15 +918,11 @@ class MainWindow(QtWidgets.QMainWindow):
         This function displays crosshair to the closest point where the user clicked
         It also retrieves the corresponding flight and displays its value on the data table
         """
-        table_data.horizontalHeader().setStretchLastSection(False)
-        table_data.setHorizontalHeaderLabels(('Variable', 'Value', 'Unit'))
-        table_data.resizeColumnsToContents()
-        table_data.clear()
+
         table_data.setRowCount(0)        
         
         vb = plot_widget.getViewBox()
         click_pos = vb.mapSceneToView(event.scenePos())
-        distances = []
         flight_selected = plot.get_flight_variable_2D(table_flight)
         plausible_flight = []
         if len(flight_selected) == 0:
@@ -845,7 +930,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         for row, flight in enumerate(flight_dic):
             for flight_to_plot, variable in flight_selected:
-                if flight['file_name'].split(".")[0] == flight_to_plot:
+                if (flight['file_name'].split(".")[0] == flight_to_plot) or (flight['metadata']['alias'] == flight_to_plot):
                     x_click = click_pos.x()
                     y_click = click_pos.y()
                     best_dist = float('inf')
@@ -868,12 +953,11 @@ class MainWindow(QtWidgets.QMainWindow):
             best_dist, best_index, best_flight = best
             
             if best_dist < 0.0015: #if the distance clicked is beyond 20 meters
-                print(best_dist)
                 for flight in flight_dic:
-                    if flight['file_name'].split(".")[0] == best_flight:
+                    if (flight['file_name'].split(".")[0] == best_flight) or (flight['metadata']['alias'] == best_flight):
                         label_table_data.setText(f"Data {flight['file_name'].split('.')[0]}")
                         row = 0
-                        for variable in flight['data']:
+                        for variable in flight['data']: #creating table
                             if isinstance(flight['data'][variable], np.ndarray) and len(flight['data'][variable]) > 0 :
                                 table_data.insertRow(row)
                                             
@@ -895,9 +979,56 @@ class MainWindow(QtWidgets.QMainWindow):
                                 table_data.setItem(row, 2, item_unit)
                                 
                                 row += 1
+                        #setting the crosshair
+                        if flight['plot']['crosshair_v_map']:
+                            flight['plot']['crosshair_v_map'].setValue(float(flight['data']['GNSS_lon'][best_index]))
+                            flight['plot']['crosshair_h_map'].setValue(float(flight['data']['GNSS_lat'][best_index]))
+                        else:
+                            
+                            pen = pg.mkPen(flight['plot']['plot_color'], width=0.8, style=QtCore.Qt.PenStyle.DashLine
+                            )
+                        
+                            crosshair_v = pg.InfiniteLine(
+                                angle=90,
+                                movable=False,
+                                pen = pen
+                             
+                            )
+                            
+                            crosshair_h = pg.InfiniteLine(
+                                angle=0,
+                                movable=False,
+                                pen = pen
+                              
+                            )
+                        
+                            plot_widget.addItem(crosshair_v, ignoreBounds=True)
+                            plot_widget.addItem(crosshair_h, ignoreBounds=True)
+                            flight['plot']['crosshair_v_map'] = crosshair_v
+                            flight['plot']['crosshair_h_map'] = crosshair_h
+                            flight['plot']['crosshair_v_map'].setValue(float(flight['data']['GNSS_lon'][best_index]))
+                            flight['plot']['crosshair_h_map'].setValue(float(flight['data']['GNSS_lat'][best_index]))
             else:
-                return
-            
+                for flight in flight_dic:
+                    if flight['file_name'].split(".")[0] == best_flight:
+                        table_data.clearContents()
+                        
+                        if flight['plot']['crosshair_v_map']:
+                            plot_widget.removeItem(flight['plot']['crosshair_v_map'])
+                            plot_widget.removeItem(flight['plot']['crosshair_h_map'])
+                            flight['plot']['crosshair_v_map'] = None
+                            flight['plot']['crosshair_h_map'] = None
+                    
+                        
+                        
+    def get_alias(self, flight_name):
+        for flight in self.flight:
+      
+            if flight['file_name'].split(".")[0] == flight_name:
+                if flight['metadata']['alias'] != "":
+                    return flight['metadata']['alias']
+                else:
+                    return flight['file_name'].split(".")[0]
                     
                 
     def on_button_windbarbs(self, toggle, widget_wind):

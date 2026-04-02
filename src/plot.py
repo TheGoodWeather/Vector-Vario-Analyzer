@@ -42,7 +42,7 @@ def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
     
     plot_widget.clear()
     for row, flight in enumerate(flight_dic):
-        if flight['file_name'].split(".")[0] == comboBox_flight.currentText():
+        if flight['file_name'].split(".")[0] == comboBox_flight.currentText() or  flight['metadata']['alias'] == comboBox_flight.currentText() :
             
             x = np.array([t.timestamp() for t in flight['data']['GNSS_time']])
            
@@ -102,7 +102,7 @@ def save_checked_variables_1D(flight_dic, comboBox_flight, list_widget1, list_wi
     current_flight_name = comboBox_flight.currentText()
 
     for flight in flight_dic:
-        if flight['file_name'].split(".")[0] == current_flight_name:
+        if flight['file_name'].split(".")[0] == current_flight_name or flight['metadata']['alias'] == current_flight_name :
 
             flight['plot']['variables_1D'] = [[],[]]
 
@@ -124,7 +124,7 @@ def restore_checked_variables_1D(flight_dic, comboBox_flight, list_widget1, list
     current_flight_name = comboBox_flight.currentText()
 
     for flight in flight_dic:
-        if flight['file_name'].split(".")[0] == current_flight_name:
+        if flight['file_name'].split(".")[0] == current_flight_name or flight['metadata']['alias'] == current_flight_name :
 
             selected = flight['plot']['variables_1D']
 
@@ -163,97 +163,201 @@ def toggle_x_link(plot1, plot2, checkbox):
         plot2.setXLink(None)
 
 
+# def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
+#     """
+#     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
+#     """
+   
+#     plot_widget.setAspectLocked(True)
+    
+#     flight_selected = get_flight_variable_2D(tab_widget_flight)
+#     if len(flight_selected) == 0:
+#         plot_widget.clear()
+#         return
+    
+#     for row, flight in enumerate(flight_dic):
+#         if flight['is_data_processed']:
+#             for flight_to_plot, variable in flight_selected:
+#                 if flight['file_name'].split(".")[0] == flight_to_plot or flight['metadata']['alias'] == flight_to_plot :
+                        
+#                     x = flight['data']['GNSS_lon']
+#                     y = flight['data']['GNSS_lat']
+                    
+                    
+#                     #setting the color mapping 
+#                     if not variable:
+#                         if flight['plot']['scatter_map']:
+#                             plot_widget.removeItem(flight['plot']['scatter_map'])
+                                        
+#                         color = flight['plot']['plot_color']
+#                         pen = pg.mkPen(color, width=2)
+#                         brush = None
+                        
+#                         flight['plot']['scatter_map'] = plot_widget.plot(
+#                             x=x,
+#                             y=y,
+#                             brush=brush,
+#                             size=2,
+#                             pen=pen,
+#                             symbol= None
+#                         )
+                            
+#                     else:
+#                         cmap = pg.colormap.get('turbo')
+#                         z = flight['data'][variable]
+                    
+#                         z_min, z_max = np.nanmin(z), np.nanmax(z)
+                        
+#                         if z_max - z_min == 0:
+#                             norm = np.zeros_like(z)
+#                         else:
+#                             norm = (z - z_min) / (z_max - z_min)
+                        
+#                         brush = cmap.map(norm, mode='qcolor')
+#                         pen = None
+                        
+#                         if flight['plot']['scatter_map']:
+#                             plot_widget.removeItem(flight['plot']['scatter_map'])
+                    
+#                         flight['plot']['scatter_map'] = pg.ScatterPlotItem(
+#                             x=x,
+#                             y=y,
+#                             brush=brush,
+#                             size=2,
+#                             pen=pen
+#                         )
+#                         plot_widget.addItem(flight['plot']['scatter_map'])
+    
+                    
+#                     plot_widget.setTitle(f"{flight['file_name'].split('.')[0]} flight trajectory")
+                    
+#                     #START / END
+#                     if not flight['plot']['text_map_start']:
+#                         start = pg.TextItem("Start", color='black')
+#                         plot_widget.addItem(start)
+#                         flight['plot']['text_map_start'] = start
+                       
+#                     if not flight['plot']['text_map_end']:
+#                         end = pg.TextItem("End", color='black')
+#                         plot_widget.addItem(end)
+#                         flight['plot']['text_map_end'] = end
+  
+#                     flight['plot']['text_map_start'].setPos(x[0], y[0])
+#                     flight['plot']['text_map_start'].show()
+#                     flight['plot']['text_map_end'].setPos(x[-1], y[-1])
+#                     flight['plot']['text_map_end'].show()
+                    
+#                     plot_widget.autoRange()
+                    
+#             # for flight_to_plot, variable not in flight_selected:            
+            
+#             #     if flight['plot']['scatter_map']:
+#             #         plot_widget.removeItem(flight['plot']['scatter_map'])
+#             #         plot_widget.removeItem(flight['plot']['text_map_start'])
+#             #         plot_widget.removeItem(flight['plot']['text_map_end'])
+#             #         plot_widget.autoRange()
+    
 def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
     """
     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
     """
-   
-    plot_widget.enableAutoRange(True)
     plot_widget.setAspectLocked(True)
-    
-    flight_selected = get_flight_variable_2D(tab_widget_flight)
-    if len(flight_selected) == 0:
-        plot_widget.clear()
-        return
-    
-    plot_widget.clear()
-    
-    for row, flight in enumerate(flight_dic):
-        for flight_to_plot, variable in flight_selected:
-            if flight['file_name'].split(".")[0] == flight_to_plot:
-                    
-                x = flight['data']['GNSS_lon']
-                y = flight['data']['GNSS_lat']
-                
-                #setting the color mapping 
-                if not variable:
-                    color = flight['plot']['plot_color']
-                    pen = pg.mkPen(color, width=2)
-                    brush = None
-                    
-                    trajectory = plot_widget.plot(
-                        x=x,
-                        y=y,
-                        brush=brush,
-                        size=2,
-                        pen=pen,
-                        symbol= None
-                    )
-                else:
-                    cmap = pg.colormap.get('turbo')
-                    z = flight['data'][variable]
-                
-                    z_min, z_max = np.nanmin(z), np.nanmax(z)
-                    
-                    if z_max - z_min == 0:
-                        norm = np.zeros_like(z)
-                    else:
-                        norm = (z - z_min) / (z_max - z_min)
-                    
-                    brush = cmap.map(norm, mode='qcolor')
-                    pen = None
-                    
-                    
-                    trajectory = pg.ScatterPlotItem(
-                        x=x,
-                        y=y,
-                        brush=brush,
-                        size=2,
-                        pen=pen
-                    )
-                    plot_widget.addItem(trajectory)
 
-                
-                plot_widget.setTitle(f"{flight['file_name'].split('.')[0]} flight trajectory")
-                
-                #scatter start
-                start = pg.ScatterPlotItem(
-                x=[x[0]], y=[y[0]],
-                brush=pg.mkBrush('black'),
-                size=3,
-                symbol='o'
-                )
+    flight_selected = get_flight_variable_2D(tab_widget_flight)
+
+
+    selected_names = [f for f, v in flight_selected]
+
+    for flight in flight_dic:
+
+        flight_name = flight['file_name'].split(".")[0]
+        alias = flight['metadata']['alias']
+
+        is_selected = flight_name in selected_names or alias in selected_names
+
+        # récupérer variable
+        variable = None
+        for f_name, var in flight_selected:
+            if f_name == flight_name or f_name == alias:
+                variable = var
+                break
+
+        if is_selected:
+
+            x = flight['data']['GNSS_lon']
+            y = flight['data']['GNSS_lat']
+
+            # REMOVE ancien plot UNE FOIS
+            if flight['plot']['scatter_map']:
+                plot_widget.removeItem(flight['plot']['scatter_map'])
+                flight['plot']['scatter_map'] = None
+
             
-                # scatter finish 
-                end = pg.ScatterPlotItem(
-                    x=[x[-1]], y=[y[-1]],
-                    brush=pg.mkBrush('black'),
-                    size=3,
-                    symbol='x'
+            if not variable:
+                pen = pg.mkPen(flight['plot']['plot_color'], width=2)
+
+                flight['plot']['scatter_map'] = plot_widget.plot(
+                    x=x,
+                    y=y,
+                    pen=pen
                 )
-                
+
+            else:
+                cmap = pg.colormap.get('turbo')
+                z = flight['data'][variable]
             
-                text_start = pg.TextItem("Start", color='black')
-                text_start.setPos(x[0], y[0])
+                z_min, z_max = np.nanmin(z), np.nanmax(z)
                 
-                text_end = pg.TextItem("Finish", color='black')
-                text_end.setPos(x[-1], y[-1])
-                plot_widget.addItem(text_start)
-                plot_widget.addItem(text_end)
+                if z_max - z_min == 0:
+                    norm = np.zeros_like(z)
+                else:
+                    norm = (z - z_min) / (z_max - z_min)
+                
+                brush = cmap.map(norm, mode='qcolor')
+                pen = None
+                
+                if flight['plot']['scatter_map']:
+                    plot_widget.removeItem(flight['plot']['scatter_map'])
+            
+                flight['plot']['scatter_map'] = pg.ScatterPlotItem(
+                    x=x,
+                    y=y,
+                    brush=brush,
+                    size=2,
+                    pen=pen
+                )
+                plot_widget.addItem(flight['plot']['scatter_map'])
+              
+
+            # START / END
+            if not flight['plot']['text_map_start']:
+                start = pg.TextItem("Start", color='black')
                 plot_widget.addItem(start)
+                flight['plot']['text_map_start'] = start
+               
+            if not flight['plot']['text_map_end']:
+                end = pg.TextItem("End", color='black')
                 plot_widget.addItem(end)
-                plot_widget.autoRange()
-    
+                flight['plot']['text_map_end'] = end
+                
+            flight['plot']['text_map_start'].setPos(x[0], y[0])
+            flight['plot']['text_map_start'].show()
+            flight['plot']['text_map_end'].setPos(x[-1], y[-1])
+            flight['plot']['text_map_end'].show()
+        else:
+            if flight['plot']['scatter_map']:
+                plot_widget.removeItem(flight['plot']['scatter_map'])
+                flight['plot']['scatter_map'] = None
+                
+
+            if flight['plot']['text_map_start']:
+                flight['plot']['text_map_start'].hide()
+
+
+            if flight['plot']['text_map_end']:
+                flight['plot']['text_map_end'].hide()
+        
+    plot_widget.autoRange()   
         
 
 
@@ -275,7 +379,7 @@ def update_wind_barbs_2D(flight_dic, table_widget_flight, plot_widget, radiobutt
     
     for row, flight in enumerate(flight_dic):
         for flight_to_plot, variable in flight_selected:
-            if flight['file_name'].split(".")[0] == flight_to_plot:
+            if flight['file_name'].split(".")[0] == flight_to_plot or flight['metadata']['alias'] == flight_to_plot:
                 vel_max = np.nanmax(flight['data']['wind_vel'])
                 vel_min = np.nanmin(flight['data']['wind_vel'])    
                 #slider.setMaximum(int(round(len(flight['data']['GNSS_lon'])/3)))
@@ -381,7 +485,7 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
     
     plot_widget.clear()
     for row, flight in enumerate(flight_dic):
-        if flight['file_name'].split(".")[0] == comboBox_flight.currentText():
+        if flight['file_name'].split(".")[0] == comboBox_flight.currentText() or flight['metadata']['alias'] == comboBox_flight.currentText():
             
             y = convert_array_to_unit(flight['data'][variable], variable)
             x = np.arange(len(y))
@@ -400,7 +504,7 @@ def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget
     Creating a new ROI -> meaning a new polar point
     """
     for row, flight in enumerate(flight_dic):
-        if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+        if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():
             roi = pg.LinearRegionItem(values=(calculate_roi(flight, "min"), calculate_roi(flight, "max")), bounds=(calculate_roi(flight, "bound_min"), calculate_roi(flight, "bound_max" )))
             roi.setMovable(True)
             roi.setBrush(QColor(100, 100, 100, 25)) 
@@ -490,7 +594,7 @@ def load_emagram_roi(flight_dic, plot_widget_time, plot_widget_emagram, combobox
 def remove_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz, ias_comp):
     row = table_polar_widget.currentRow() #the row selected 
     for flight in flight_dic:
-        if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+        if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():
             if row >= len(flight['plot']['roi_polar']):
                 return
             else:
@@ -498,14 +602,14 @@ def remove_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget
                     if i == row:
                         plot_widget_time.removeItem(roi_data[0])
                         flight['plot']['roi_polar'].pop(i)
-                plot_widget_vxvz.removeItem(flight['plot']['crosshair_v'])
-                plot_widget_vxvz.removeItem(flight['plot']['crosshair_h'])
+                plot_widget_vxvz.removeItem(flight['plot']['crosshair_v_polar'])
+                plot_widget_vxvz.removeItem(flight['plot']['crosshair_h_polar'])
                 
     update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp)
 
 
-def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight, legend_vxvz, ias_comp):
-
+def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight, legend_vxvz, ias_comp_coeff):
+ 
     for row, flight in enumerate(flight_dic):
         # if flight['file_name'].split(".")[0] == combobox_flight.currentText():
         if flight['is_data_processed']:
@@ -515,7 +619,8 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
                     if x_min != x_max:
                         with np.errstate(divide='ignore', invalid='ignore'):
                             # we set the ias compensation 
-                            ias_comp = np.multiply(flight['data']['IAS'] , (1+ (ias_comp/100) ))
+                     
+                            ias_comp = np.multiply(flight['data']['IAS'] , (1+ (ias_comp_coeff/100) ))
                             #Then the array are converted into the desired unit
                             ias_comp = convert_array_to_unit(ias_comp, 'IAS')
                             vario_ias = flight['data']['VarioIAS']
@@ -533,9 +638,9 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
                             roi_data[3] = vario_avg
                             roi_data[4] = glide_ratio_avg
                             
-                            if flight['plot']['crosshair_v']:
-                                flight['plot']['crosshair_v'].hide()
-                                flight['plot']['crosshair_h'].hide()
+                            if flight['plot']['crosshair_v_polar']:
+                                flight['plot']['crosshair_v_polar'].hide()
+                                flight['plot']['crosshair_h_polar'].hide()
             
     create_polar_table(flight_dic, table_widget, combobox_flight)
     update_vxvz_graph(flight_dic, plot_widget, legend_vxvz)
@@ -560,7 +665,7 @@ def display_rois(flight_dic, plot_widget, combobox_flight, tab):
     This function keeps the existings rois displayed even though we change the variable or the flight
     """
     for row, flight in enumerate(flight_dic):
-        if flight['file_name'].split(".")[0] == combobox_flight.currentText():
+        if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():
             if flight['plot'][tab]:
                 for roi in flight['plot'][tab]:
                     plot_widget.addItem(roi[0])  #roi[0] is the pyqtgraph item 
@@ -577,9 +682,9 @@ def reset_highlights(flight_dic, plot_widget):
         if flight['is_data_processed']:
             for roi in flight['plot']['roi_polar']:
                 roi[0].setBrush(QColor(100, 100, 100, 25))
-            if flight['plot']['crosshair_v']:
-                plot_widget.removeItem(flight['plot']['crosshair_v'])
-                plot_widget.removeItem(flight['plot']['crosshair_h'])  
+            if flight['plot']['crosshair_v_polar']:
+                plot_widget.removeItem(flight['plot']['crosshair_v_polar'])
+                plot_widget.removeItem(flight['plot']['crosshair_h_polar'])  
 
 def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
     
@@ -642,11 +747,11 @@ def highlights_polar_tab(index, flight, table_polar_points, plot_widget_vxvz):
             roi_data[0].setBrush(QColor(100, 100, 100, 50)) #Highlight ROI 
             roi_data[0].setZValue(20) 
             
-            if flight['plot']['crosshair_v']: #if the crosshair already exists, no need to create them again
-                flight['plot']['crosshair_v'].show()
-                flight['plot']['crosshair_h'].show()
-                flight['plot']['crosshair_v'].setValue(roi_data[2])
-                flight['plot']['crosshair_h'].setValue(roi_data[3])
+            if flight['plot']['crosshair_v_polar']: #if the crosshair already exists, no need to create them again
+                flight['plot']['crosshair_v_polar'].show()
+                flight['plot']['crosshair_h_polar'].show()
+                flight['plot']['crosshair_v_polar'].setValue(roi_data[2])
+                flight['plot']['crosshair_h_polar'].setValue(roi_data[3])
             
             else:
                 
@@ -662,10 +767,10 @@ def highlights_polar_tab(index, flight, table_polar_points, plot_widget_vxvz):
             
                 plot_widget_vxvz.addItem(crosshair_v)
                 plot_widget_vxvz.addItem(crosshair_h)
-                flight['plot']['crosshair_v'] = crosshair_v
-                flight['plot']['crosshair_h'] = crosshair_h
-                flight['plot']['crosshair_v'].setValue(roi_data[2])
-                flight['plot']['crosshair_h'].setValue(roi_data[3])
+                flight['plot']['crosshair_v_polar'] = crosshair_v
+                flight['plot']['crosshair_h_polar'] = crosshair_h
+                flight['plot']['crosshair_v_polar'].setValue(roi_data[2])
+                flight['plot']['crosshair_h_polar'].setValue(roi_data[3])
             
             table_polar_points.selectRow(i) #highlights the corresponding row
             
