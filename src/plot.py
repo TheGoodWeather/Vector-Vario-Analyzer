@@ -557,8 +557,7 @@ def calculate_roi(flight, edge):
             end = min(start + interval, t_end)
 
         else:
-            # Plus de place
-            start = last_xmax + 50
+            start = t_end - total_duration * 0.08
             end = t_end
     if edge == 'min':
         return int(start)
@@ -625,13 +624,14 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
                             ias_comp = convert_array_to_unit(ias_comp, 'IAS')
                             vario_ias = flight['data']['VarioIAS']
                             vx = np.sqrt(np.subtract(np.square(ias_comp), np.square(vario_ias)))
-                            glide_ratio = np.divide(vx, vario_ias)
                             
-                            glide_ratio_avg = round(np.nanmean(glide_ratio[int(x_min):int(x_max)]),2)
+                            
+                            
 
                             vx_avg = round(np.nanmean(vx[int(x_min):int(x_max)]),2)
                             ias_avg = round(np.nanmean(ias_comp[int(x_min):int(x_max)]),2)
                             vario_avg = round(np.nanmean(vario_ias[int(x_min):int(x_max)]),2)
+                            glide_ratio_avg = round(np.divide(vx_avg, vario_avg ), 2)
                             
                             roi_data[1] = ias_avg
                             roi_data[2] = vx_avg

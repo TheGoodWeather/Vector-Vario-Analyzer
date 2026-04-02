@@ -607,13 +607,13 @@ class MainWindow(QtWidgets.QMainWindow):
         
         row_to_export = return_selected_row(self.flight, self.tableWidget_database)
         for row in row_to_export:
-            export_file_csv(self.flight[row])
+            export_file_csv(self.flight[row], self)
             
     def on_button_export_entries_kml(self):
         
         row_to_export = return_selected_row(self.flight, self.tableWidget_database)
         for row in row_to_export:
-            export_file_kml(self.flight[row])
+            export_file_kml(self.flight[row], self)
             
     def populate_combobox_flight(self, data, combo_box_flight):
         """

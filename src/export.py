@@ -5,12 +5,12 @@ import csv
 import simplekml
 
 
-def export_file_csv(flight):
+def export_file_csv(flight, parent):
     
     
     filename = create_file_name(flight , '_processed.csv' )
 
-    filepath, _ = QtWidgets.QFileDialog.getSaveFileName(None,"Save file as .csv", filename, "CSV Files (*.csv);;All Files (*)")
+    filepath, _ = QtWidgets.QFileDialog.getSaveFileName(parent,"Save file as .csv", filename, "CSV Files (*.csv);;All Files (*)")
     
     if filepath:
         try:
@@ -89,13 +89,13 @@ def create_file_name(flight , end): #Little function to create a path file for e
         return file_name
 
 
-def export_file_kml(flight):
+def export_file_kml(flight, parent):
     
     
     kml = simplekml.Kml() 
     
     filename = create_file_name(flight , '_track.kml')
-    filepath, _ = QtWidgets.QFileDialog.getSaveFileName(None,"Save file as .kml", filename, "KML Files (*.kml);;All Files (*)")
+    filepath, _ = QtWidgets.QFileDialog.getSaveFileName(parent,"Save file as .kml", filename, "KML Files (*.kml);;All Files (*)")
     coords = []
     if filepath:
         for i in range(len(flight['data']['GNSS_lat'])):
