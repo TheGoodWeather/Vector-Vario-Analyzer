@@ -10,8 +10,9 @@ from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_alias_comment_to_vva
 from moulinette import fetch_raw_csv, fetch_raw_igc
 import sys
+import numpy as np
 from pathlib  import Path 
-from units import get_unit
+from units import get_unit, convert_array_to_unit
 
 def update_vva_table(data, table_widget):
     
@@ -159,6 +160,46 @@ def save_comment_alias(item, flight_dic, table_widget):
             return
             
         
-            
+def populate_table_1D_variable(flight_dic, table1, table2, choice):
+    table1.blockSignals(True)
+    table2.blockSignals(True)
+
+    table1.setRowCount(0)   
+    table2.setRowCount(0)  
+
+    row = 0
+
+    for flight in flight_dic:
+        if (flight['file_name'].split(".")[0] == choice) or (flight['metadata']['alias'] == choice):
+            if flight['is_data_processed'] and flight['data']:
+
+                for variable in flight['data']:
+                    if variable != 'GNSS_time':                       
+                        data = flight['data'][variable]
+
+                        if len(data) > 0 and not np.all(np.isnan(data)):
+
+                            table1.insertRow(row)
+                            table2.insertRow(row)
+
+                            # TABLE 1
+                            item1 = QTableWidgetItem(variable)
+                            item1.setFlags(item1.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                            item1.setFlags(item1.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                            item1.setCheckState(Qt.CheckState.Unchecked)
+
+                            # TABLE 2
+                            item2 = QTableWidgetItem(variable)
+                            item2.setFlags(item2.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                            item2.setFlags(item2.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                            item2.setCheckState(Qt.CheckState.Unchecked)
+
+                            table1.setItem(row, 0, item1)
+                            table2.setItem(row, 0, item2)
+
+                            row += 1            
+    
+    table1.blockSignals(False)
+    table2.blockSignals(False)
     
 

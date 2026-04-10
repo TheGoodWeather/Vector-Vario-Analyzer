@@ -8,7 +8,7 @@ import datetime
 from units import convert_array_to_unit , get_unit
 from table_handler import create_polar_table
 import math
-
+import pprint
 
 settings = QSettings("Vector Vario", "VVA") #Initialize settings
 
@@ -27,60 +27,95 @@ colors = [
 
 
 
-def update_1D_plot(flight_dic, comboBox_flight , list_widget, plot_widget):
+def update_1D_plot(flight_dic, comboBox_flight , table_widget, plot_widget, curve1, curve2):
     """
     This function was initially written in order to handle multiple plot on the same graph. 
-    For now it only plot one as it is to complex to add several scales with pyqtgraph.
+    For now it only plot twos as it is to complex to add several scales with pyqtgraph.
     """
+    
 
-    variables = get_checked_variables(list_widget)
+    crosshair_id = plot_widget.crosshair_id
+    plot_widget.enableAutoRange()
+    variables = get_checked_variables(table_widget)
+    legend = plot_widget.addLegend()
+    legend.clear()
+    
+    remove_crosshair(flight_dic, plot_widget, f"time_{crosshair_id}")
+
+
     if len(variables) == 0:
-        plot_widget.clear()
-        
+        curve1.setData([], [])
+        curve2.setData([], [])
+        legend.clear()
+        remove_crosshair(flight_dic, plot_widget, f"time_{crosshair_id}")
         return
     
     
-    plot_widget.clear()
-    for row, flight in enumerate(flight_dic):
+    for flight in flight_dic:
+        if flight['plot']['crosshair_v_time_1']: #Removing crosshairs
+            plot_widget.removeItem(flight['plot']['crosshair_v_time_1'])
+            plot_widget.removeItem(flight['plot']['crosshair_h_time_1'])
+            flight['plot']['crosshair_v_time_1'] = None
+            flight['plot']['crosshair_h_time_1'] = None
+            
         if flight['file_name'].split(".")[0] == comboBox_flight.currentText() or  flight['metadata']['alias'] == comboBox_flight.currentText() :
             
+    
             x = np.array([t.timestamp() for t in flight['data']['GNSS_time']])
            
-            y = convert_array_to_unit(flight['data'][variables[0]], variables[0])
+            y1 = convert_array_to_unit(flight['data'][variables[0]], variables[0])
             plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])}")
             plot_widget.setTitle(f"{variables[0]} vs time")
-            plot_widget.addLegend()
-            plot_widget.enableAutoRange(True)
             pen1 = pg.mkPen(flight['plot']['plot_color'], width=1)
-            date_axis = pg.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-            plot_widget.setAxisItems({'bottom': date_axis})
-            plot_widget.plot(x, y, pen=pen1,  name=variables[0])
+            legend.addItem(curve1, variables[0])
+            curve1.setPen(pen1)
+            curve1.setData(x, y1,
+                pen=pen1,
+                symbol='o',
+                symbolSize=5,
+                symbolBrush=(0, 0, 0, 0),  # invisible
+                symbolPen=None
+            )
+            
             
             if len(variables) > 1:
+
                 y2 = convert_array_to_unit(flight['data'][variables[1]], variables[1])
                 plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])} / {variables[1]} {get_unit(variables[1])}")
                 plot_widget.setTitle(f"{variables[0]} and {variables[1]} vs time")
-                plot_widget.addLegend()
                 pen2 = pg.mkPen(flight['plot']['plot_color'].darker(), width=1)
-                plot_widget.plot(x, y2, pen=pen2,  name=variables[1])
-                
+                legend.addItem(curve2, variables[1])
+                curve2.setPen(pen2)
+                curve2.setData(x, y2, pen=pen2,
+                symbol='o',
+                symbolSize=5,
+                symbolBrush=(0, 0, 0, 0),  # invisible
+                symbolPen=None
+                )
+            else:
+                curve2.setData([], [])
+
             plot_widget.autoRange()
         
             
-def get_checked_variables(list_widget):
-
+def get_checked_variables(table_widget):
+    """
+    Returns the variables checked to be displayed in the 1D Tab
+    """
     checked_vars = []
+    
+    for row in range(table_widget.rowCount()):
+        item = table_widget.item(row, 0)
 
-    for i in range(list_widget.count()):
-
-        item = list_widget.item(i)
-
-        if item.checkState() == Qt.CheckState.Checked:
+        if item and item.checkState() == Qt.CheckState.Checked:
             checked_vars.append(item.text())
-
+            
     return checked_vars
 
 def get_flight_variable_2D(table_widget):
+    """
+    Returns which flights is selected to be displayed in the 2D map 
+    """
     flights_selected = []
     for row in range(table_widget.rowCount()):
         checkbox_item = table_widget.item(row, 0)
@@ -93,12 +128,11 @@ def get_flight_variable_2D(table_widget):
             flights_selected.append((flight_name,variable))
     return flights_selected
 
-def save_checked_variables_1D(flight_dic, comboBox_flight, list_widget1, list_widget2):
+def save_checked_variables_1D(flight_dic, comboBox_flight, table_widget1, table_widget2):
     """
     Save the variables that has been checked to display in graph 1D
     each time we tick a new variable
     """
-
     current_flight_name = comboBox_flight.currentText()
 
     for flight in flight_dic:
@@ -106,43 +140,46 @@ def save_checked_variables_1D(flight_dic, comboBox_flight, list_widget1, list_wi
 
             flight['plot']['variables_1D'] = [[],[]]
 
-            for i in range(list_widget1.count()):
-                item1 = list_widget1.item(i)
-                if item1.checkState() == Qt.CheckState.Checked:
-                    flight['plot']['variables_1D'][0].append(item1.text())
-            for i in range(list_widget2.count()):
-                item2 = list_widget2.item(i)
-                if item2.checkState() == Qt.CheckState.Checked:
-                    flight['plot']['variables_1D'][1].append(item2.text())
-                    
+            for row in range(table_widget1.rowCount()):
+                item_check_1 = table_widget1.item(row, 0)
+                if item_check_1 and item_check_1.checkState() == Qt.CheckState.Checked:
+                        flight['plot']['variables_1D'][0].append(item_check_1.text())
+            
+            
+            for row in range(table_widget2.rowCount()):
+                item_check_2 = table_widget2.item(row, 0)            
+                if item_check_2 and item_check_2.checkState() == Qt.CheckState.Checked:
+                    flight['plot']['variables_1D'][1].append(item_check_2.text())
+            
 
-def restore_checked_variables_1D(flight_dic, comboBox_flight, list_widget1, list_widget2):
+def restore_checked_variables_1D(flight_dic, comboBox_flight, table_widget1, table_widget2):
     """
-    Restore the variables that has been previously checked to display in graph 1D
+    Restore the variables that have been previously checked to display in graph 1D
     """
-
     current_flight_name = comboBox_flight.currentText()
 
     for flight in flight_dic:
-        if flight['file_name'].split(".")[0] == current_flight_name or flight['metadata']['alias'] == current_flight_name :
-
+        if (flight['file_name'].split(".")[0] == current_flight_name or 
+            flight['metadata']['alias'] == current_flight_name):
+            
             selected = flight['plot']['variables_1D']
+            #  TABLE 1
+            for row in range(table_widget1.rowCount()):
+                item_check = table_widget1.item(row, 0)
+                if item_check:
+                    if item_check.text() in selected[0]:
+                        item_check.setCheckState(Qt.CheckState.Checked)
+                    else:
+                        item_check.setCheckState(Qt.CheckState.Unchecked)
 
-            for i in range(list_widget1.count()):
-                item1 = list_widget1.item(i)
-            
-                if item1.text() in selected[0]:
-                    item1.setCheckState(Qt.CheckState.Checked)
-                else:
-                    item1.setCheckState(Qt.CheckState.Unchecked)
-                    
-            for i in range(list_widget2.count()):
-                item2 = list_widget2.item(i)
-            
-                if item2.text() in selected[1]:
-                    item2.setCheckState(Qt.CheckState.Checked)
-                else:
-                    item2.setCheckState(Qt.CheckState.Unchecked)
+            #  TABLE 2
+            for row in range(table_widget2.rowCount()):
+                item_check = table_widget2.item(row, 0)
+                if item_check:
+                    if item_check.text() in selected[1]:
+                        item_check.setCheckState(Qt.CheckState.Checked)
+                    else:
+                        item_check.setCheckState(Qt.CheckState.Unchecked)
 
 
 def clear_plots_1D(plot1, plot2):
@@ -261,13 +298,20 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
     """
     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
     """
-    plot_widget.setAspectLocked(True)
+
 
     flight_selected = get_flight_variable_2D(tab_widget_flight)
 
-
     selected_names = [f for f, v in flight_selected]
-
+    
+    
+    #Removing all previous highlighted point if they exists
+    for flight in flight_dic:
+        if flight['plot']['highlight_point_map']: 
+            plot_widget.removeItem(flight['plot']['highlight_point_map'])
+            flight['plot']['highlight_point_map'] = None
+        
+    
     for flight in flight_dic:
 
         flight_name = flight['file_name'].split(".")[0]
@@ -286,6 +330,17 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
 
             x = flight['data']['GNSS_lon']
             y = flight['data']['GNSS_lat']
+            # min_lon = np.min(x)
+            # max_lon = np.max(x)
+            # min_lat = np.min(y)
+            # max_lat = np.max(y)
+            
+            # # #changing the aspect ratio without using setAspectLocked because it creates weird bug display with crosshairs
+            # plot_widget.getViewBox().setRange(
+            # xRange=[min_lon - 0.01, max_lon + 0.01],
+            # yRange=[min_lat - 0.01, max_lat + 0.01],
+            # padding=0.05
+            # )
 
             # REMOVE ancien plot UNE FOIS
             if flight['plot']['scatter_map']:
@@ -479,25 +534,46 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
     """
     
     variable = combobox_var.currentText()
-    if variable == '':
+    if not variable:
         plot_widget.clear()
         return
-    
-    plot_widget.clear()
-    for row, flight in enumerate(flight_dic):
-        if flight['file_name'].split(".")[0] == comboBox_flight.currentText() or flight['metadata']['alias'] == comboBox_flight.currentText():
-            
-            y = convert_array_to_unit(flight['data'][variable], variable)
-            x = np.arange(len(y))
 
-            plot_widget.setLimits(xMin=np.min(x), xMax=np.max(x), yMin=np.min(y), yMax=np.max(y))
-            plot_widget.setLabel("left", f"{variable} {get_unit(variable)}")
-            plot_widget.setTitle(f"{variable}")
-            plot_widget.addLegend()
-            plot_widget.enableAutoRange(False)
-            pen1 = pg.mkPen(flight['plot']['plot_color'], width=1)
-            plot_widget.plot(x, y, pen=pen1,  name=variable)
-            plot_widget.autoRange()
+    selected = comboBox_flight.currentText()
+    plot_widget.clear()
+
+    for flight in flight_dic:
+        name  = flight['file_name'].split(".")[0]
+        alias = flight['metadata']['alias']
+
+        if name != selected and alias != selected:
+            continue
+
+        data = flight.get('data')
+        if not data or variable not in data:
+            return
+
+        y = convert_array_to_unit(data[variable], variable)
+        if y is None or len(y) == 0:
+            return
+
+        x = np.arange(len(y))
+
+        plot_widget.setLimits(
+            xMin=np.min(x), xMax=np.max(x),
+            yMin=np.min(y), yMax=np.max(y)
+        )
+
+        plot_widget.setLabel("left", f"{variable} {get_unit(variable)}")
+        plot_widget.setTitle(f"{variable}")
+        plot_widget.addLegend()
+        plot_widget.enableAutoRange(False)
+
+        pen = pg.mkPen(flight['plot']['plot_color'], width=1)
+        plot_widget.plot(x, y, pen=pen, name=variable)
+
+        plot_widget.autoRange()
+
+        break  
 
 def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz, ias_comp):
     """
@@ -755,15 +831,21 @@ def highlights_polar_tab(index, flight, table_polar_points, plot_widget_vxvz):
             
             else:
                 
+                pen = pg.mkPen(QColor(0,0,0), width=1, style=QtCore.Qt.PenStyle.DashLine)
+            
                 crosshair_v = pg.InfiniteLine(
                     angle=90,
                     movable=False,
-                    pen=pg.mkPen(flight['plot']['plot_color'], width=1, style=QtCore.Qt.PenStyle.DashLine))
+                    pen = pen
+                 
+                )
                 
                 crosshair_h = pg.InfiniteLine(
                     angle=0,
                     movable=False,
-                    pen=pg.mkPen(flight['plot']['plot_color'], width=1, style=QtCore.Qt.PenStyle.DashLine))
+                    pen = pen
+                  
+                )
             
                 plot_widget_vxvz.addItem(crosshair_v)
                 plot_widget_vxvz.addItem(crosshair_h)
@@ -778,11 +860,52 @@ def highlights_polar_tab(index, flight, table_polar_points, plot_widget_vxvz):
             roi_data[0].setBrush(QColor(100, 100, 100, 25)) 
             roi_data[0].setZValue(10) 
 
-    
+def remove_crosshair(flight_dic, plot_widget, crosshair):
+    for flight in flight_dic:
+        if flight['plot'][f"crosshair_v_{crosshair}"]:
+            plot_widget.removeItem(flight['plot'][f'crosshair_v_{crosshair}'])
+            plot_widget.removeItem(flight['plot'][f'crosshair_h_{crosshair}'])
+            flight['plot'][f'crosshair_v_{crosshair}'] = None
+            flight['plot'][f'crosshair_h_{crosshair}'] = None
                 
 
 
+# def lock_aspect(plot_widget):
+#     # if self._aspect_updating:
+#     #     return
 
-        
-        
-        
+#     # self._aspect_updating = True
+
+#     view = plot_widget.getViewBox()
+#     (x_min, x_max), (y_min, y_max) = view.viewRange()
+#     print(view.viewPixelSize())
+#     width  = x_max - x_min
+#     height = y_max - y_min
+
+#     # if width == 0 or height == 0:
+#     #     # self._aspect_updating = False
+#     #     return
+
+#     # 👉 centre
+#     cx = (x_min + x_max) / 2
+#     cy = (y_min + y_max) / 2
+
+#     # 🌍 correction géographique (IMPORTANT pour tes tuiles)
+#     lat_center = cy
+#     scale = math.cos(math.radians(lat_center))
+#     target_ratio = 1.0 / scale
+
+#     current_ratio = width / height
+
+#     if current_ratio > target_ratio:
+#         width = height * target_ratio
+#     else:
+#         height = width / target_ratio
+
+#     view.setRange(
+#         xRange=(cx - width / 2, cx + width / 2),
+#         yRange=(cy - height / 2, cy + height / 2),
+#         padding=0
+#     )
+
+#     # self._aspect_updating = False

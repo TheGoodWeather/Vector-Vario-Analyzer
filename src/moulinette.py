@@ -116,6 +116,7 @@ def fetch_raw_igc(flight_dic, progress_callback):
     flight_dic : TYPE
     
     This function returns all the raw data from a igc files, and compute additionnaly the Vario, Pstat, heading GPS and speed_Gps values.
+    It detects if its an IGC or an IGC+ 
 .
 
     Returns

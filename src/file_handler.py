@@ -284,9 +284,10 @@ def load_vva_files(flight_dir="flight"):
                      "plot_color" : None,
                      "crosshair_v_polar": None,
                      "crosshair_h_polar": None,
-                     "crosshair_v_map": None,
-                     "crosshair_h_map": None,
+                     "highlight_point_map": None,
                      "crosshair_v_time_1": None,
+                     "crosshair_h_time_1": None,
+                     "crosshair_v_time_2": None,
                      "crosshair_h_time_2": None}}
         flight["metadata"] = read_vva_metadata(file)
         flight["file_name"] = file.name

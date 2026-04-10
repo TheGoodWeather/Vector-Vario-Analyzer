@@ -8,7 +8,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
-from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table, save_comment_alias
+from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table, save_comment_alias, populate_table_1D_variable
 from PyQt6.QtCore import QThread, QThreadPool, QSettings
 from moulinette_worker import MoulinetteWorker
 from pyqtgraph import ErrorBarItem 
@@ -39,14 +39,16 @@ class MainWindow(QtWidgets.QMainWindow):
     
         uic.loadUi(self.resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
         self.unit_dialog = UnitDialog(parent = self)  
-        self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
-        self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
+        self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.graph1_tab1D, self.curve_1D_11,self.curve_1D_12))
+        self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2, self.graph2_tab1D, self.curve_1D_21, self.curve_1D_22))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
-        self.unit_dialog.unitsChanged.connect(lambda event: self.on_2D_point_clicked(event, self.flight, self.graph_tab2D, self.tableWidget_flights_plot2D, self.tableWidget_data_point_tab2D, self.label_table_data))
+        # self.unit_dialog.unitsChanged.connect(lambda event: self.on_2D_point_clicked(event, self.flight, self.graph_tab2D, self.tableWidget_flights_plot2D, self.tableWidget_data_point_tab2D, self.label_table_data))
+        # self.unit_dialog.unitsChanged.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph1_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1))
+        # self.unit_dialog.unitsChanged.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph2_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2))
         
         self.color_dialog = ColorDialog(parent = self)  
         self.color_dialog.colorWindBarbsChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
@@ -57,9 +59,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.analyze_queue = []
         self.analyze_running = False
         
-        self.drop_zone = DropZone()
-        self.drag_and_drop_layout.layout().insertWidget(0, self.drop_zone)
-        self.drop_zone.fileDropped.connect(lambda filepath : self.on_drop_load_file(filepath))
+        
         
         
         
@@ -116,15 +116,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
         update_vva_table(self.flight, self.tableWidget_database)
         
+        self.drop_zone = DropZone()
+        self.drag_and_drop_layout.layout().insertWidget(0, self.drop_zone)
+        self.drop_zone.fileDropped.connect(lambda filepath : self.on_drop_load_file(filepath))
+        
         """
         Widgets tab 1D plot
         """
+        #Initializing curves
         self.graph1_tab1D.setBackground("w")
         self.graph1_tab1D.setLabel('left', 'No variable selected')
         self.graph1_tab1D.setLabel('bottom', 'GNSS Time (s)')
         self.graph1_tab1D.setTitle("Select a variable to plot in time")
         self.graph1_tab1D.showGrid(x=True, y=True, alpha=0.3)
         self.graph1_tab1D.setEnabled(True)
+        self.graph1_tab1D.crosshair_id = "1"
         
         self.graph2_tab1D.setBackground("w")
         self.graph2_tab1D.setLabel('left', 'No variable selected')
@@ -132,20 +138,58 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph2_tab1D.setTitle("Select a variable to plot in time")
         self.graph2_tab1D.showGrid(x=True, y=True, alpha=0.3)
         self.graph2_tab1D.setEnabled(True)
+        self.graph2_tab1D.crosshair_id = "2"
         
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda choice: self.populate_combobox_1D_variable(self.flight, self.listWidget_variable_plot1, self.listWidget_variable_plot2, choice))
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph1_tab1D, self.graph2_tab1D))
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1 , self.listWidget_variable_plot2))
+        self.graph1_tab1D.enableAutoRange(True)
+        self.graph2_tab1D.enableAutoRange(True)
+        
+        date_axis_1 = pg.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+        date_axis_2 = pg.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
+        
+        self.graph1_tab1D.setAxisItems({'bottom': date_axis_1})
+        self.graph2_tab1D.setAxisItems({'bottom': date_axis_2})
+        
+        self.curve_1D_11 = self.graph1_tab1D.plot([], [])
+        self.curve_1D_12 = self.graph1_tab1D.plot([], [])
+        self.curve_1D_21 = self.graph2_tab1D.plot([], [])
+        self.curve_1D_22 = self.graph2_tab1D.plot([], [])
+        
 
-        self.listWidget_variable_plot1.itemChanged.connect(lambda: self.handle_checkboxes_on_widgetlist_1D(self.listWidget_variable_plot1))
-        self.listWidget_variable_plot1.itemChanged.connect(lambda: plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
-        self.listWidget_variable_plot2.itemChanged.connect(lambda: self.handle_checkboxes_on_widgetlist_1D(self.listWidget_variable_plot2))
-        self.listWidget_variable_plot1.itemChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.graph1_tab1D))
-        self.listWidget_variable_plot2.itemChanged.connect(lambda: plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot1, self.listWidget_variable_plot2))
-        self.listWidget_variable_plot2.itemChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.listWidget_variable_plot2, self.graph2_tab1D))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda choice: populate_table_1D_variable(self.flight, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2, choice))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.graph1_tab1D, self.curve_1D_11,self.curve_1D_12))
+        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2, self.graph2_tab1D, self.curve_1D_21,self.curve_1D_22))
+
+        
+        # self.tableWidget_variable_plot1.itemChanged.connect(lambda: self.handle_checkboxes_on_table_1D(self.tableWidget_variable_plot1))
+        # self.tableWidget_variable_plot1.itemChanged.connect(lambda: plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2))
+        self.tableWidget_variable_plot1.itemChanged.connect(lambda item: self.on_item_table_1D_changed(item))
+        
+        # self.tableWidget_variable_plot2.itemChanged.connect(lambda: self.handle_checkboxes_on_table_1D(self.tableWidget_variable_plot2))
+        # self.tableWidget_variable_plot2.itemChanged.connect(lambda: plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2))
+        self.tableWidget_variable_plot2.itemChanged.connect(lambda item: self.on_item_table_1D_changed(item))
+        
         self.checkBox_x_axis_link.stateChanged.connect(lambda: plot.toggle_x_link(self.graph1_tab1D, self.graph2_tab1D, self.checkBox_x_axis_link))
         
+        #Table ------------------------------------
+        header_table_1D2 = ["Variable", "Value", "Unit"]
+        self.tableWidget_variable_plot2.setColumnCount(len(header_table_1D2))
+        self.tableWidget_variable_plot2.setHorizontalHeaderLabels(header_table_1D2)
+        header_table_1D2 = self.tableWidget_variable_plot2.horizontalHeader()
+        header_table_1D2.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tableWidget_variable_plot2.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableWidget_variable_plot2.resizeColumnsToContents()
+        
+        header_table_1D1 = ["Variable", "Value", "Unit"]
+        self.tableWidget_variable_plot1.setColumnCount(len(header_table_1D1))
+        self.tableWidget_variable_plot1.setHorizontalHeaderLabels(header_table_1D1)
+        header_table_1D1 = self.tableWidget_variable_plot1.horizontalHeader()
+        header_table_1D1.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.tableWidget_variable_plot1.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.tableWidget_variable_plot1.resizeColumnsToContents()
+        
+        self.graph1_tab1D.scene().sigMouseClicked.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph1_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1))
+        self.graph2_tab1D.scene().sigMouseClicked.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph2_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2))
         """
         Widgets tab 2D plot
         """
@@ -156,6 +200,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph_tab2D.addLegend()
         self.graph_tab2D.showGrid(x=True, y=True, alpha=0.3)
         self.graph_tab2D.setEnabled(True)
+        self.graph_tab2D.setAspectLocked(True)
+
+        
         # self.colorbar = pg.ColorBarItem(values=(0, 1),width=10,colorMap=pg.colormap.get('turbo'), interactive=False, orientation='horizontal')
         # self.color_gradient_bar_widget.addItem(self.colorbar)
         # self.color_gradient_bar_widget.setBackground("w")
@@ -197,7 +244,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalSlider_size_barbs.valueChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         
         self.graph_tab2D.scene().sigMouseClicked.connect(lambda event: self.on_2D_point_clicked(event, self.flight, self.graph_tab2D, self.tableWidget_flights_plot2D, self.tableWidget_data_point_tab2D, self.label_table_data))
-        
+
         # Map
     
         map_overlay = OSMTileOverlay(
@@ -205,7 +252,14 @@ class MainWindow(QtWidgets.QMainWindow):
         tile_url="https://tile.opentopomap.org/{z}/{x}/{y}.png",
         user_agent="VVA User (felixaubourg@gmail.com)",
         )
-    
+        
+        self.horizontalSlider_set_opacity.setSliderPosition(50)
+
+        self.radioButton_background_map.toggled.connect(lambda toggle: map_overlay.display_tiles(toggle))
+        self.radioButton_background_map.toggled.connect(lambda toggle: self.widget_opacity.setEnabled(toggle))
+        self.radioButton_background_map.toggled.connect(lambda : map_overlay.set_opacity(self.horizontalSlider_set_opacity.value() / 100.0))
+        self.horizontalSlider_set_opacity.valueChanged.connect(lambda v: map_overlay.set_opacity(v / 100.0))
+
         """
         Widgets tab POLAR
         """
@@ -220,6 +274,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableView_polar_points.resizeColumnsToContents()
         self.tableView_polar_points.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
         self.tableView_polar_points.cellClicked.connect(lambda row, column: self.on_table_cell_clicked(row, self.flight, self.comboBox_flight_select_polartab, self.tableView_polar_points, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.pushButton_remove_polar_point))
+        
         self.graph_tabpolar_vxvz.setBackground("w")
         self.graph_tabpolar_vxvz.setXRange(0, 30, padding=0)
         self.graph_tabpolar_vxvz.setYRange(-10, 2, padding=0)
@@ -304,7 +359,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalSlider_sproj.setSliderPosition(20) 
         self.horizontalSlider_auw.setSliderPosition(90) 
         self.horizontalSlider_ar.setSliderPosition(60) 
-        self.horizontalSlider_ias_comp.setSliderPosition(0) 
+        self.horizontalSlider_ias_comp.setSliderPosition(0)
+        
         
         self.horizontalSlider_sproj.valueChanged.connect(lambda sproj: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), sproj, self.widget_harness_polar , self.polar_generated_curve, self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         self.horizontalSlider_auw.valueChanged.connect(lambda auw: update_polar_generator_values(auw, self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve,self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
@@ -335,13 +391,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda choice: self.populate_combobox_variable(self.flight, self.comboBox_variable_select_atmtab, choice, 'emagram'))
         
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_atmtab_timeserie, None))
-        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.widget_19, self.comboBox_flight_select_atmtab ))
+        #self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.widget_19, self.comboBox_flight_select_atmtab ))
         
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
-        self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : update_emagram_graph(self.flight, self.widget_19, self.comboBox_flight_select_atmtab))   
+        #self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : update_emagram_graph(self.flight, self.widget_19, self.comboBox_flight_select_atmtab))   
+    
     def resource_path(self, relative_path):
         """
         Get absolute path to resource (for PyInstaller and development) 
@@ -634,42 +691,15 @@ class MainWindow(QtWidgets.QMainWindow):
             elif flight['is_data_processed'] and combo_box_flight.findText(alias) < 0:
                 combo_box_flight.addItem(f"{alias}")
                 
-    def populate_combobox_1D_variable(self, flight_dic, list1, list2, choice):
-
-        list1.clear()
-        list2.clear()
-        for row, flight in enumerate(flight_dic):
-            if (flight['file_name'].split(".")[0] == choice) or (flight['metadata']['alias'] == choice):
-                if flight['is_data_processed'] and flight['data']:
-                    for index, variable in enumerate(flight['data']):
-                        if variable != 'GNSS_time':                       
-                            if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
-                                item1 = QListWidgetItem(variable)
-                                item1.setFlags(
-                                    item1.flags() | Qt.ItemFlag.ItemIsUserCheckable
-                                )
-                            
-                                item1.setCheckState(Qt.CheckState.Unchecked)
-                                
-                                item2 = QListWidgetItem(variable)
-                                item2.setFlags(
-                                    item2.flags() | Qt.ItemFlag.ItemIsUserCheckable
-                                )
-                            
-                                item2.setCheckState(Qt.CheckState.Unchecked)
-                            
-                                list1.addItem(item1)
-                                list2.addItem(item2)
-                            
+    
             
    
         
-    def handle_checkboxes_on_widgetlist_1D(self, list_widget):
+    def handle_checkboxes_on_table_1D(self, table_widget):
         """
         This function handles what variables can be displayed on the same graph
         relative to their scale (same group only, max 2 variables)
         """
-    
         var_to_unit_group_dic = {
             "heading": ["compass_head", "GNSS_head", "wind_origin"],
             "speed": ["GNSS_speed", "vario", "wind_vel", "IAS", "VarioIAS", "TAS", "netto"],
@@ -679,7 +709,6 @@ class MainWindow(QtWidgets.QMainWindow):
             "pressure": ["DP", "P_stat", "AirES", "AirE"]
         }
     
-
         var_to_group = {
             var: group
             for group, variables in var_to_unit_group_dic.items()
@@ -688,60 +717,63 @@ class MainWindow(QtWidgets.QMainWindow):
     
         max_number_plot = 2
     
-        list_widget.blockSignals(True)
+        table_widget.blockSignals(True)
     
-        item_checked = []
-        for i in range(list_widget.count()):
-            item = list_widget.item(i)
-            if item.checkState() == Qt.CheckState.Checked:
-                item_checked.append(item)
+        #  récupérer les items cochés
+        items_checked = []
+        for row in range(table_widget.rowCount()):
+            item = table_widget.item(row, 0)
+            if item and item.checkState() == Qt.CheckState.Checked:
+                items_checked.append(item)
     
-        for i in range(list_widget.count()):
-            item = list_widget.item(i)
-            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            item.setBackground(QBrush(QColor("white")))
+        #  reset état de tous les items
+        for row in range(table_widget.rowCount()):
+            item = table_widget.item(row, 0)
+            if item:
+                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                item.setBackground(QBrush(QColor("white")))
+                item.setToolTip("")
     
-        if len(item_checked) == 0:
-            list_widget.blockSignals(False)
+        if len(items_checked) == 0:
+            table_widget.blockSignals(False)
             return
     
-        first_var = item_checked[0].text()
+        first_var = items_checked[0].text()
         first_group = var_to_group.get(first_var)
-        
-        
-        if first_group is None:
-            for i in range(list_widget.count()):
-                item = list_widget.item(i)
     
-                if item.checkState() != Qt.CheckState.Checked:
+        # variable sans groupe
+        if first_group is None:
+            for row in range(table_widget.rowCount()):
+                item = table_widget.item(row, 0)
+                if item and item.checkState() != Qt.CheckState.Checked:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
                     item.setBackground(QBrush(QColor(240, 240, 240)))
                     item.setToolTip("Variable without unit group → single selection only")
     
-            list_widget.blockSignals(False)
+            table_widget.blockSignals(False)
             return
     
-        if len(item_checked) == 1:
+        #  1 seule variable cochée
+        if len(items_checked) == 1:
+            for row in range(table_widget.rowCount()):
+                item = table_widget.item(row, 0)
+                if item:
+                    var = item.text()
+                    if var_to_group.get(var) != first_group:
+                        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+                        item.setBackground(QBrush(QColor(240, 240, 240)))
     
-            for i in range(list_widget.count()):
-                item = list_widget.item(i)
-                var = item.text()
-    
-                if var_to_group.get(var) != first_group: #If the item
+        #  max atteint
+        elif len(items_checked) >= max_number_plot:
+            for row in range(table_widget.rowCount()):
+                item = table_widget.item(row, 0)
+                if item and item.checkState() != Qt.CheckState.Checked:
                     item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
                     item.setBackground(QBrush(QColor(240, 240, 240)))
     
-        elif len(item_checked) >= max_number_plot:
-    
-            for i in range(list_widget.count()):
-                item = list_widget.item(i)
-    
-                if item.checkState() != Qt.CheckState.Checked:
-                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
-                    item.setBackground(QBrush(QColor(240, 240, 240)))
-    
-        list_widget.blockSignals(False)
-    
+        table_widget.blockSignals(False)
+        
+        
     def populate_flight_table_tab_2D(self, flight_dic, table_widget, plot_widget):
         """
         Populating the flight table according to flights that are processed
@@ -898,18 +930,21 @@ class MainWindow(QtWidgets.QMainWindow):
         distances = []
         for i, flight in enumerate(flight_dic):
             if (flight['file_name'].split(".")[0] == combobox_flight.currentText()) or (flight['metadata']['alias'] == combobox_flight.currentText()):
-                for index, roi_data in enumerate(flight['plot']['roi_polar']):
-                    x_click = click_pos.x()
-                    y_click = click_pos.y()
-                    x_point = roi_data[2]
-                    y_point = roi_data[3]
-                    d = np.absolute(np.sqrt(np.add((np.square(np.subtract(x_click, x_point))), np.square(np.subtract(y_click, y_point)))))
-                    distances.append(d)
-                
-                distance_closer = min(distances)
-                if distance_closer <= 0.5:
-                    index_closer = distances.index(min(distances))
-                    plot.highlights_polar_tab(index_closer, flight, table_polar_points, plot_widget_vxvz)
+                if flight['plot']['roi_polar']:
+                    for index, roi_data in enumerate(flight['plot']['roi_polar']):
+                        x_click = click_pos.x()
+                        y_click = click_pos.y()
+                        x_point = roi_data[2]
+                        y_point = roi_data[3]
+                        d = np.absolute(np.sqrt(np.add((np.square(np.subtract(x_click, x_point))), np.square(np.subtract(y_click, y_point)))))
+                        distances.append(d)
+                    
+                    distance_closer = min(distances)
+                    if distance_closer <= 0.5:
+                        index_closer = distances.index(min(distances))
+                        plot.highlights_polar_tab(index_closer, flight, table_polar_points, plot_widget_vxvz)
+                    else:
+                        return
                 else:
                     return
                 
@@ -917,12 +952,12 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         This function displays crosshair to the closest point where the user clicked
         It also retrieves the corresponding flight and displays its value on the data table
+        Remove previous crosshair from other flights aswell 
         """
-
         table_data.setRowCount(0)        
         
         vb = plot_widget.getViewBox()
-        click_pos = vb.mapSceneToView(event.scenePos())
+        click_pos = event.scenePos()
         flight_selected = plot.get_flight_variable_2D(table_flight)
         plausible_flight = []
         if len(flight_selected) == 0:
@@ -937,25 +972,29 @@ class MainWindow(QtWidgets.QMainWindow):
                     best_index = None
                     best_flight = None
                     for index in range(len(flight['data']['GNSS_lat'])):
+                        
                         x_point = flight['data']['GNSS_lon'][index]
                         y_point = flight['data']['GNSS_lat'][index]
-                        
-                        dist = np.sqrt((x_click - x_point)**2 + (y_click - y_point)**2)
+                        point_scene = vb.mapViewToScene(QtCore.QPointF(x_point, y_point))
+
+                        dist = np.sqrt((x_click - point_scene.x())**2 + (y_click - point_scene.y())**2)
 
                         if dist < best_dist:
                             best_dist = dist
                             best_index = index
                             best_flight = flight['file_name'].split(".")[0]
+                            
                     plausible_flight.append([best_dist, best_index, best_flight])
+      
         
         if plausible_flight:
             best = min(plausible_flight, key=lambda x: x[0])
             best_dist, best_index, best_flight = best
             
-            if best_dist < 0.0015: #if the distance clicked is beyond 20 meters
+            if best_dist < 20: #if the distance clicked is beyond 20 pixels
                 for flight in flight_dic:
                     if (flight['file_name'].split(".")[0] == best_flight) or (flight['metadata']['alias'] == best_flight):
-                        label_table_data.setText(f"Data {flight['file_name'].split('.')[0]}")
+                        label_table_data.setText(f"Data from flight : {self.get_alias(flight['file_name'].split('.')[0])}")
                         row = 0
                         for variable in flight['data']: #creating table
                             if isinstance(flight['data'][variable], np.ndarray) and len(flight['data'][variable]) > 0 :
@@ -979,48 +1018,161 @@ class MainWindow(QtWidgets.QMainWindow):
                                 table_data.setItem(row, 2, item_unit)
                                 
                                 row += 1
-                        #setting the crosshair
-                        if flight['plot']['crosshair_v_map']:
-                            flight['plot']['crosshair_v_map'].setValue(float(flight['data']['GNSS_lon'][best_index]))
-                            flight['plot']['crosshair_h_map'].setValue(float(flight['data']['GNSS_lat'][best_index]))
+                        #setting the point to Highlight 
+                        if flight['plot'].get('highlight_point_map'):
+                            # Déjà existant → on met à jour
+                            flight['plot']['highlight_point_map'].setData([float(flight['data']['GNSS_lon'][best_index])], [float(flight['data']['GNSS_lat'][best_index])])
                         else:
-                            
-                            pen = pg.mkPen(flight['plot']['plot_color'], width=0.8, style=QtCore.Qt.PenStyle.DashLine
+                            # Création du point highlight
+                            scatter = pg.ScatterPlotItem(
+                                x=[float(flight['data']['GNSS_lon'][best_index])],
+                                y=[float(flight['data']['GNSS_lat'][best_index])],
+                                size=6,  
+                                pen=pg.mkPen('black', width=2),   # contour
+                                brush=pg.mkBrush(255, 0, 0, 180), # rouge semi-transparent
+                                symbol='o'
                             )
                         
-                            crosshair_v = pg.InfiniteLine(
-                                angle=90,
-                                movable=False,
-                                pen = pen
-                             
-                            )
-                            
-                            crosshair_h = pg.InfiniteLine(
-                                angle=0,
-                                movable=False,
-                                pen = pen
-                              
-                            )
-                        
-                            plot_widget.addItem(crosshair_v, ignoreBounds=True)
-                            plot_widget.addItem(crosshair_h, ignoreBounds=True)
-                            flight['plot']['crosshair_v_map'] = crosshair_v
-                            flight['plot']['crosshair_h_map'] = crosshair_h
-                            flight['plot']['crosshair_v_map'].setValue(float(flight['data']['GNSS_lon'][best_index]))
-                            flight['plot']['crosshair_h_map'].setValue(float(flight['data']['GNSS_lat'][best_index]))
+                            plot_widget.addItem(scatter)
+                            flight['plot']['highlight_point_map'] = scatter
             else:
                 for flight in flight_dic:
                     if flight['file_name'].split(".")[0] == best_flight:
                         table_data.clearContents()
+                        label_table_data.setText("Data from flight :")
+                        if flight['plot'].get('highlight_point_map'):
+                            plot_widget.removeItem(flight['plot']['highlight_point_map'])
+                            flight['plot']['highlight_point_map'] = None
+    
+
+            
+        
+    def on_1D_point_clicked(self, event, flight_dic, plot_widget, combobox_flight, table_data):
+        """
+        This function displays crosshair to the closest point where the user clicked
+        It also retrieves the corresponding flight and displays its value on the data table
+        Remove previous crosshair from other flights aswell 
+        """
+
+            
+        crosshair_id = plot_widget.crosshair_id
+        vb = plot_widget.getViewBox()
+        
+        click_pos = event.scenePos()
+        flight_selected = combobox_flight.currentText()
+        variables_checked = plot.get_checked_variables(table_data)
+
+        for flight in flight_dic:
+            if (flight['file_name'].split(".")[0] == flight_selected) or (flight['metadata']['alias'] == flight_selected):
+                x_click = click_pos.x()
+                y_click = click_pos.y()
+                
+                best_dist = float('inf')
+                best_index = None
+                best_variable = None
+                
+                closest_variable = [] 
+                for variable in variables_checked:
+             
+                    for index in range(len(flight['data'][variable])):
+                        x_point = flight['data']['GNSS_time'][index].timestamp()
+                        y_point = convert_array_to_unit(flight['data'][variable][index], variable)
+                        point_scene = vb.mapViewToScene(QtCore.QPointF(x_point, y_point))
                         
-                        if flight['plot']['crosshair_v_map']:
-                            plot_widget.removeItem(flight['plot']['crosshair_v_map'])
-                            plot_widget.removeItem(flight['plot']['crosshair_h_map'])
-                            flight['plot']['crosshair_v_map'] = None
-                            flight['plot']['crosshair_h_map'] = None
+                        #Computing virtual distance between click and the curve displayed . Get the relative distance in pixel
+                        dist = np.sqrt((x_click - point_scene.x())**2 + (y_click - point_scene.y())**2)
+              
+                        if dist < best_dist:
+                            best_dist = dist
+                            best_index = index
+                
+                    closest_variable.append([best_dist, best_index, variable])
+                
+                # if flight['plot']['crosshair_v_map']:
+                #     plot_widget.removeItem(flight['plot']['crosshair_v_map'])
+                #     plot_widget.removeItem(flight['plot']['crosshair_h_map'])
+        
+                if closest_variable:
+                    best = min(closest_variable, key=lambda x: x[0])
+                    best_dist, best_index, best_variable = best
                     
+
+                    if best_dist < 10: #if the distance clicked is beyond 30 pixels
+                        for f in flight_dic:
+                            if (f['file_name'].split(".")[0] == flight_selected) or (f['metadata']['alias'] == flight_selected):
+                                for row in range(table_data.rowCount()): #Updating table content
+                                    variable_already_set = table_data.item(row, 0).text()  
+                                    data = convert_array_to_unit(f['data'][variable_already_set], variable_already_set)
+                                    if isinstance(data[best_index], float):
+                                        item_value = QTableWidgetItem(str(round(data[best_index],2)))
+                                    else:
+                                        item_value = QTableWidgetItem(str(data[best_index]))
+                                    item_value.setFlags(item_value.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                                    table_data.setItem(row, 1, item_value)
+                                    
+                                    item_unit = QTableWidgetItem(get_unit(variable_already_set))
+                                    item_unit.setFlags(item_unit.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                                    table_data.setItem(row, 2, item_unit)
+                                    
+                                #setting the crosshair
+                                if f['plot'][f'crosshair_v_time_{crosshair_id}']:
+                                    f['plot'][f'crosshair_v_time_{crosshair_id}'].setValue(float(f['data']['GNSS_time'][best_index].timestamp()))
+                                    f['plot'][f'crosshair_h_time_{crosshair_id}'].setValue(convert_array_to_unit(float(f['data'][best_variable][best_index]),best_variable))
+                                    
+                                else:
+                                    
+                                    pen = pg.mkPen(QColor(0,0,0), width=1, style=QtCore.Qt.PenStyle.DashLine)
+                                
+                                    crosshair_v = pg.InfiniteLine(
+                                        angle=90,
+                                        movable=False,
+                                        pen = pen
+                                     
+                                    )
+                                    
+                                    crosshair_h = pg.InfiniteLine(
+                                        angle=0,
+                                        movable=False,
+                                        pen = pen
+                                      
+                                    )
+                                
+                                    plot_widget.addItem(crosshair_v, ignoreBounds=True)
+                                    plot_widget.addItem(crosshair_h, ignoreBounds=True)
+                                    f['plot'][f'crosshair_v_time_{crosshair_id}'] = crosshair_v
+                                    f['plot'][f'crosshair_h_time_{crosshair_id}'] = crosshair_h
+                                    f['plot'][f'crosshair_v_time_{crosshair_id}'].setValue(float(f['data']['GNSS_time'][best_index].timestamp()))
+                                    f['plot'][f'crosshair_h_time_{crosshair_id}'].setValue(convert_array_to_unit(float(f['data'][best_variable][best_index]),best_variable))
+                    else:
+                        for row in range(table_data.rowCount()): # Clearing the table contents
+                            
+                            table_data.setItem(row, 1, QTableWidgetItem(""))
+                            table_data.setItem(row, 2, QTableWidgetItem(""))
+                       
+                        if flight['plot'][f'crosshair_v_time_{crosshair_id}']:
+                            plot_widget.removeItem(flight['plot'][f'crosshair_v_time_{crosshair_id}'])
+                            plot_widget.removeItem(flight['plot'][f'crosshair_h_time_{crosshair_id}'])
+                            flight['plot'][f'crosshair_v_time_{crosshair_id}'] = None
+                            flight['plot'][f'crosshair_h_time_{crosshair_id}'] = None
                         
-                        
+    def on_item_table_1D_changed(self, item):
+        """
+        This function is here to filter which item has been changed from the table 1D 
+        if it is a checkbox, then there will be an update of the graph
+        otherwise, we do nothing to minimize computing each time a cell is changed
+        """
+        if item.column() != 0:
+            return
+    
+        if not (item.flags() & Qt.ItemFlag.ItemIsUserCheckable):
+            return
+        
+        plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.graph1_tab1D, self.curve_1D_11,self.curve_1D_12)
+        plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2, self.graph2_tab1D, self.curve_1D_21,self.curve_1D_22)
+        plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2)
+        self.handle_checkboxes_on_table_1D(self.tableWidget_variable_plot2)
+        self.handle_checkboxes_on_table_1D(self.tableWidget_variable_plot1)
+        
     def get_alias(self, flight_name):
         for flight in self.flight:
       
