@@ -73,7 +73,7 @@ def update_1D_plot(flight_dic, comboBox_flight , table_widget, plot_widget, curv
                 pen=pen1,
                 symbol='o',
                 symbolSize=5,
-                symbolBrush=(0, 0, 0, 0),  # invisible
+                symbolBrush='b',  # invisible
                 symbolPen=None
             )
             
@@ -349,7 +349,7 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
 
             
             if not variable:
-                pen = pg.mkPen(flight['plot']['plot_color'], width=2)
+                pen = pg.mkPen('r', width=2)
 
                 flight['plot']['scatter_map'] = plot_widget.plot(
                     x=x,
@@ -423,7 +423,8 @@ def update_wind_barbs_2D(flight_dic, table_widget_flight, plot_widget, radiobutt
     """
     
     settings.beginGroup("colors")
-    color = QColor(settings.value("windbarbs"))
+    # color = QColor(settings.value("windbarbs")) NE FONCTIONNE PAS CHEZ QUENTIN 
+    color = QColor(0,0,0)
     settings.endGroup()
     density = slider_density.value()
     size_coeff = slider_size.value()

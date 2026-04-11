@@ -161,12 +161,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2, self.graph2_tab1D, self.curve_1D_21,self.curve_1D_22))
 
         
-        # self.tableWidget_variable_plot1.itemChanged.connect(lambda: self.handle_checkboxes_on_table_1D(self.tableWidget_variable_plot1))
-        # self.tableWidget_variable_plot1.itemChanged.connect(lambda: plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2))
+ 
         self.tableWidget_variable_plot1.itemChanged.connect(lambda item: self.on_item_table_1D_changed(item))
-        
-        # self.tableWidget_variable_plot2.itemChanged.connect(lambda: self.handle_checkboxes_on_table_1D(self.tableWidget_variable_plot2))
-        # self.tableWidget_variable_plot2.itemChanged.connect(lambda: plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2))
         self.tableWidget_variable_plot2.itemChanged.connect(lambda item: self.on_item_table_1D_changed(item))
         
         self.checkBox_x_axis_link.stateChanged.connect(lambda: plot.toggle_x_link(self.graph1_tab1D, self.graph2_tab1D, self.checkBox_x_axis_link))
@@ -1185,6 +1181,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 
     def on_button_windbarbs(self, toggle, widget_wind):
         widget_wind.setEnabled(toggle)
+        
+        
+    def on_mouse_hovering(self, point_list):
+        print(point_list)
         
 if __name__ == "__main__":
    #try:
