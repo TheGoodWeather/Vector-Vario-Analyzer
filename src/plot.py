@@ -11,7 +11,6 @@ import math
 import pprint
 
 settings = QSettings("Vector Vario", "VVA") #Initialize settings
-
 pg.setConfigOptions(useOpenGL=True)
 pg.setConfigOptions(antialias=True)
 
@@ -330,17 +329,6 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
 
             x = flight['data']['GNSS_lon']
             y = flight['data']['GNSS_lat']
-            # min_lon = np.min(x)
-            # max_lon = np.max(x)
-            # min_lat = np.min(y)
-            # max_lat = np.max(y)
-            
-            # # #changing the aspect ratio without using setAspectLocked because it creates weird bug display with crosshairs
-            # plot_widget.getViewBox().setRange(
-            # xRange=[min_lon - 0.01, max_lon + 0.01],
-            # yRange=[min_lat - 0.01, max_lat + 0.01],
-            # padding=0.05
-            # )
 
             # REMOVE ancien plot UNE FOIS
             if flight['plot']['scatter_map']:
@@ -423,8 +411,7 @@ def update_wind_barbs_2D(flight_dic, table_widget_flight, plot_widget, radiobutt
     """
     
     settings.beginGroup("colors")
-    # color = QColor(settings.value("windbarbs")) NE FONCTIONNE PAS CHEZ QUENTIN 
-    color = QColor(0,0,0)
+    color = QColor(settings.value("windbarbs", "#000000")) #default color is black  
     settings.endGroup()
     density = slider_density.value()
     size_coeff = slider_size.value()
@@ -533,7 +520,6 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
     It also load the existing ROI
     Used both in Polar and Emagram tab
     """
-    
     variable = combobox_var.currentText()
     if not variable:
         plot_widget.clear()
@@ -567,12 +553,13 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
         plot_widget.setLabel("left", f"{variable} {get_unit(variable)}")
         plot_widget.setTitle(f"{variable}")
         plot_widget.addLegend()
-        plot_widget.enableAutoRange(False)
 
         pen = pg.mkPen(flight['plot']['plot_color'], width=1)
         plot_widget.plot(x, y, pen=pen, name=variable)
+        
+        if flight['plot']['roi_emagram']:
+            plot_widget.addItem(flight['plot']['roi_emagram'])
 
-        plot_widget.autoRange()
 
         break  
 
@@ -657,15 +644,28 @@ def load_polar_roi(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_w
                     roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp))
         update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp)
 
-def load_emagram_roi(flight_dic, plot_widget_time, plot_widget_emagram, combobox_flight):
-    plot_widget_time.clear()
+def load_emagram_roi(flight_dic, plot_widget_time, widget_emagram, combobox_flight):
+
     for flight in flight_dic:
-        if flight['is_data_processed']:
-            if len(flight['plot']['roi_emagram']) > 0:
-                for roi in flight['plot']['roi_emagram']:
-                    plot_widget_time.addItem(roi)
-                    roi.sigRegionChanged.connect(lambda : update_emagram_values(flight_dic, plot_widget_emagram))
-        update_emagram_values(flight_dic, plot_widget_emagram)
+        if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():
+            if flight['plot']['roi_emagram']: #If there is already a ROI saved, we create the roi 
+
+                plot_widget_time.addItem(flight['plot']['roi_emagram'])
+            else: #if no ROI exists yet, we create a new one by default
+
+                x_min_default = int(len(flight['data']['GNSS_time'])/2 - (0.2 *len(flight['data']['GNSS_time'])))
+                x_max_default = int(len(flight['data']['GNSS_time'])/2 + (0.2 *len(flight['data']['GNSS_time'])))
+                x_bound_max_default = len(flight['data']['GNSS_time'])
+                x_bound_min_default = 1                          
+                roi = pg.LinearRegionItem(values=(x_min_default,x_max_default ), bounds=(x_bound_min_default,x_bound_max_default ))
+                roi.setMovable(True)
+                roi.setBrush(QColor(100, 100, 100, 25)) 
+                roi.setZValue(10)  # Stay on top
+                plot_widget_time.addItem(roi)
+                roi.sigRegionChanged.connect(lambda roi_item, f=flight: widget_emagram.update(f))
+                flight['plot']['roi_emagram'] = roi
+            
+            widget_emagram.update(flight)
 
 def remove_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz, ias_comp):
     row = table_polar_widget.currentRow() #the row selected 
@@ -722,20 +722,7 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
     create_polar_table(flight_dic, table_widget, combobox_flight)
     update_vxvz_graph(flight_dic, plot_widget, legend_vxvz)
         
-def update_emagram_values(flight_dic, plot_widget_emagram):
-    for row, flight in enumerate(flight_dic):
-        # if flight['file_name'].split(".")[0] == combobox_flight.currentText():
-        if flight['is_data_processed']:
-            if len(flight['plot']['roi_emagram']) > 0:
-                for roi in flight['plot']['roi_emagram']:
-                    x_min, x_max = roi.getRegion()
-                    if x_min != x_max:
-                        with np.errstate(divide='ignore', invalid='ignore'):
-                            print(x_min)
-                            print(x_max)
-                            
-    #update_emagram_graph(flight_dic, plot_widget_emagram)
-    
+
     
 def display_rois(flight_dic, plot_widget, combobox_flight, tab):
     """
@@ -870,43 +857,3 @@ def remove_crosshair(flight_dic, plot_widget, crosshair):
             flight['plot'][f'crosshair_h_{crosshair}'] = None
                 
 
-
-# def lock_aspect(plot_widget):
-#     # if self._aspect_updating:
-#     #     return
-
-#     # self._aspect_updating = True
-
-#     view = plot_widget.getViewBox()
-#     (x_min, x_max), (y_min, y_max) = view.viewRange()
-#     print(view.viewPixelSize())
-#     width  = x_max - x_min
-#     height = y_max - y_min
-
-#     # if width == 0 or height == 0:
-#     #     # self._aspect_updating = False
-#     #     return
-
-#     # 👉 centre
-#     cx = (x_min + x_max) / 2
-#     cy = (y_min + y_max) / 2
-
-#     # 🌍 correction géographique (IMPORTANT pour tes tuiles)
-#     lat_center = cy
-#     scale = math.cos(math.radians(lat_center))
-#     target_ratio = 1.0 / scale
-
-#     current_ratio = width / height
-
-#     if current_ratio > target_ratio:
-#         width = height * target_ratio
-#     else:
-#         height = width / target_ratio
-
-#     view.setRange(
-#         xRange=(cx - width / 2, cx + width / 2),
-#         yRange=(cy - height / 2, cy + height / 2),
-#         padding=0
-#     )
-
-#     # self._aspect_updating = False

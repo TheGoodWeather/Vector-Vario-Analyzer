@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1228</width>
+    <width>873</width>
     <height>857</height>
    </rect>
   </property>
@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="inexport_tab">
        <attribute name="title">
@@ -1231,6 +1231,37 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="PlotWidget" name="graph_skewt">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="cursor" stdset="0">
+              <cursorShape>ArrowCursor</cursorShape>
+             </property>
+             <property name="mouseTracking">
+              <bool>true</bool>
+             </property>
+             <property name="tabletTracking">
+              <bool>true</bool>
+             </property>
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
+             <property name="frameShape">
+              <enum>QFrame::Box</enum>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Plain</enum>
+             </property>
+             <property name="interactive">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -1250,7 +1281,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1228</width>
+     <width>873</width>
      <height>26</height>
     </rect>
    </property>

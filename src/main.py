@@ -14,7 +14,7 @@ from moulinette_worker import MoulinetteWorker
 from pyqtgraph import ErrorBarItem 
 import pyqtgraph as pg
 from export import export_file_csv, export_file_kml
-from plot_emagram import update_emagram_graph
+from plot_emagram import SkewTWidget
 import sys
 from units import get_unit, convert_array_to_unit
 from overlay_map import OSMTileOverlay
@@ -25,6 +25,7 @@ import pprint
 import numpy as np
 from preference_windows import UnitDialog, ColorDialog
 import plot 
+
 
 SOFTWARE_VERSION = "1.0.0"
 OPEN = 0.0389250
@@ -378,6 +379,9 @@ class MainWindow(QtWidgets.QMainWindow):
         Widgets tab EMAGRAM
         """
         
+        self.skewt = SkewTWidget(self.graph_skewt)
+        
+        
         self.graph_atmtab_timeserie.setBackground("w")
         self.graph_atmtab_timeserie.setLabel("bottom", "Sample")
         self.graph_atmtab_timeserie.addLegend()
@@ -387,13 +391,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda choice: self.populate_combobox_variable(self.flight, self.comboBox_variable_select_atmtab, choice, 'emagram'))
         
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_atmtab_timeserie, None))
-        #self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.widget_19, self.comboBox_flight_select_atmtab ))
+        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.skewt, self.comboBox_flight_select_atmtab ))
         
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
-        self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
-        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
-        #self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : update_emagram_graph(self.flight, self.widget_19, self.comboBox_flight_select_atmtab))   
+        #self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
     
     def resource_path(self, relative_path):
         """
