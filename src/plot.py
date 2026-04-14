@@ -61,10 +61,23 @@ def update_1D_plot(flight_dic, comboBox_flight , table_widget, plot_widget, curv
             
     
             x = np.array([t.timestamp() for t in flight['data']['GNSS_time']])
-           
             y1 = convert_array_to_unit(flight['data'][variables[0]], variables[0])
+            x_min_limit= np.min(x) - 10
+            x_max_limit= np.max(x) + 10 
+            # y1_min_limit= int(np.min(y1) - (0.1 * (np.max(y1) - np.min(y1))))
+            # y1_max_limit= int(np.max(y1) + (0.1 * (np.max(y1) - np.min(y1)))) 
+            y1_min_limit= np.min(y1) - (0.1 * (np.max(y1) - np.min(y1)))
+            y1_max_limit= np.max(y1) + (0.1 * (np.max(y1) - np.min(y1)))
+
             plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])}")
             plot_widget.setTitle(f"{variables[0]} vs time")
+            plot_widget.setLimits(
+                xMin=x_min_limit,
+                xMax=x_max_limit,
+                yMin=y1_min_limit,
+                yMax=y1_max_limit
+            )
+            
             pen1 = pg.mkPen(flight['plot']['plot_color'], width=1)
             legend.addItem(curve1, variables[0])
             curve1.setPen(pen1)
@@ -72,16 +85,27 @@ def update_1D_plot(flight_dic, comboBox_flight , table_widget, plot_widget, curv
                 pen=pen1,
                 symbol='o',
                 symbolSize=5,
-                symbolBrush='b',  # invisible
+                symbolBrush=(0, 0, 0, 0),  # invisible
                 symbolPen=None
             )
             
             
             if len(variables) > 1:
-
+                
                 y2 = convert_array_to_unit(flight['data'][variables[1]], variables[1])
+                y2_min_limit= np.min(y2) - (0.1 * (np.max(y2) - np.min(y2)))
+                y2_max_limit= np.max(y2) + (0.1 * (np.max(y2) - np.min(y2)))
+                y_min_limit= min(y2_min_limit, y1_min_limit)
+                y_max_limit= max(y2_max_limit, y1_max_limit)
+                
                 plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])} / {variables[1]} {get_unit(variables[1])}")
                 plot_widget.setTitle(f"{variables[0]} and {variables[1]} vs time")
+                plot_widget.setLimits(
+                    xMin=x_min_limit,
+                    xMax=x_max_limit,
+                    yMin=y_min_limit,
+                    yMax=y_max_limit
+                )
                 pen2 = pg.mkPen(flight['plot']['plot_color'].darker(), width=1)
                 legend.addItem(curve2, variables[1])
                 curve2.setPen(pen2)
@@ -566,6 +590,7 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
 def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz, ias_comp):
     """
     Creating a new ROI -> meaning a new polar point
+    Used only in polar tab
     """
     for row, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():
@@ -645,7 +670,10 @@ def load_polar_roi(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_w
         update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp)
 
 def load_emagram_roi(flight_dic, plot_widget_time, widget_emagram, combobox_flight):
-
+    """
+    this function is called when a new emagram is displayed. it retrieves the previous roi if they already exists
+    or create a new one , and save it to the dic
+    """
     for flight in flight_dic:
         if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():
             if flight['plot']['roi_emagram']: #If there is already a ROI saved, we create the roi 
@@ -727,6 +755,7 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
 def display_rois(flight_dic, plot_widget, combobox_flight, tab):
     """
     This function keeps the existings rois displayed even though we change the variable or the flight
+    Used only in Polar Tab
     """
     for row, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():

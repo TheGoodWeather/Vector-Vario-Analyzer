@@ -396,7 +396,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         #self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
-    
+        
+        self.checkBox_isotherm.stateChanged.connect(
+            lambda state: self.skewt.set_background_visibility(isotherms=bool(state)))
+        
+        self.checkBox_isobar.stateChanged.connect(
+            lambda state: self.skewt.set_background_visibility(isobars=bool(state)))
+        
+        self.checkBox_dryadia.stateChanged.connect(
+            lambda state: self.skewt.set_background_visibility(dry_adiabats=bool(state)))
+        
+        self.checkBox_moist_adia.stateChanged.connect(
+            lambda state: self.skewt.set_background_visibility(moist_adiabats=bool(state)))
+        
+        self.checkBox_mixing_ratio.stateChanged.connect(
+            lambda state: self.skewt.set_background_visibility(mixing_ratio=bool(state)))   
+        
+        self.checkBox_isotherm.setCheckState(Qt.CheckState.Checked)
+        self.checkBox_isobar.setCheckState(Qt.CheckState.Checked)
+
+
+        
     def resource_path(self, relative_path):
         """
         Get absolute path to resource (for PyInstaller and development) 
