@@ -397,11 +397,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         #self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
         
-        self.checkBox_isotherm.stateChanged.connect(
-            lambda state: self.skewt.set_background_visibility(isotherms=bool(state)))
+        self.checkBox_isotherm.stateChanged.connect(lambda state: self.horizontalSlider_isotherm.setEnabled(state))
+        self.checkBox_dryadia.stateChanged.connect(lambda state: self.horizontalSlider_dry_adia.setEnabled(state))
+        self.checkBox_moist_adia.stateChanged.connect(lambda state: self.horizontalSlider_moist_adia.setEnabled(state))
+        self.checkBox_windbarbs_atm.stateChanged.connect(lambda state: self.horizontalSlider_windbarbs_atm.setEnabled(state))
         
-        self.checkBox_isobar.stateChanged.connect(
-            lambda state: self.skewt.set_background_visibility(isobars=bool(state)))
+        
+
+        self.checkBox_isotherm.stateChanged.connect(
+            lambda state: self.skewt.set_background_visibility(isotherms=bool(state)))  
         
         self.checkBox_dryadia.stateChanged.connect(
             lambda state: self.skewt.set_background_visibility(dry_adiabats=bool(state)))
@@ -412,8 +416,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkBox_mixing_ratio.stateChanged.connect(
             lambda state: self.skewt.set_background_visibility(mixing_ratio=bool(state)))   
         
+        self.checkBox_windbarbs_atm.stateChanged.connect(
+            lambda state: self.skewt.set_background_visibility(windbarbs=bool(state)))   
+        
+        self.horizontalSlider_isotherm.valueChanged.connect(lambda v: self.skewt.set_isotherm_step(v, self.checkBox_isotherm.isChecked()))
+        self.horizontalSlider_dry_adia.valueChanged.connect(lambda v: self.skewt.set_dry_adiabat_step(v, self.checkBox_dryadia.isChecked()))
+        self.horizontalSlider_moist_adia.valueChanged.connect(lambda v: self.skewt.set_moist_adiabat_step(v, self.checkBox_moist_adia.isChecked()))
+        self.horizontalSlider_windbarbs_atm.valueChanged.connect(lambda v: self.skewt.set_windbarbs_step(v))
+
+        
         self.checkBox_isotherm.setCheckState(Qt.CheckState.Checked)
-        self.checkBox_isobar.setCheckState(Qt.CheckState.Checked)
+        self.checkBox_dryadia.setCheckState(Qt.CheckState.Unchecked)
+        self.checkBox_moist_adia.setCheckState(Qt.CheckState.Unchecked)
+        self.checkBox_mixing_ratio.setCheckState(Qt.CheckState.Unchecked)
+        self.checkBox_windbarbs_atm.setCheckState(Qt.CheckState.Unchecked)
+
 
 
         
