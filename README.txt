@@ -3,7 +3,7 @@ Flight Data Analyzer v1.0.0
 
 ### Fonctionnement : 
 
-Se référer au manuel utilisateur 
+Se référer au mnuel utilisateur 
 
 
 ### Prérequis pour lancer en python
