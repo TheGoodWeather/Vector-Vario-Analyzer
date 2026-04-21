@@ -441,6 +441,19 @@ def update_wind_barbs_2D(flight_dic, table_widget_flight, plot_widget, radiobutt
     size_coeff = slider_size.value()
     increment = int((density - 1) * (20 - 200) // (100 - 1) + 200) #mapping the res of the slider into a increment that goes to a barb every 20 points to every 200 points  
     flight_selected = get_flight_variable_2D(table_widget_flight)
+    
+    selected_names = {f for f, _ in flight_selected}
+
+    for flight in flight_dic:
+        flight_name = flight['file_name'].split(".")[0]
+        flight_alias = flight['metadata']['alias']
+    
+        if (flight_name not in selected_names) and (flight_alias not in selected_names):
+            if flight['plot']['windbarbs_2D']:
+                for arrow in flight['plot']['windbarbs_2D']:
+                    plot_widget.removeItem(arrow)
+                flight['plot']['windbarbs_2D'] = []
+    
     if len(flight_selected) == 0:
         return
     
@@ -671,29 +684,39 @@ def load_polar_roi(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_w
 
 def load_emagram_roi(flight_dic, plot_widget_time, widget_emagram, combobox_flight):
     """
-    this function is called when a new emagram is displayed. it retrieves the previous roi if they already exists
+    this function is called when a new emagram is displayed. it retrieves the previous roi if it already exists
     or create a new one , and save it to the dic
     """
+    flight_selected = None 
     for flight in flight_dic:
         if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():
-            if flight['plot']['roi_emagram']: #If there is already a ROI saved, we create the roi 
+            flight_selected = flight 
+            break 
+    if not combobox_flight.currentText():
+        return
 
-                plot_widget_time.addItem(flight['plot']['roi_emagram'])
-            else: #if no ROI exists yet, we create a new one by default
 
-                x_min_default = int(len(flight['data']['GNSS_time'])/2 - (0.2 *len(flight['data']['GNSS_time'])))
-                x_max_default = int(len(flight['data']['GNSS_time'])/2 + (0.2 *len(flight['data']['GNSS_time'])))
-                x_bound_max_default = len(flight['data']['GNSS_time'])
-                x_bound_min_default = 1                          
-                roi = pg.LinearRegionItem(values=(x_min_default,x_max_default ), bounds=(x_bound_min_default,x_bound_max_default ))
-                roi.setMovable(True)
-                roi.setBrush(QColor(100, 100, 100, 25)) 
-                roi.setZValue(10)  # Stay on top
-                plot_widget_time.addItem(roi)
-                roi.sigRegionChanged.connect(lambda roi_item, f=flight: widget_emagram.update(f))
-                flight['plot']['roi_emagram'] = roi
-            
-            widget_emagram.update(flight)
+    if flight_selected['plot']['roi_emagram']: #If there is already a ROI saved, we delete it to create a new one. Correct a bug
+        plot_widget_time.removeItem(flight_selected['plot']['roi_emagram'])
+        flight_selected['plot']['roi_emagram'] = None
+    # else: #if no ROI exists yet, we create a new one by default
+
+    x_min_default = int(len(flight_selected['data']['GNSS_time'])/2 - (0.2 *len(flight_selected['data']['GNSS_time'])))
+    x_max_default = int(len(flight_selected['data']['GNSS_time'])/2 + (0.2 *len(flight_selected['data']['GNSS_time'])))
+    x_bound_max_default = len(flight_selected['data']['GNSS_time'])
+    x_bound_min_default = 1                          
+    roi = pg.LinearRegionItem(values=(x_min_default,x_max_default ), bounds=(x_bound_min_default,x_bound_max_default ))
+    roi.setMovable(True)
+    roi.setBrush(QColor(100, 100, 100, 25)) 
+    roi.setZValue(10)  # Stay on top
+    plot_widget_time.addItem(roi)
+    roi.sigRegionChanged.connect(lambda roi_item, f=flight_selected: widget_emagram.update(f))
+    #roi.sigRegionChanged.connect(lambda roi_item: widget_emagram.update(flight_selected))
+
+    flight_selected['plot']['roi_emagram'] = roi
+    
+    widget_emagram.update(flight_selected)
+         
 
 def remove_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz, ias_comp):
     row = table_polar_widget.currentRow() #the row selected 

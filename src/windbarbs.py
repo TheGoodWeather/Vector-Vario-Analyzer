@@ -4,8 +4,6 @@ from utils import mapping
 from PyQt6 import QtCore
 
 class WindBarbs:
-    
-    
     def __init__(self, plot_widget):
         self._n_barbs = 10  # nombre fixe de barbules affichées
         self.plot_widget = plot_widget

@@ -5,6 +5,7 @@ from units import convert_array_to_unit
 from scipy.optimize import brentq 
 from utils import mapping
 from windbarbs import WindBarbs
+from sklearn.linear_model import LinearRegression
 
 L = 2.501e6 # J/kg : latent heat of vaporization at 0°C (2.257 J/kg at 100°C)
 Ra = 287.04  # J/kg : gas constant for dry air
@@ -19,9 +20,11 @@ ezero = 6.112# hPa
 
 
 class SkewTWidget:
-    def __init__(self, plot_widget, P_bot=1013.25, P_b=1013.25, P_t=300., dp=1):
+    def __init__(self, plot_widget, label_gradient, label_atm_state, P_bot=1013.25, P_b=1013.25, P_t=300., dp=1):
         
+        self.gradient_label = label_gradient
         self.plot_widget = plot_widget
+        self.label_atm_state = label_atm_state
         pg.setConfigOptions(antialias=True)
         self.P_bot = P_bot
         self.P_b = P_b
@@ -31,10 +34,19 @@ class SkewTWidget:
         self.cursor_x = 0
         self.cursor_y =1000 #default value for cursor 
         
+        self._legend = self.plot_widget.addLegend(
+        offset=(10, -10),  # position par rapport au coin
+        brush=pg.mkBrush(255, 255, 255, 220),  # fond blanc semi-transparent
+        pen=pg.mkPen((200, 200, 200), width=1)  # bordure grise
+    )
+        
+        self._current_flight = None #Used to keep track of which flight is being displayed
+        
         #Windbarbs
         self.wind_barbs = WindBarbs(plot_widget)
         self.wind_barbs.P_bot = self.P_bot
         
+        self.myreg = LinearRegression()
         
         self._curves_isotherms = []
         self._curves_isobars = []
@@ -76,13 +88,51 @@ class SkewTWidget:
         
         self.plot_widget.addItem(self._curve_isobar_cursor)
         
-        self.label_cursor_therm = pg.TextItem(text="°C", color=(180, 115, 51, 90), anchor=(0.3, 0), fill = pg.mkBrush(255, 255, 255, 180))
+        self.label_cursor_therm = pg.TextItem(text="°C", color=(180, 115, 51, 100), anchor=(0.3, 0), fill = pg.mkBrush(255, 255, 255, 180))
         self.plot_widget.addItem(self.label_cursor_therm)
-        self.label_cursor_bar = pg.TextItem(text="hPa", color=(0,0,0,90), anchor=(0.5, 0), fill = pg.mkBrush(255, 255, 255, 180))
+        self.label_cursor_bar = pg.TextItem(text="hPa", color=(0,0,0,100), anchor=(0.5, 0), fill = pg.mkBrush(255, 255, 255, 180))
         self.plot_widget.addItem(self.label_cursor_bar)
-        self.label_cursor_alt = pg.TextItem(text="m", color=(0,0,0,90), anchor=(0.5, 1), fill = pg.mkBrush(255, 255, 255, 180))
+        self.label_cursor_alt = pg.TextItem(text="m", color=(0,0,0,100), anchor=(0.5, 1), fill = pg.mkBrush(255, 255, 255, 180))
         self.plot_widget.addItem(self.label_cursor_alt)
+        self.label_cursor_adia = pg.TextItem(text="m", color=(0, 180, 0, 100), anchor=(0.5, 1), fill = pg.mkBrush(255, 255, 255, 180))
+        self.plot_widget.addItem(self.label_cursor_adia)
         # self.plot_widget.setYRange(self.P_t, self.P_b, padding=0)
+        
+        #Gradient 
+        self._gradient_reg = self.plot_widget.plot([], [], pen=pg.mkPen(color=(212, 28, 163, 100), width=1, style=QtCore.Qt.PenStyle.SolidLine))
+        self._gradient_reg.setVisible(False)
+        self.gradient_label.setVisible(False)
+        self.label_atm_state.setVisible(False)
+        # Points déplaçables
+        self._reg_handle_min = pg.TargetItem(
+            pos=(0, 0),
+            size=12,
+            symbol='o',
+            pen=pg.mkPen((255, 100, 0), width=2),
+            brush=pg.mkBrush(255, 100, 0, 180),
+            movable=True
+        )
+        self._reg_handle_min.setVisible(False)
+        self._reg_handle_max = pg.TargetItem(
+            pos=(0, 0),
+            size=12,
+            symbol='o',
+            pen=pg.mkPen((255, 100, 0), width=2),
+            brush=pg.mkBrush(255, 100, 0, 180),
+            movable=True
+        )
+        self._reg_handle_max.setVisible(False)
+
+        self._reg_point_min = None  # index dans le profil
+        self._reg_point_max = None
+            
+        self.plot_widget.addItem(self._reg_handle_min)
+        self.plot_widget.addItem(self._reg_handle_max)
+        # Connexion native du drag
+        self._reg_handle_min.sigPositionChanged.connect(self._on_handle_moved)
+        self._reg_handle_max.sigPositionChanged.connect(self._on_handle_moved)
+        self._updating_handles = False  # flag anti-récursion
+        
         
         self.plot_widget.scene().sigMouseMoved.connect(self._on_mouse_moved)
         self.plot_widget.getViewBox().sigRangeChanged.connect(self._update_labels_cursor)
@@ -143,7 +193,7 @@ class SkewTWidget:
         # # Adiabatiques sèches
         for tk in 273.15 + np.arange(-30, 60, step):
             dry = tk * (self.plevs / self.P_bot) ** kappa - 273.15 + self.skewnessTerm(self.plevs, self.P_bot)
-            c = self.plot_widget.plot(dry, self.plevs, pen=pg.mkPen(color=(0, 180, 0, 70), width=0.5,
+            c = self.plot_widget.plot(dry, self.plevs, pen=pg.mkPen(color=(0, 180, 0, 70), width=0.75,
                                                             style=QtCore.Qt.PenStyle.SolidLine))
             self._curves_dry_adiabats.append(c)
             
@@ -152,11 +202,11 @@ class SkewTWidget:
             self.plot_widget.removeItem(c)
         self._curves_moist_adiabats = []   
         # # Adiabatiques saturées
-        pen = QtGui.QPen(QtGui.QColor(0, 180, 0, 70))
+        pen = QtGui.QPen(QtGui.QColor(52, 180, 235, 70))
         pen.setWidth(10)
         pen.setStyle(QtCore.Qt.PenStyle.DashLine)
         pen.setCosmetic(True)
-        pen.setWidthF(1.8)              # plus épais
+        pen.setWidthF(0.5)              # plus épais
         pen.setDashPattern([8, 4])      # tirets plus longs
         ps = [p for p in self.plevs if p <= self.P_bot]
         for temp0 in np.arange(-30, 40, step):
@@ -189,6 +239,9 @@ class SkewTWidget:
         Update the sounding profiles dynamically.
         P_min / P_max : pressure bounds in hPa (P_min < P_max, ex: 800, 1050)
         """
+        if self._current_flight is not None and self._current_flight is not flight:
+            self._clear_flight_plots()
+        self._current_flight = flight
         
         x_min =  int(flight['plot']['roi_emagram'].getRegion()[0])
         x_max =  int(flight['plot']['roi_emagram'].getRegion()[1])
@@ -211,27 +264,30 @@ class SkewTWidget:
         self.plot_widget.setYRange(y_range_max, y_range_min)
         self.plot_widget.setXRange(x_range_min, x_range_max)   
         self.plot_widget.setLimits(
-            xMin=x_range_min - (x_range_max - x_range_min)*0.2,
-            xMax=x_range_max + (x_range_max - x_range_min)*0.2,
+            xMin=x_range_min - (x_range_max - x_range_min)*0.5,
+            xMax=x_range_max + (x_range_max - x_range_min)*0.5,
             yMin=y_range_min - (y_range_max - y_range_min)*0.2,
             yMax=y_range_max + (y_range_max - y_range_min)*0.2
         )
+        
         if flight['plot']['scatter_emagram'][0] and flight['plot']['scatter_emagram'][1]: #if the scatters Tdew and Tdry item already exists
         
             flight['plot']['scatter_emagram'][0].setData(Tdry + self.skewnessTerm(P, self.P_bot), P)
             flight['plot']['scatter_emagram'][1].setData(Tdew + self.skewnessTerm(P, self.P_bot), P)
         else:
-            # Create Curve T Dry 
+            # Create Curve temperature 
             flight['plot']['scatter_emagram'][0] = self.plot_widget.plot(
                 Tdry + self.skewnessTerm(P, self.P_bot),
                 P,
-                pen=pg.mkPen(color=(0, 0, 0), width=1.5)
+                pen=pg.mkPen(color=(255, 0, 0), width=1.5),
+                name="T dry",
             )
-            # Create Curve T moist
+            # Create Curve dew point
             flight['plot']['scatter_emagram'][1] = self.plot_widget.plot(
                 Tdew + self.skewnessTerm(P, self.P_bot),
                 P,
-                pen=pg.mkPen(color=(255, 0, 0), width=1.5)
+                pen=pg.mkPen(color=(0, 0, 0), width=1.5),
+                name="T dew"
             )
             
             
@@ -245,6 +301,9 @@ class SkewTWidget:
         Xgraph = x_max_range - (x_max_range - x_min_range)*0.1 
         self.wind_barbs.update(P/100, speed, angle, Xgraph)
         self._update_windbarbs_display()
+        self._P_data = P / 100 #converting from Pa to hPa
+        self._Tdry_data = Tdry
+        self._calculate_linreg(self._P_data, self._Tdry_data)
     
     def _update_windbarbs_display(self):
         vb = self.plot_widget.getViewBox()
@@ -254,6 +313,10 @@ class SkewTWidget:
         self.wind_barbs.update_pos(Xgraph)
     
     def _on_mouse_moved(self, pos):
+        """
+        This function calculates the initial condition for isotherm, isobar and dry adiabatique 
+        for where the mouse is (pos)
+        """
         vb = self.plot_widget.getViewBox()
         if not self.plot_widget.sceneBoundingRect().contains(pos):
             return
@@ -261,6 +324,8 @@ class SkewTWidget:
         mouse_point = vb.mapSceneToView(pos)
         T_mouse_unskewed = mouse_point.x()   
         P_mouse = mouse_point.y()
+        if P_mouse > 0:
+            P_mouse == 0.1 #Keeping the P positive 
         T_mouse_skewed = T_mouse_unskewed - self.skewnessTerm(P_mouse, self.P_bot)
         self.cursor_x = T_mouse_skewed
         self.cursor_y = P_mouse
@@ -292,6 +357,7 @@ class SkewTWidget:
         #     self._curve_moist_adiabat.setData(moist_skewed, ps) 
     
     def skewnessTerm(self, P,P_bot):
+        
         return 45 * np.log(P_bot/P)
     
     def gamma_s(self, T,p):
@@ -346,15 +412,36 @@ class SkewTWidget:
         P_bottom = max(y_min, y_max) - (0.1 * (y_max - y_min))
         T_left = min(x_min, x_max)  + (0.05 * (x_max - x_min))
         pressure_altitude = 44109.12 * (1 - ((self.cursor_y/1013.25)**(1/5.255)))
+        
+        
         #updating labels from cursor
         self.label_cursor_therm.setText(f"{round(self.cursor_x,2)} °C")
-        self.label_cursor_therm.setPos(self.cursor_x + self.skewnessTerm(P_bottom, self.P_bot), P_bottom)
+        Tk = self.cursor_x + self.skewnessTerm(P_bottom, self.P_bot)
+        B = self.P_bot / (np.exp((x_min - self.cursor_x)/45))
+        temp_adia_zero = (self.cursor_x + 273.15) * (self.P_bot / self.cursor_y) ** kappa - 273.15
+
+        if B < P_bottom:
+            pos_curs_x = x_min + (0.02 * (x_max - x_min))
+            pos_curs_y = B
+        else :
+            pos_curs_x = Tk
+            pos_curs_y =  P_bottom
+
+        self.label_cursor_therm.setPos(pos_curs_x, pos_curs_y)
         
         self.label_cursor_bar.setText(f"{round(self.cursor_y,2)} hPa")
         self.label_cursor_bar.setPos(T_left, self.cursor_y)
         
-        self.label_cursor_alt.setText(f"{round(pressure_altitude,2)} m")
+        self.label_cursor_alt.setText(f"{round(pressure_altitude)} m")
         self.label_cursor_alt.setPos(T_left, self.cursor_y)
+        
+        temp_at_P_bottom = (self.cursor_x + 273.15) * (P_bottom / self.cursor_y) ** kappa - 273.15
+        x_pos_lab_adia = temp_at_P_bottom + self.skewnessTerm(P_bottom, self.P_bot)
+        # x_pos_lab_adia = temp_adia_zero * (P_bottom/self.P_bot)** kappa - self.skewnessTerm(P_bottom, self.P_bot)
+        self.label_cursor_adia.setText(f"{round(temp_adia_zero,2)} °C")
+        self.label_cursor_adia.setPos(x_pos_lab_adia, P_bottom)
+        
+        
         
     def _update_labels(self):
         
@@ -363,7 +450,7 @@ class SkewTWidget:
         x_min, x_max = x_range
         y_min, y_max = y_range 
         P_bottom_therm = max(y_min, y_max) - (0.2 * (y_max - y_min))
-        P_bottom_ws = max(y_min, y_max) - (0.05 * (y_max - y_min))
+        P_bottom_ws = max(y_min, y_max) - (0.1 * (y_max - y_min))
         for label in self._isotherm_labels: #Updating labels from grid
             if not self._visibility['isotherms']:  # ← on vérifie l'état
                 label.setVisible(False)
@@ -393,7 +480,107 @@ class SkewTWidget:
             else:
                 label.setVisible(False)
                 
+    def _calculate_linreg(self, dataX, dataY):
+        """
+        Appelé depuis update() — initialise les handles ET calcule la régression
+        """
+        if self._P_data is None or self._Tdry_data is None:
+            return
+    
+        P    = self._P_data
+        Tdry = self._Tdry_data
+    
+        if self._reg_point_min is None or self._reg_point_max is None:
+            self._reg_point_min = 0
+            self._reg_point_max = len(P) - 1
+    
+        self._reg_point_min = int(np.clip(self._reg_point_min, 0, len(P) - 1))
+        self._reg_point_max = int(np.clip(self._reg_point_max, 0, len(P) - 1))
+    
+        idx_min = min(self._reg_point_min, self._reg_point_max)
+        idx_max = max(self._reg_point_min, self._reg_point_max)
+    
+        # Repositionne les handles sur la courbe
+        self._updating_handles = True
+        x_min = float(Tdry[idx_min]) + self.skewnessTerm(float(P[idx_min]), self.P_bot)
+        x_max = float(Tdry[idx_max]) + self.skewnessTerm(float(P[idx_max]), self.P_bot)
+        self._reg_handle_min.setPos(x_min, float(P[idx_min]))
+        self._reg_handle_max.setPos(x_max, float(P[idx_max]))
+        self._updating_handles = False
+    
+        # Calcule la régression
+        self._calculate_linreg_update_only()
+    
+    def _calculate_linreg_update_only(self):
+        """
+        Recalcule uniquement la courbe de régression sans repositionner les handles.
+        We also calculate the linear regression of the adiabatic dry in the same interval to compare coefficient
+        It will help us to tell is the atmosphere is stable or instable in the aera
+        """
+        if self._P_data is None:
+            return
+    
+        idx_min = min(self._reg_point_min, self._reg_point_max)
+        idx_max = max(self._reg_point_min, self._reg_point_max)
+    
+        P_slice    = self._P_data[idx_min:idx_max + 1]
+        Tdry_slice = self._Tdry_data[idx_min:idx_max + 1]
+    
+        if len(P_slice) < 2:
+            return
         
+        #Regression on Tdry (state curve)
+        dataX = P_slice.reshape(-1, 1)
+        reg_t  = self.myreg.fit(dataX, Tdry_slice)
+        curve_reg_tdry = reg_t.coef_[0] * P_slice + reg_t.intercept_
+        curve_reg_tdry_skewed = curve_reg_tdry + self.skewnessTerm(P_slice, self.P_bot)
+        self._gradient_reg.setData(curve_reg_tdry_skewed, P_slice)
+        self.gradient_label.setText(f"{round(reg_t.coef_[0],3)} °C/hPa")
+        
+        
+        # Gradient adiabatique sec analytique : d/dP [Tk*(P/P_bot)^kappa] = kappa*Tk/P_bot*(P/P_bot)^(kappa-1)
+        # Evalué au milieu de l'intervalle
+        P_mid = np.mean(P_slice)
+        T_mid_K = (reg_t.coef_[0] * P_mid + reg_t.intercept_) + 273.15
+        dry_adiabat_coef = kappa * T_mid_K / P_mid  # dT/dP analytique en °C/hPa
+       
+        
+        if reg_t.coef_[0] > dry_adiabat_coef:
+            color = (255, 60, 0)   # instable
+            self.label_atm_state.setText("Unstable")
+            self.label_atm_state.setStyleSheet("color: rgb(255, 60, 0);")
+        else:
+            color = (0, 150, 255)  # stable
+            self.label_atm_state.setText("Stable")
+            self.label_atm_state.setStyleSheet("color: rgb(0, 150, 255);")
+        self._gradient_reg.setPen(pg.mkPen(color=color, width=2,
+                                            style=QtCore.Qt.PenStyle.DashLine))
+                
+    def _on_handle_moved(self):
+        if self._P_data is None or self._updating_handles:
+            return
+    
+        self._updating_handles = True
+    
+        # Trouve l'index le plus proche pour chaque handle
+        for handle, attr in [
+            (self._reg_handle_min, '_reg_point_min'),
+            (self._reg_handle_max, '_reg_point_max'),
+        ]:
+            P_mouse = handle.pos().y()
+            idx = int(np.argmin(np.abs(self._P_data - P_mouse)))
+            setattr(self, attr, idx)
+    
+            # Snap immédiat sur la courbe Tdry
+            x_snap = float(self._Tdry_data[idx]) + self.skewnessTerm(float(self._P_data[idx]), self.P_bot)
+            y_snap = float(self._P_data[idx])
+            handle.setPos(x_snap, y_snap)
+    
+        self._updating_handles = False
+    
+        # Recalcul APRÈS avoir mis à jour les index et snappé
+        self._calculate_linreg_update_only()
+      
         
     def set_background_visibility(self, isotherms=None, isobars=None,
                                dry_adiabats=None, moist_adiabats=None,
@@ -418,6 +605,15 @@ class SkewTWidget:
         
         if windbarbs is not None:
             self.wind_barbs.show(windbarbs)
+    
+            
+    def set_gradient_visibility(self, state):
+        self._gradient_reg.setVisible(state)
+        self._reg_handle_min.setVisible(state)
+        self._reg_handle_max.setVisible(state)
+        self.gradient_label.setVisible(state)
+        self.label_atm_state.setVisible(state)
+        
 
                 
     def set_isotherm_step(self, step, enabled=True):
@@ -471,4 +667,29 @@ class SkewTWidget:
 
     
     
+    def _clear_flight_plots(self):
+        """Supprime les courbes de l'ancien vol"""
+        flight = self._current_flight
+        
+        # Supprime les courbes Tdry / Tdew
+        if flight['plot']['scatter_emagram'][0]:
+            self.plot_widget.removeItem(flight['plot']['scatter_emagram'][0])
+            flight['plot']['scatter_emagram'][0] = None
+        if flight['plot']['scatter_emagram'][1]:
+            self.plot_widget.removeItem(flight['plot']['scatter_emagram'][1])
+            flight['plot']['scatter_emagram'][1] = None
     
+        # Supprime la régression
+        self._gradient_reg.setData([], [])
+        self._reg_handle_min.setPos(0, 0)
+        self._reg_handle_max.setPos(0, 0)
+        self._reg_point_min = None
+        self._reg_point_max = None
+    
+        # Vide les windbarbs
+        self.wind_barbs.clear()
+    
+        # Reset des données
+        self._P_data = None
+        self._Tdry_data = None
+        self.plot_widget.autoRange()

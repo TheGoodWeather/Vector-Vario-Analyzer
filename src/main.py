@@ -379,7 +379,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Widgets tab EMAGRAM
         """
         
-        self.skewt = SkewTWidget(self.graph_skewt)
+        self.skewt = SkewTWidget(self.graph_skewt, self.label_t_gradient , self.label_state_atm)
         
         
         self.graph_atmtab_timeserie.setBackground("w")
@@ -392,7 +392,6 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_atmtab_timeserie, None))
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.skewt, self.comboBox_flight_select_atmtab ))
-        
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         #self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
@@ -417,7 +416,11 @@ class MainWindow(QtWidgets.QMainWindow):
             lambda state: self.skewt.set_background_visibility(mixing_ratio=bool(state)))   
         
         self.checkBox_windbarbs_atm.stateChanged.connect(
-            lambda state: self.skewt.set_background_visibility(windbarbs=bool(state)))   
+            lambda state: self.skewt.set_background_visibility(windbarbs=bool(state))) 
+        
+        self.checkBox_T_gradient.stateChanged.connect(
+            lambda state: self.skewt.set_gradient_visibility(state))   
+        
         
         self.horizontalSlider_isotherm.valueChanged.connect(lambda v: self.skewt.set_isotherm_step(v, self.checkBox_isotherm.isChecked()))
         self.horizontalSlider_dry_adia.valueChanged.connect(lambda v: self.skewt.set_dry_adiabat_step(v, self.checkBox_dryadia.isChecked()))
@@ -467,6 +470,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.settings.setValue("size", self.size())
         self.settings.endGroup()
         
+        self.settings.beginGroup("tab_geometry")
+        self.settings.setValue("splitter/1D",   self.splitter_1D.saveState())
+        self.settings.setValue("splitter/2D",   self.splitter_2D.saveState())
+        self.settings.setValue("splitter/polar",   self.splitter_polar.saveState())
+        self.settings.setValue("splitter/atm",   self.splitter_atm.saveState())
+        self.settings.endGroup()
+
+        
     def read_settings_main(self):
  
         self.settings.beginGroup("geometry")
@@ -474,6 +485,25 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resize(self.settings.value("size" , defaultValue=QSize(400, 200)))
         self.settings.endGroup()
         
+        self.settings.beginGroup("tab_geometry")
+        
+
+    
+        for key, splitter in [
+            ("splitter/1D", self.splitter_1D),
+            ("splitter/2D",        self.splitter_2D),
+            ("splitter/polar",      self.splitter_polar),
+            ("splitter/atm",      self.splitter_atm)
+        ]:
+            state = self.settings.value(key)
+            if state:
+                splitter.restoreState(state)
+            else:
+                # Valeurs par défaut si premier démarrage
+                splitter.setSizes([600, 200])
+                
+        self.settings.endGroup()
+
     def closeEvent(self, event):
         self.write_settings_main()
         super().closeEvent(event)
@@ -541,9 +571,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.flight = load_vva_files()
         update_vva_table(self.flight, self.tableWidget_database)
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
-        self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
-        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
-        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D )
             
     def on_drop_load_file(self, filepath):
@@ -606,9 +634,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.flight = load_vva_files()
         update_vva_table(self.flight, self.tableWidget_database)
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
-        self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
-        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
-        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D )
 
 
@@ -849,7 +875,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def populate_combobox_variable(self, flight_dic, combobox_var, choice, tab):
         """
         This function populate the variable according to the flight selected in the combobox in selected tab
-        It also set a prioritarization of the variable IAS in the polar tab
+        It also set a prioritarization of the variable IAS in the polar tab, and GNSS_alt for the emagram tab
         """
         combobox_var.clear()
         
@@ -863,10 +889,15 @@ class MainWindow(QtWidgets.QMainWindow):
                                 if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
                                     combobox_var.addItem(variable)
                     elif tab == 'emagram':
-                        for variable in flight['data']:
-                            if variable != 'GNSS_time':
-                                if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
-                                    combobox_var.addItem(variable)
+                        priority_vars = ['GNSS_alt']
+                        for variable in priority_vars:
+                            if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
+                                combobox_var.addItem(variable)
+                        for variable in flight['data'] :
+                            if variable in priority_vars or variable == 'GNSS_time':  # ← on skip les prioritaires et GNSS_time
+                                continue
+                            if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
+                                combobox_var.addItem(variable)
     
     
 
@@ -1026,42 +1057,45 @@ class MainWindow(QtWidgets.QMainWindow):
             best = min(plausible_flight, key=lambda x: x[0])
             best_dist, best_index, best_flight = best
             
+            flight_to_display_data = None
             if best_dist < 20: #if the distance clicked is beyond 20 pixels
                 for flight in flight_dic:
                     if (flight['file_name'].split(".")[0] == best_flight) or (flight['metadata']['alias'] == best_flight):
-                        label_table_data.setText(f"Data from flight : {self.get_alias(flight['file_name'].split('.')[0])}")
-                        row = 0
-                        for variable in flight['data']: #creating table
-                            if isinstance(flight['data'][variable], np.ndarray) and len(flight['data'][variable]) > 0 :
-                                table_data.insertRow(row)
-                                            
-                                item_variable = QTableWidgetItem(variable)
-                                item_variable.setFlags(item_variable.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                                table_data.setItem(row, 0, item_variable)
-                                
-                                data = convert_array_to_unit(flight['data'][variable], variable)
-                                if isinstance(data[best_index], float):
-                                    item_value = QTableWidgetItem(str(round(data[best_index],2)))
-                                else:
-                                    item_value = QTableWidgetItem(str(data[best_index]))
+                        flight_to_display_data = flight
+                        break 
+                label_table_data.setText(f"Data from flight : {self.get_alias(flight_to_display_data['file_name'].split('.')[0])}")
+                row = 0
+                for variable in flight_to_display_data['data']: #creating table
+                    if len(flight_to_display_data['data'][variable]) > 0 :
+                        table_data.insertRow(row)
+                                    
+                        item_variable = QTableWidgetItem(variable)
+                        item_variable.setFlags(item_variable.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                        table_data.setItem(row, 0, item_variable)
+                        
+                        data = convert_array_to_unit(flight_to_display_data['data'][variable], variable)
+                        if isinstance(data[best_index], float):
+                            item_value = QTableWidgetItem(str(round(data[best_index],2)))
+                        else:
+                            item_value = QTableWidgetItem(str(data[best_index]))
     
-                                item_value.setFlags(item_value.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                                table_data.setItem(row, 1, item_value)
-                                
-                                item_unit = QTableWidgetItem(get_unit(variable))
-                                item_unit.setFlags(item_unit.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                                table_data.setItem(row, 2, item_unit)
-                                
-                                row += 1
+                        item_value.setFlags(item_value.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                        table_data.setItem(row, 1, item_value)
+                        
+                        item_unit = QTableWidgetItem(get_unit(variable))
+                        item_unit.setFlags(item_unit.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                        table_data.setItem(row, 2, item_unit)
+                        
+                        row += 1
                         #setting the point to Highlight 
-                        if flight['plot'].get('highlight_point_map'):
+                        if flight_to_display_data['plot'].get('highlight_point_map'):
                             # Déjà existant → on met à jour
-                            flight['plot']['highlight_point_map'].setData([float(flight['data']['GNSS_lon'][best_index])], [float(flight['data']['GNSS_lat'][best_index])])
+                            flight_to_display_data['plot']['highlight_point_map'].setData([float(flight_to_display_data['data']['GNSS_lon'][best_index])], [float(flight_to_display_data['data']['GNSS_lat'][best_index])])
                         else:
                             # Création du point highlight
                             scatter = pg.ScatterPlotItem(
-                                x=[float(flight['data']['GNSS_lon'][best_index])],
-                                y=[float(flight['data']['GNSS_lat'][best_index])],
+                                x=[float(flight_to_display_data['data']['GNSS_lon'][best_index])],
+                                y=[float(flight_to_display_data['data']['GNSS_lat'][best_index])],
                                 size=6,  
                                 pen=pg.mkPen('black', width=2),   # contour
                                 brush=pg.mkBrush(255, 0, 0, 180), # rouge semi-transparent
@@ -1069,7 +1103,7 @@ class MainWindow(QtWidgets.QMainWindow):
                             )
                         
                             plot_widget.addItem(scatter)
-                            flight['plot']['highlight_point_map'] = scatter
+                            flight_to_display_data['plot']['highlight_point_map'] = scatter
             else:
                 for flight in flight_dic:
                     if flight['file_name'].split(".")[0] == best_flight:
@@ -1089,106 +1123,113 @@ class MainWindow(QtWidgets.QMainWindow):
         Remove previous crosshair from other flights aswell 
         """
 
-            
+        
+        pos = event.scenePos()
         crosshair_id = plot_widget.crosshair_id
         vb = plot_widget.getViewBox()
         
-        click_pos = event.scenePos()
+        flight_selected_dic = None
+        mouse_point = vb.mapSceneToView(pos)
+        x_click = mouse_point.x()
+        y_click = mouse_point.y()
+    
         flight_selected = combobox_flight.currentText()
         variables_checked = plot.get_checked_variables(table_data)
+        
+        
+        if not variables_checked:
+            return
 
         for flight in flight_dic:
             if (flight['file_name'].split(".")[0] == flight_selected) or (flight['metadata']['alias'] == flight_selected):
-                x_click = click_pos.x()
-                y_click = click_pos.y()
                 
-                best_dist = float('inf')
-                best_index = None
-                best_variable = None
-                
-                closest_variable = [] 
-                for variable in variables_checked:
-             
-                    for index in range(len(flight['data'][variable])):
-                        x_point = flight['data']['GNSS_time'][index].timestamp()
-                        y_point = convert_array_to_unit(flight['data'][variable][index], variable)
-                        point_scene = vb.mapViewToScene(QtCore.QPointF(x_point, y_point))
-                        
-                        #Computing virtual distance between click and the curve displayed . Get the relative distance in pixel
-                        dist = np.sqrt((x_click - point_scene.x())**2 + (y_click - point_scene.y())**2)
-              
-                        if dist < best_dist:
-                            best_dist = dist
-                            best_index = index
-                
-                    closest_variable.append([best_dist, best_index, variable])
-                
-                # if flight['plot']['crosshair_v_map']:
-                #     plot_widget.removeItem(flight['plot']['crosshair_v_map'])
-                #     plot_widget.removeItem(flight['plot']['crosshair_h_map'])
+                flight_selected_dic = flight
+                GNSS_time_timestamped = np.array([t.timestamp() for t in flight_selected_dic['data']['GNSS_time']])
+                idx = np.searchsorted(GNSS_time_timestamped, x_click)
+                if idx > len(flight_selected_dic['data']['GNSS_time']) -1:
+                    idx = len(flight_selected_dic['data']['GNSS_time']) -1
+                if idx < 0:
+                    idx = 0
+            else:
+                pass
+            
+        dist = []
         
-                if closest_variable:
-                    best = min(closest_variable, key=lambda x: x[0])
-                    best_dist, best_index, best_variable = best
-                    
+        for variable in variables_checked:
+            x_val = flight_selected_dic['data']['GNSS_time'][idx].timestamp()
+            y_val = convert_array_to_unit(flight_selected_dic['data'][variable], variable)[idx]  # ← unité convertie
+        
+            point_view = QtCore.QPointF(x_val, y_val)
+            point_scene = vb.mapViewToScene(point_view)
+        
+            dx = abs(pos.x() - point_scene.x())
+            dy = abs(pos.y() - point_scene.y())
+            d = np.sqrt(dx**2 + dy**2)  # distance euclidienne en pixels
+        
+            dist.append((d, variable))
+           
+        closest_variable = min(dist, key=lambda x: x[0])[1] 
+        closest_distance = min(dist, key=lambda x: x[0])[0] 
+        
 
-                    if best_dist < 10: #if the distance clicked is beyond 30 pixels
-                        for f in flight_dic:
-                            if (f['file_name'].split(".")[0] == flight_selected) or (f['metadata']['alias'] == flight_selected):
-                                for row in range(table_data.rowCount()): #Updating table content
-                                    variable_already_set = table_data.item(row, 0).text()  
-                                    data = convert_array_to_unit(f['data'][variable_already_set], variable_already_set)
-                                    if isinstance(data[best_index], float):
-                                        item_value = QTableWidgetItem(str(round(data[best_index],2)))
-                                    else:
-                                        item_value = QTableWidgetItem(str(data[best_index]))
-                                    item_value.setFlags(item_value.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                                    table_data.setItem(row, 1, item_value)
-                                    
-                                    item_unit = QTableWidgetItem(get_unit(variable_already_set))
-                                    item_unit.setFlags(item_unit.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                                    table_data.setItem(row, 2, item_unit)
-                                    
-                                #setting the crosshair
-                                if f['plot'][f'crosshair_v_time_{crosshair_id}']:
-                                    f['plot'][f'crosshair_v_time_{crosshair_id}'].setValue(float(f['data']['GNSS_time'][best_index].timestamp()))
-                                    f['plot'][f'crosshair_h_time_{crosshair_id}'].setValue(convert_array_to_unit(float(f['data'][best_variable][best_index]),best_variable))
-                                    
-                                else:
-                                    
-                                    pen = pg.mkPen(QColor(0,0,0), width=1, style=QtCore.Qt.PenStyle.DashLine)
-                                
-                                    crosshair_v = pg.InfiniteLine(
-                                        angle=90,
-                                        movable=False,
-                                        pen = pen
-                                     
-                                    )
-                                    
-                                    crosshair_h = pg.InfiniteLine(
-                                        angle=0,
-                                        movable=False,
-                                        pen = pen
-                                      
-                                    )
-                                
-                                    plot_widget.addItem(crosshair_v, ignoreBounds=True)
-                                    plot_widget.addItem(crosshair_h, ignoreBounds=True)
-                                    f['plot'][f'crosshair_v_time_{crosshair_id}'] = crosshair_v
-                                    f['plot'][f'crosshair_h_time_{crosshair_id}'] = crosshair_h
-                                    f['plot'][f'crosshair_v_time_{crosshair_id}'].setValue(float(f['data']['GNSS_time'][best_index].timestamp()))
-                                    f['plot'][f'crosshair_h_time_{crosshair_id}'].setValue(convert_array_to_unit(float(f['data'][best_variable][best_index]),best_variable))
-                    else:
-                        for row in range(table_data.rowCount()): # Clearing the table contents
-                            
-                            table_data.setItem(row, 1, QTableWidgetItem(""))
-                            table_data.setItem(row, 2, QTableWidgetItem(""))
-                       
-                        if flight['plot'][f'crosshair_v_time_{crosshair_id}']:
-                            plot_widget.removeItem(flight['plot'][f'crosshair_v_time_{crosshair_id}'])
-                            plot_widget.removeItem(flight['plot'][f'crosshair_h_time_{crosshair_id}'])
-                            flight['plot'][f'crosshair_v_time_{crosshair_id}'] = None
-                            flight['plot'][f'crosshair_h_time_{crosshair_id}'] = None
+        if closest_distance < 20: #if the click is below 20 pixels
+             
+                    #setting the crosshair
+            if flight_selected_dic['plot'][f'crosshair_v_time_{crosshair_id}']:
+                flight_selected_dic['plot'][f'crosshair_v_time_{crosshair_id}'].setValue(float(flight_selected_dic['data']['GNSS_time'][idx].timestamp()))
+                flight_selected_dic['plot'][f'crosshair_h_time_{crosshair_id}'].setValue(convert_array_to_unit(float(flight_selected_dic['data'][closest_variable][idx]),closest_variable))
+                
+            else:
+                
+                pen = pg.mkPen(QColor(0,0,0), width=1, style=QtCore.Qt.PenStyle.DashLine)
+            
+                crosshair_v = pg.InfiniteLine(
+                    angle=90,
+                    movable=False,
+                    pen = pen
+                 
+                )
+                
+                crosshair_h = pg.InfiniteLine(
+                    angle=0,
+                    movable=False,
+                    pen = pen
+                  
+                )
+            
+                plot_widget.addItem(crosshair_v, ignoreBounds=True)
+                plot_widget.addItem(crosshair_h, ignoreBounds=True)
+                flight_selected_dic['plot'][f'crosshair_v_time_{crosshair_id}'] = crosshair_v
+                flight_selected_dic['plot'][f'crosshair_h_time_{crosshair_id}'] = crosshair_h
+                flight_selected_dic['plot'][f'crosshair_v_time_{crosshair_id}'].setValue(float(flight_selected_dic['data']['GNSS_time'][idx].timestamp()))
+                flight_selected_dic['plot'][f'crosshair_h_time_{crosshair_id}'].setValue(convert_array_to_unit(float(flight_selected_dic['data'][closest_variable][idx]),closest_variable))
+    
+             
+            for row in range(table_data.rowCount()): #Updating table content
+                variable_already_set = table_data.item(row, 0).text()  
+                data = convert_array_to_unit(flight_selected_dic['data'][variable_already_set], variable_already_set)
+                if isinstance(data[idx], float):
+                    item_value = QTableWidgetItem(str(round(data[idx],2)))
+                else:
+                    item_value = QTableWidgetItem(str(data[idx]))
+                item_value.setFlags(item_value.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                table_data.setItem(row, 1, item_value)
+                
+                item_unit = QTableWidgetItem(get_unit(variable_already_set))
+                item_unit.setFlags(item_unit.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                table_data.setItem(row, 2, item_unit)
+                    
+        else:
+            for row in range(table_data.rowCount()): # Clearing the table contents
+                
+                table_data.setItem(row, 1, QTableWidgetItem(""))
+                table_data.setItem(row, 2, QTableWidgetItem(""))
+           
+            if flight_selected_dic['plot'][f'crosshair_v_time_{crosshair_id}']:
+                plot_widget.removeItem(flight_selected_dic['plot'][f'crosshair_v_time_{crosshair_id}'])
+                plot_widget.removeItem(flight_selected_dic['plot'][f'crosshair_h_time_{crosshair_id}'])
+                flight_selected_dic['plot'][f'crosshair_v_time_{crosshair_id}'] = None
+                flight_selected_dic['plot'][f'crosshair_h_time_{crosshair_id}'] = None
                         
     def on_item_table_1D_changed(self, item):
         """

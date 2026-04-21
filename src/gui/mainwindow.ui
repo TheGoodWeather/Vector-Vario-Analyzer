@@ -196,7 +196,7 @@
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
-         <widget class="QSplitter" name="splitter">
+         <widget class="QSplitter" name="splitter_1D">
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
           </property>
@@ -204,6 +204,12 @@
            <enum>Qt::Horizontal</enum>
           </property>
           <widget class="QWidget" name="widget_7" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>1</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <layout class="QVBoxLayout" name="verticalLayout_7">
             <item>
              <widget class="PlotWidget" name="graph1_tab1D">
@@ -258,6 +264,12 @@
            </layout>
           </widget>
           <widget class="QWidget" name="widget_2" native="true">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <layout class="QVBoxLayout" name="verticalLayout_6" stretch="1,2,1,2,1">
             <item>
              <widget class="QWidget" name="widget_3" native="true">
@@ -271,7 +283,7 @@
                <item>
                 <widget class="QLabel" name="label_4">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -284,7 +296,7 @@
                <item>
                 <widget class="QComboBox" name="comboBox_flight_tab1D">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -306,7 +318,7 @@
                <item>
                 <widget class="QLabel" name="label_5">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -319,7 +331,7 @@
                <item>
                 <widget class="QTableWidget" name="tableWidget_variable_plot1">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -392,7 +404,7 @@
                <item>
                 <widget class="QLabel" name="label_6">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -405,7 +417,7 @@
                <item>
                 <widget class="QTableWidget" name="tableWidget_variable_plot2">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -436,11 +448,17 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_21">
         <item>
-         <widget class="QSplitter" name="splitter_2">
+         <widget class="QSplitter" name="splitter_2D">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
           <widget class="PlotWidget" name="graph_tab2D">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>3</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="cursor" stdset="0">
             <cursorShape>ArrowCursor</cursorShape>
            </property>
@@ -525,7 +543,7 @@
                <item>
                 <widget class="QTableWidget" name="tableWidget_data_point_tab2D">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -678,7 +696,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_15">
         <item>
-         <widget class="QSplitter" name="splitter_3">
+         <widget class="QSplitter" name="splitter_polar">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
@@ -686,7 +704,7 @@
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
              <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
+             <verstretch>1</verstretch>
             </sizepolicy>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_12" stretch="0,0">
@@ -875,7 +893,7 @@
             <item>
              <widget class="QWidget" name="widget_17" native="true">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
@@ -889,57 +907,45 @@
                 </widget>
                </item>
                <item>
-                <widget class="QWidget" name="widget_20" native="true">
+                <widget class="QWidget" name="widget_ias_compensation" native="true">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
-                 <layout class="QVBoxLayout" name="verticalLayout_19">
+                 <layout class="QHBoxLayout" name="horizontalLayout">
                   <item>
-                   <widget class="QWidget" name="widget_ias_compensation" native="true">
-                    <property name="enabled">
-                     <bool>false</bool>
-                    </property>
+                   <widget class="QLabel" name="label_18">
                     <property name="sizePolicy">
-                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
                     </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout">
-                     <item>
-                      <widget class="QLabel" name="label_18">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Adjust (%)</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QSlider" name="horizontalSlider_ias_comp">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="spinBox_ias_comp"/>
-                     </item>
-                    </layout>
+                    <property name="text">
+                     <string>Adjust (%)</string>
+                    </property>
                    </widget>
+                  </item>
+                  <item>
+                   <widget class="QSlider" name="horizontalSlider_ias_comp">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
+                    <property name="orientation">
+                     <enum>Qt::Horizontal</enum>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QSpinBox" name="spinBox_ias_comp"/>
                   </item>
                  </layout>
                 </widget>
@@ -957,7 +963,7 @@
                   <bool>false</bool>
                  </property>
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -1041,7 +1047,7 @@
                   <bool>false</bool>
                  </property>
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
@@ -1207,7 +1213,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QSplitter" name="splitter_4">
+            <widget class="QSplitter" name="splitter_atm">
              <property name="orientation">
               <enum>Qt::Vertical</enum>
              </property>
@@ -1241,6 +1247,12 @@
               </property>
              </widget>
              <widget class="QWidget" name="widget_13" native="true">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <layout class="QHBoxLayout" name="horizontalLayout_9">
                <item>
                 <widget class="QWidget" name="widget_19" native="true">
@@ -1254,43 +1266,14 @@
                   <item>
                    <widget class="QWidget" name="widget" native="true">
                     <property name="sizePolicy">
-                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                       <horstretch>0</horstretch>
                       <verstretch>0</verstretch>
                      </sizepolicy>
                     </property>
                     <layout class="QGridLayout" name="gridLayout">
-                     <item row="5" column="0">
-                      <widget class="QCheckBox" name="checkBox_windbarbs_atm">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Wind barbs</string>
-                       </property>
-                       <property name="checked">
-                        <bool>true</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="2" column="0">
-                      <widget class="QCheckBox" name="checkBox_isotherm">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="text">
-                        <string>Isotherm</string>
-                       </property>
-                       <property name="checked">
-                        <bool>false</bool>
-                       </property>
-                      </widget>
+                     <item row="7" column="0">
+                      <widget class="QWidget" name="widget_20" native="true"/>
                      </item>
                      <item row="4" column="0">
                       <widget class="QCheckBox" name="checkBox_moist_adia">
@@ -1305,6 +1288,13 @@
                        </property>
                        <property name="checked">
                         <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="8" column="0">
+                      <widget class="QCheckBox" name="checkBox_T_gradient">
+                       <property name="text">
+                        <string>Thermal gradient</string>
                        </property>
                       </widget>
                      </item>
@@ -1324,57 +1314,10 @@
                        </property>
                       </widget>
                      </item>
-                     <item row="3" column="0">
-                      <widget class="QCheckBox" name="checkBox_dryadia">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
+                     <item row="1" column="1">
+                      <widget class="QLabel" name="label_9">
                        <property name="text">
-                        <string>Dry adiabat</string>
-                       </property>
-                       <property name="checked">
-                        <bool>true</bool>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="3" column="1">
-                      <widget class="QSlider" name="horizontalSlider_dry_adia">
-                       <property name="enabled">
-                        <bool>false</bool>
-                       </property>
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="value">
-                        <number>50</number>
-                       </property>
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
-                       </property>
-                      </widget>
-                     </item>
-                     <item row="4" column="1">
-                      <widget class="QSlider" name="horizontalSlider_moist_adia">
-                       <property name="enabled">
-                        <bool>false</bool>
-                       </property>
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="value">
-                        <number>50</number>
-                       </property>
-                       <property name="orientation">
-                        <enum>Qt::Horizontal</enum>
+                        <string>Density</string>
                        </property>
                       </widget>
                      </item>
@@ -1397,6 +1340,22 @@
                        </property>
                       </widget>
                      </item>
+                     <item row="5" column="0">
+                      <widget class="QCheckBox" name="checkBox_windbarbs_atm">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>Wind barbs</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
                      <item row="2" column="1">
                       <widget class="QSlider" name="horizontalSlider_isotherm">
                        <property name="enabled">
@@ -1416,10 +1375,61 @@
                        </property>
                       </widget>
                      </item>
-                     <item row="1" column="1">
-                      <widget class="QLabel" name="label_9">
+                     <item row="2" column="0">
+                      <widget class="QCheckBox" name="checkBox_isotherm">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
                        <property name="text">
-                        <string>Density</string>
+                        <string>Isotherm</string>
+                       </property>
+                       <property name="checked">
+                        <bool>false</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="3" column="0">
+                      <widget class="QCheckBox" name="checkBox_dryadia">
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="text">
+                        <string>Dry adiabat</string>
+                       </property>
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="8" column="1">
+                      <widget class="QLabel" name="label_t_gradient">
+                       <property name="text">
+                        <string>°C/hPa</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="4" column="1">
+                      <widget class="QSlider" name="horizontalSlider_moist_adia">
+                       <property name="enabled">
+                        <bool>false</bool>
+                       </property>
+                       <property name="sizePolicy">
+                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                         <horstretch>0</horstretch>
+                         <verstretch>0</verstretch>
+                        </sizepolicy>
+                       </property>
+                       <property name="value">
+                        <number>50</number>
+                       </property>
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
                        </property>
                       </widget>
                      </item>
@@ -1436,63 +1446,29 @@
                        </property>
                       </widget>
                      </item>
-                    </layout>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QWidget" name="widget_24" native="true">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <layout class="QVBoxLayout" name="verticalLayout_22">
-                     <item>
-                      <widget class="QLabel" name="label_2">
+                     <item row="3" column="1">
+                      <widget class="QSlider" name="horizontalSlider_dry_adia">
+                       <property name="enabled">
+                        <bool>false</bool>
+                       </property>
                        <property name="sizePolicy">
                         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
                          <horstretch>0</horstretch>
                          <verstretch>0</verstretch>
                         </sizepolicy>
                        </property>
-                       <property name="text">
-                        <string>Points</string>
+                       <property name="value">
+                        <number>50</number>
+                       </property>
+                       <property name="orientation">
+                        <enum>Qt::Horizontal</enum>
                        </property>
                       </widget>
                      </item>
-                     <item>
-                      <widget class="QTableWidget" name="tableView_atm_point">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
-                       <property name="minimumSize">
-                        <size>
-                         <width>8</width>
-                         <height>0</height>
-                        </size>
-                       </property>
-                       <property name="baseSize">
-                        <size>
-                         <width>0</width>
-                         <height>0</height>
-                        </size>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QPushButton" name="pushButton_remove_atm_point">
-                       <property name="sizePolicy">
-                        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                         <horstretch>0</horstretch>
-                         <verstretch>0</verstretch>
-                        </sizepolicy>
-                       </property>
+                     <item row="9" column="1">
+                      <widget class="QLabel" name="label_state_atm">
                        <property name="text">
-                        <string>Remove point</string>
+                        <string>Stable</string>
                        </property>
                       </widget>
                      </item>
