@@ -41,7 +41,6 @@ def update_vva_table(data, table_widget):
         item_alias.setFlags(Qt.ItemFlag.ItemIsEnabled |Qt.ItemFlag.ItemIsSelectable |Qt.ItemFlag.ItemIsEditable)
         table_widget.setItem(row, 7, item_alias)
         
-    table_widget.resizeColumnsToContents()
     table_widget.blockSignals(False)
     return
     

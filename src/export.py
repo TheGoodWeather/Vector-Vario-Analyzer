@@ -3,7 +3,8 @@ from logging_handler import QTextEditLogger, logger
 from pathlib  import Path 
 import csv
 import simplekml
-
+import math
+import numpy as np
 
 def export_file_csv(flight, parent):
     
@@ -93,17 +94,39 @@ def export_file_kml(flight, parent):
     
     
     kml = simplekml.Kml() 
-    
+    R = 6371000
+    scale = 50
+    minLat, maxLat = 90, -90
+    minLon, maxLon = 180, -180
+    minAlt, maxAlt = 1e9, -1e9
+
+    def delta_lat(dy):
+        return (dy / R) * (180 / math.pi)
+
+    def delta_lon(dx, lat):
+        return (dx / (R * math.cos(math.radians(lat)))) * (180 / math.pi)
+
     filename = create_file_name(flight , '_track.kml')
     filepath, _ = QtWidgets.QFileDialog.getSaveFileName(parent,"Save file as .kml", filename, "KML Files (*.kml);;All Files (*)")
     coords = []
-    if filepath:
-        for i in range(len(flight['data']['GNSS_lat'])):
-            lat = flight['data']['GNSS_lat'][i]
-            lon = flight['data']['GNSS_lon'][i]
-            alt = flight['data']['GNSS_alt'][i]
-            coords.append((lon,lat,alt))            
-            
+    if not filepath:
+        return 
+    
+    data = flight['data']
+
+    for i in range(len(flight['data']['GNSS_lat'])): #sample every seconds
+        lat = data['GNSS_lat'][i]
+        lon = data['GNSS_lon'][i]
+        alt = data['GNSS_alt'][i]
+        coords.append((lon,lat,alt))   
+        
+        minLat = min(minLat, lat)
+        maxLat = max(maxLat, lat)
+        minLon = min(minLon, lon)
+        maxLon = max(maxLon, lon)
+        minAlt = min(minAlt, alt)
+        maxAlt = max(maxAlt, alt)
+
     line = kml.newlinestring(
         name=f"{flight['file_name'].split('.')[0]}",
         coords=coords
@@ -114,6 +137,66 @@ def export_file_kml(flight, parent):
     line.style.linestyle.width = 2
     line.style.linestyle.color = simplekml.Color.red
 
+
+   
+
+    for l in range(0, len(flight['data']['GNSS_lat']) -1 ,10): #wind vectors every 10 seconds (only for IGC+ with netto)
+        
+        lat0 = data['GNSS_lat'][l]
+        lon0 = data['GNSS_lon'][l]
+        alt0 = data['GNSS_alt'][l]
+        wind_speed = data['wind_vel'][l]
+        wind_dir = data['wind_origin'][l]
+        netto = data['netto'][l]
+    
+        L = scale * wind_speed
+        dir_vent = (wind_dir + 180) % 360
+    
+        dx = L * math.sin(math.radians(dir_vent))
+        dy = L * math.cos(math.radians(dir_vent))
+    
+        lat1 = lat0 + delta_lat(dy)
+        lon1 = lon0 + delta_lon(dx, lat0)
+    
+        alt1 = alt0
+        
+        if not np.isnan(netto): #If netto exists (does not exist on VPRO)
+            alt1 = alt0 + scale * netto
+    
+        ls = kml.newlinestring(
+            name=f"W {wind_speed:.1f} m/s",
+            coords=[(lon0, lat0, alt0), (lon1, lat1, alt1)]
+        )
+    
+        ls.altitudemode = simplekml.AltitudeMode.absolute
+        ls.style.linestyle.width = 2
+    
+        if not np.isnan(netto):
+            ls.style.linestyle.color = simplekml.Color.cyan
+        else:
+            ls.style.linestyle.color = simplekml.Color.green
+
+    # ------------------------
+    # # 3. LOOKAT (ZOOM GOOGLE EARTH)
+    # # ------------------------
+    centerLat = (minLat + maxLat) / 2
+    centerLon = (minLon + maxLon) / 2
+    centerAlt = (minAlt + maxAlt) / 2
+
+    spanLat = maxLat - minLat
+    spanLon = maxLon - minLon
+    spanAlt = maxAlt - minAlt
+
+    spanDeg = max(spanLat, spanLon)
+    approxRange = max(100, R * spanDeg * math.pi/180 * 1.5 + spanAlt)
+
+    kml.document.lookat = simplekml.LookAt(
+        latitude=centerLat,
+        longitude=centerLon,
+        altitude=centerAlt,
+        range=approxRange,
+        tilt=60
+    )
     
     kml.save(filepath)
 

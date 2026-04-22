@@ -6966,3 +6966,84 @@
 [2026-04-21 19:22:44] INFO: Analyzing 2026-02-27-XVV-JRJ006-02.IGC.vva
 [2026-04-21 19:22:44] INFO: Finished 2026-02-27-XVV-JRJ006-02.IGC.vva
 [2026-04-21 19:22:44] INFO: Analysis done
+[2026-04-21 22:32:17] INFO: Analyzing 2026-02-27-XVV-JRJ006-02.IGC.vva
+[2026-04-21 22:32:17] INFO: Finished 2026-02-27-XVV-JRJ006-02.IGC.vva
+[2026-04-21 22:32:17] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-04-21 22:32:18] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-04-21 22:32:18] INFO: Analysis done
+[2026-04-21 22:32:19] INFO: files LOGPRO007_20260121_120019.csv.vva deleted
+[2026-04-21 22:32:19] INFO: files 2026-02-27-XVV-JRJ006-02.IGC.vva deleted
+[2026-04-21 22:32:39] INFO: File copied
+[2026-04-21 22:32:39] INFO: .vva file created at flight\2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-04-21 22:32:39] INFO: Converting .igc file to .vva
+[2026-04-21 22:32:42] INFO: File copied
+[2026-04-21 22:32:42] INFO: .vva file created at flight\2026-01-27-XVV-JRJ035-01.IGC.vva
+[2026-04-21 22:32:42] INFO: Converting .igc file to .vva
+[2026-04-21 22:32:45] INFO: The file « 2026-01-29-XVV-JRJ035-01.IGC » has already been uploaded
+[2026-04-21 22:32:47] INFO: File copied
+[2026-04-21 22:32:47] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-04-21 22:32:47] INFO: Converting .igc file to .vva
+[2026-04-21 22:32:59] INFO: File copied
+[2026-04-21 22:32:59] INFO: .vva file created at flight\LOGPRO007_20260121_120019.csv.vva
+[2026-04-21 22:32:59] INFO: Converting .csv file to .vva
+[2026-04-21 22:35:57] INFO: files LOGPRO007_20260121_120019.csv.vva deleted
+[2026-04-21 22:35:57] INFO: files 2026-01-29-XVV-JRJ035-01.IGC.vva deleted
+[2026-04-21 22:35:57] INFO: files 2026-01-27-XVV-JRJ035-01.IGC.vva deleted
+[2026-04-21 22:35:57] INFO: files 2026-01-04-XVV-FVN005-02.IGC.vva deleted
+[2026-04-21 22:36:03] INFO: File copied
+[2026-04-21 22:36:03] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-04-21 22:36:03] INFO: Converting .igc file to .vva
+[2026-04-21 22:36:06] INFO: File copied
+[2026-04-21 22:36:06] INFO: .vva file created at flight\2026-01-27-XVV-JRJ035-01.IGC.vva
+[2026-04-21 22:36:06] INFO: Converting .igc file to .vva
+[2026-04-21 22:36:08] INFO: File copied
+[2026-04-21 22:36:08] INFO: .vva file created at flight\2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-04-21 22:36:08] INFO: Converting .igc file to .vva
+[2026-04-21 22:36:11] INFO: File copied
+[2026-04-21 22:36:11] INFO: .vva file created at flight\LOGPRO007_20260121_120019.csv.vva
+[2026-04-21 22:36:11] INFO: Converting .csv file to .vva
+[2026-04-22 08:36:26] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 08:36:29] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 08:36:29] INFO: Analysis done
+[2026-04-22 09:19:33] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-04-22 09:19:34] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-04-22 09:19:34] INFO: Flight already analyzed LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:19:34] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:19:34] INFO: Analysis done
+[2026-04-22 09:35:20] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-04-22 09:35:20] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-04-22 09:35:20] INFO: Analysis done
+[2026-04-22 09:36:55] INFO: Analyzing 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-04-22 09:36:55] INFO: Finished 2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-04-22 09:36:55] INFO: Analysis done
+[2026-04-22 09:39:12] INFO: Analyzing 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-04-22 09:39:12] INFO: Finished 2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-04-22 09:39:12] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:39:13] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:39:13] INFO: Analysis done
+[2026-04-22 09:44:36] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:44:38] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:44:38] INFO: Analysis done
+[2026-04-22 09:46:07] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:46:08] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:46:08] INFO: Analysis done
+[2026-04-22 09:47:30] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:47:31] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:47:31] INFO: Analysis done
+[2026-04-22 09:49:23] INFO: Analyzing LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:49:25] INFO: Finished LOGPRO007_20260121_120019.csv.vva
+[2026-04-22 09:49:25] INFO: Analysis done
+[2026-04-22 09:50:55] INFO: The file « 2026-01-29-XVV-JRJ035-01.IGC » has already been uploaded
+[2026-04-22 09:50:57] INFO: File copied
+[2026-04-22 09:50:57] INFO: .vva file created at flight\2026-01-29-XVV-JRJ035-01.IGC.vva
+[2026-04-22 09:50:57] INFO: Converting .igc file to .vva
+[2026-04-22 09:51:02] INFO: The file « 2026-01-04-XVV-FVN005-02.IGC » has already been uploaded
+[2026-04-22 09:51:03] INFO: File copied
+[2026-04-22 09:51:03] INFO: .vva file created at flight\2026-01-04-XVV-FVN005-02.IGC.vva
+[2026-04-22 09:51:03] INFO: Converting .igc file to .vva
+[2026-04-22 09:51:18] INFO: File copied
+[2026-04-22 09:51:18] INFO: .vva file created at flight\2026-02-27-XVV-JRJ006-02.IGC.vva
+[2026-04-22 09:51:18] INFO: Converting .igc file to .vva
+[2026-04-22 09:51:32] INFO: Analyzing 2026-02-27-XVV-JRJ006-02.IGC.vva
+[2026-04-22 09:51:32] INFO: Finished 2026-02-27-XVV-JRJ006-02.IGC.vva
+[2026-04-22 09:51:32] INFO: Analysis done
