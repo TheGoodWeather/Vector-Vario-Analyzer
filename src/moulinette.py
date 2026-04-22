@@ -4,6 +4,9 @@ import re
 from gps_calculation import calculateDistance, calculateHeading
 import copy
 from units import convert_gps_coords_DDM_to_DD
+from utils import sma_filter, min_res
+
+
 raw_data_model = {  #available for both csv and igc file 
     "GNSS_time" : [],
     "GNSS_lat" : [],
@@ -209,33 +212,36 @@ def fetch_raw_igc(flight_dic, progress_callback):
          
             GNSS_speed.append(round(speed,2))
         
-        # Simple Moving Average (SMA) for filtering GNSS_speed
-        window_size_sma = 4
-        kernel_sma = np.ones(window_size_sma) / window_size_sma
-        raw_data["GNSS_speed"] = np.convolve(GNSS_speed, kernel_sma, mode='same')
+        # Simple Moving Average (SMA) for filtering data
+        
+        raw_data["GNSS_speed"] = sma_filter(raw_data["GNSS_speed"], 4)
         raw_data["GNSS_speed"] = np.append(raw_data["GNSS_speed"], np.nan) #to complete the array
         
         raw_data["DP"] = np.full(len(raw_data["GNSS_time"]),np.nan)
         raw_data["T_sensor"] = np.full(len(raw_data["GNSS_time"]),np.nan)
-
+        
+        #computing P_stat with QNS_alt
         raw_data["P_stat"] = np.round(np.multiply(101325, np.power(np.subtract(1, np.divide(raw_data["QNS_alt"],44109.12)),5.255)))
         
-        vario = []
-        vario = np.multiply(
+        
+        # Simple Moving Average (SMA) for filtering data
+        raw_data["QNS_alt"] = sma_filter(raw_data["QNS_alt"], 7)
+        raw_data["GNSS_alt"] = sma_filter(raw_data["GNSS_alt"], 7)
+        
+        #Computing vario with only GNSS_alt to prevent atmoshpere effect
+        raw_data["vario"] = np.multiply(
             (
-                np.diff(raw_data["QNS_alt"], append=raw_data["QNS_alt"][-1]) +
                 np.diff(raw_data["GNSS_alt"], append=raw_data["GNSS_alt"][-1])
-            ) / 2,
+            ),
             dt
         )
-        
-        # Simple Moving Average (SMA) for filtering vario
-        raw_data["vario"] = np.convolve(vario, kernel_sma, mode='same')
+    
         
         
         raw_data["AirES"],raw_data["AirE"],raw_data["AirW"], raw_data["AirTd"], raw_data["LCL"], raw_data["AirTheta"], raw_data["AirRho"], raw_data["VarioIAS"], raw_data["TAS"] = additional_data_process(raw_data,progress_callback )
-        flight_dic["data"] = raw_data       
-        
+        flight_dic["data"] = raw_data    
+       
+
         return flight_dic["data"]
 
 

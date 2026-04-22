@@ -41,6 +41,8 @@ def update_1D_plot(flight_dic, comboBox_flight , table_widget, plot_widget, curv
     
     remove_crosshair(flight_dic, plot_widget, f"time_{crosshair_id}")
 
+    if not comboBox_flight.currentText(): #Fix to prevent load an empty file . Happens when the combobox takes too long to change
+        return
 
     if len(variables) == 0:
         curve1.setData([], [])
