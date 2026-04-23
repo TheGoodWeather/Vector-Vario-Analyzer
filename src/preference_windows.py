@@ -102,7 +102,8 @@ class ColorDialog(QtWidgets.QDialog):
     
     
     colorWindBarbsChanged = pyqtSignal()
-    
+    colorPlotChanged = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
@@ -115,9 +116,11 @@ class ColorDialog(QtWidgets.QDialog):
 
         uic.loadUi(resource_path("gui/colorwindow.ui"), self)  # Load the .ui file directly
         self.settings = QSettings("Vector Vario", "VVA")
-        self.color_button_windbarb = ColorButton(color="#ff0000")  # Start with red as default
+        self.color_button_windbarb = ColorButton(color="#000000")  # Start with black as default
+        self.color_button_plot = ColorButton(color="#ff0000") #Start with red as default
         self.windbarbs_color_widget.layout().addWidget(self.color_button_windbarb)
-        
+        self.plot_color_widget.layout().addWidget(self.color_button_plot)
+
         
         self.read_settings()
         self.buttonBox.accepted.connect(self.write_settings)    
@@ -127,16 +130,18 @@ class ColorDialog(QtWidgets.QDialog):
     def write_settings(self):
         self.settings.beginGroup("colors")
         self.settings.setValue("windbarbs", self.color_button_windbarb.color())
-
+        self.settings.setValue("plot", self.color_button_plot.color())
         self.settings.endGroup()
         self.colorWindBarbsChanged.emit()
+        self.colorPlotChanged.emit()
         self.close()
         
     def read_settings(self):
         
         
         self.settings.beginGroup("colors")
-        self.color_button_windbarb.setColor(self.settings.value("windbarbs"))
+        self.color_button_windbarb.setColor(self.settings.value("windbarbs" , "#000000"))
+        self.color_button_plot.setColor(self.settings.value("plot" , "#ff0000"))
 
         self.settings.endGroup()
         

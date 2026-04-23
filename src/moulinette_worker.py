@@ -17,22 +17,22 @@ class MoulinetteWorker(QRunnable):
         self.signals = WorkerSignals()
 
     def run(self):
-        # try:
-        if self.flight_dic["is_data_processed"]: #If the flight is already processed, return 
-            self.signals.finished.emit(self.flight_dic)
-            logger.info(f"Flight already analyzed {self.flight_dic['file_name']}")
-            return
-        if self.flight_dic["origin_file_path"].suffix == ".csv":
-            logger.info(f"Analyzing {self.flight_dic['file_name']}")
-            self.flight_dic['data'] = fetch_raw_csv(self.flight_dic, self.signals.progress)
-    
-        elif self.flight_dic["origin_file_path"].suffix == ".IGC":
-            logger.info(f"Analyzing {self.flight_dic['file_name']}")
-            self.flight_dic['data'] = fetch_raw_igc(self.flight_dic, self.signals.progress)
+        try:
+            if self.flight_dic["is_data_processed"]: #If the flight is already processed, return 
+                self.signals.finished.emit(self.flight_dic)
+                logger.info(f"Flight already analyzed {self.flight_dic['file_name']}")
+                return
+            if self.flight_dic["origin_file_path"].suffix == ".csv":
+                logger.info(f"Analyzing {self.flight_dic['file_name']}")
+                self.flight_dic['data'] = fetch_raw_csv(self.flight_dic, self.signals.progress)
         
-        self.signals.finished.emit(self.flight_dic)
+            elif self.flight_dic["origin_file_path"].suffix == ".IGC":
+                logger.info(f"Analyzing {self.flight_dic['file_name']}")
+                self.flight_dic['data'] = fetch_raw_igc(self.flight_dic, self.signals.progress)
             
-    
-        # except Exception as e:
-        #     self.flight_dic['is_data_processed'] = False
-        #     self.signals.error.emit(str(e))
+            self.signals.finished.emit(self.flight_dic)
+                
+        
+        except Exception as e:
+            self.flight_dic['is_data_processed'] = False
+            self.signals.error.emit(str(e))

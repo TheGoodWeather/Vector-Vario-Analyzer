@@ -214,7 +214,7 @@ def fetch_raw_igc(flight_dic, progress_callback):
         
         # Simple Moving Average (SMA) for filtering data
         
-        raw_data["GNSS_speed"] = sma_filter(raw_data["GNSS_speed"], 4)
+        raw_data["GNSS_speed"] = sma_filter(GNSS_speed, 4)
         raw_data["GNSS_speed"] = np.append(raw_data["GNSS_speed"], np.nan) #to complete the array
         
         raw_data["DP"] = np.full(len(raw_data["GNSS_time"]),np.nan)

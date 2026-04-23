@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="inexport_tab">
        <attribute name="title">
@@ -202,6 +202,12 @@
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="handleWidth">
+           <number>9</number>
+          </property>
+          <property name="childrenCollapsible">
+           <bool>false</bool>
           </property>
           <widget class="QWidget" name="widget_7" native="true">
            <property name="sizePolicy">
@@ -452,6 +458,9 @@
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
           </property>
+          <property name="childrenCollapsible">
+           <bool>false</bool>
+          </property>
           <widget class="PlotWidget" name="graph_tab2D">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -699,6 +708,9 @@
          <widget class="QSplitter" name="splitter_polar">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
+          </property>
+          <property name="childrenCollapsible">
+           <bool>false</bool>
           </property>
           <widget class="QWidget" name="widget_12" native="true">
            <property name="sizePolicy">
@@ -1217,6 +1229,9 @@
              <property name="orientation">
               <enum>Qt::Vertical</enum>
              </property>
+             <property name="childrenCollapsible">
+              <bool>false</bool>
+             </property>
              <widget class="PlotWidget" name="graph_atmtab_timeserie">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -1548,7 +1563,6 @@
     </property>
     <addaction name="actionUnits"/>
     <addaction name="actionColors"/>
-    <addaction name="actionLangage"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">

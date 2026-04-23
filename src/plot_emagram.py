@@ -33,6 +33,7 @@ class SkewTWidget:
         self.plevs = np.arange(self.P_b, self.P_t - 1, -self.dp)
         self.cursor_x = 0
         self.cursor_y =1000 #default value for cursor 
+        self._P_data_full = None
         
         self._legend = self.plot_widget.addLegend(
         offset=(10, -10),  # position par rapport au coin
@@ -76,6 +77,7 @@ class SkewTWidget:
         self.plot_widget.setLabel("bottom", "Temperature (°C)")
         self.plot_widget.showGrid(x=False, y=True, alpha=0.4)
         self.plot_widget.setXRange(-25, 40, padding=0)
+        #self.plot_widget.setLogMode(y=True)
     
         #initializing isotherm and isobar curves to empty , used as the skew  cursor
         self._curve_isotherm_cursor = self.plot_widget.plot([], [])
@@ -253,6 +255,7 @@ class SkewTWidget:
         Tdry = flight["data"]["air_T"][x_min : x_max]
         Tdew = flight["data"]["AirTd"][x_min : x_max]
         P = np.multiply(flight["data"]["P_stat"][x_min : x_max], 0.01) #converting Pa to hPa
+        P_full = np.multiply(flight["data"]["P_stat"], 0.01)
         Tdry_skewed = Tdry + self.skewnessTerm(P, self.P_bot)
         Tdew_skewed = Tdew + self.skewnessTerm(P, self.P_bot)
         #updating the range
@@ -263,12 +266,12 @@ class SkewTWidget:
         
         self.plot_widget.setYRange(y_range_max, y_range_min)
         self.plot_widget.setXRange(x_range_min, x_range_max)   
-        self.plot_widget.setLimits(
-            xMin=x_range_min - (x_range_max - x_range_min)*0.5,
-            xMax=x_range_max + (x_range_max - x_range_min)*0.5,
-            yMin=y_range_min - (y_range_max - y_range_min)*0.2,
-            yMax=y_range_max + (y_range_max - y_range_min)*0.2
-        )
+        # self.plot_widget.setLimits(
+        #     xMin=x_range_min - (x_range_max - x_range_min)*0.5,
+        #     xMax=x_range_max + (x_range_max - x_range_min)*0.5,
+        #     yMin=y_range_min - (y_range_max - y_range_min)*0.2,
+        #     yMax=y_range_max + (y_range_max - y_range_min)*0.2
+        # )
         
         if flight['plot']['scatter_emagram'][0] and flight['plot']['scatter_emagram'][1]: #if the scatters Tdew and Tdry item already exists
         
@@ -302,6 +305,7 @@ class SkewTWidget:
         self.wind_barbs.update(P/100, speed, angle, Xgraph)
         self._update_windbarbs_display()
         self._P_data = P / 100 #converting from Pa to hPa
+        self._P_data_full = P_full  #converting from Pa to hPa
         self._Tdry_data = Tdry
         self._calculate_linreg(self._P_data, self._Tdry_data)
     
@@ -357,8 +361,8 @@ class SkewTWidget:
         #     self._curve_moist_adiabat.setData(moist_skewed, ps) 
     
     def skewnessTerm(self, P,P_bot):
-        
-        return 45 * np.log(P_bot/P)
+        return 45 * (P_bot - P) / P_bot 
+        # return 45 * np.log(P_bot/P)
     
     def gamma_s(self, T,p):
         """
@@ -417,7 +421,8 @@ class SkewTWidget:
         #updating labels from cursor
         self.label_cursor_therm.setText(f"{round(self.cursor_x,2)} °C")
         Tk = self.cursor_x + self.skewnessTerm(P_bottom, self.P_bot)
-        B = self.P_bot / (np.exp((x_min - self.cursor_x)/45))
+        B = self.P_bot * (1 - ((x_min - self.cursor_x)/45))
+        #B = self.P_bot / (np.exp((x_min - self.cursor_x)/45))
         temp_adia_zero = (self.cursor_x + 273.15) * (self.P_bot / self.cursor_y) ** kappa - 273.15
 
         if B < P_bottom:
@@ -436,12 +441,25 @@ class SkewTWidget:
         self.label_cursor_alt.setPos(T_left, self.cursor_y)
         
         temp_at_P_bottom = (self.cursor_x + 273.15) * (P_bottom / self.cursor_y) ** kappa - 273.15
+        
+        #Approximation of dry adiabatic taking 0.104 as the slope rate (wich is enough precise for graphic use)
+        # P_at_xmax = (x_max - temp_adia_zero + 45  )/ (0.104  - 45/self.P_bot) 
+        # temp_at_P_top = temp_adia_zero - 0.104 * self.P_bot
+        # P_at_xmax = (x_max - temp_at_P_top) / 0.104
         x_pos_lab_adia = temp_at_P_bottom + self.skewnessTerm(P_bottom, self.P_bot)
-        # x_pos_lab_adia = temp_adia_zero * (P_bottom/self.P_bot)** kappa - self.skewnessTerm(P_bottom, self.P_bot)
         self.label_cursor_adia.setText(f"{round(temp_adia_zero,2)} °C")
-        self.label_cursor_adia.setPos(x_pos_lab_adia, P_bottom)
-        
-        
+        # print(f"PBOT {P_bottom}")
+        # print(f"Pxmax {P_at_xmax}")
+        # print(f"xmax = {x_max}")
+        # if P_at_xmax > P_bottom:
+        #     pos_label_adia_x = x_max - (0.02 * (x_max - x_min))
+        #     pos_label_adia_y = P_at_xmax
+        # else :
+            
+        pos_label_adia_x = x_pos_lab_adia
+        pos_label_adia_y =  P_bottom
+            
+        self.label_cursor_adia.setPos(pos_label_adia_x, pos_label_adia_y)
         
     def _update_labels(self):
         
@@ -529,7 +547,7 @@ class SkewTWidget:
         if len(P_slice) < 2:
             return
         
-        #Regression on Tdry (state curve)
+        # #Regression on Tdry (state curve)
         dataX = P_slice.reshape(-1, 1)
         reg_t  = self.myreg.fit(dataX, Tdry_slice)
         curve_reg_tdry = reg_t.coef_[0] * P_slice + reg_t.intercept_
@@ -537,13 +555,28 @@ class SkewTWidget:
         self._gradient_reg.setData(curve_reg_tdry_skewed, P_slice)
         self.gradient_label.setText(f"{round(reg_t.coef_[0],3)} °C/hPa")
         
+        # # Régression sur Tdry skewé
+        # Tdry_skewed_slice = Tdry_slice + self.skewnessTerm(P_slice, self.P_bot)
+        
+        # dataX  = P_slice.reshape(-1, 1)
+        # reg_t  = self.myreg.fit(dataX, Tdry_skewed_slice)
+        
+        # # La courbe est maintenant linéaire dans l'espace skewé
+        # curve_reg_tdry_skewed = reg_t.coef_[0] * P_slice + reg_t.intercept_
+        # self._gradient_reg.setData(curve_reg_tdry_skewed, P_slice)
+        # self.gradient_label.setText(f"{round(reg_t.coef_[0], 3)} °C/hPa")
+
+        
         
         # Gradient adiabatique sec analytique : d/dP [Tk*(P/P_bot)^kappa] = kappa*Tk/P_bot*(P/P_bot)^(kappa-1)
         # Evalué au milieu de l'intervalle
         P_mid = np.mean(P_slice)
-        T_mid_K = (reg_t.coef_[0] * P_mid + reg_t.intercept_) + 273.15
+        #T_mid_K = (reg_t.coef_[0] * P_mid + reg_t.intercept_) + 273.15
+        T_mid_K = np.mean(Tdry_slice) + 273.15
         dry_adiabat_coef = kappa * T_mid_K / P_mid  # dT/dP analytique en °C/hPa
-       
+        # P_mid   = np.mean(P_slice)
+        # T_mid_K = (reg_t.coef_[0] * P_mid + reg_t.intercept_) - self.skewnessTerm(P_mid, self.P_bot) + 273.15
+        # dry_adiabat_coef_skewed = kappa * T_mid_K / P_mid + 37.5 / (P_mid * np.log(10))  # dérivée de skewnessTerm incluse
         
         if reg_t.coef_[0] > dry_adiabat_coef:
             color = (255, 60, 0)   # instable
@@ -553,6 +586,7 @@ class SkewTWidget:
             color = (0, 150, 255)  # stable
             self.label_atm_state.setText("Stable")
             self.label_atm_state.setStyleSheet("color: rgb(0, 150, 255);")
+            
         self._gradient_reg.setPen(pg.mkPen(color=color, width=2,
                                             style=QtCore.Qt.PenStyle.DashLine))
                 

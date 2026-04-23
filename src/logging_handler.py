@@ -46,7 +46,7 @@ if not logger.handlers: #Used to prevent multiple instance of logger
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     file_handler.setFormatter(file_formatter)
-    logger.addHandler(file_handler)
+    #logger.addHandler(file_handler)
     
     
 

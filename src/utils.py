@@ -32,3 +32,47 @@ def sma_filter(data, window_size_sma):
     filtered[:window_size_sma] = data[:window_size_sma]
     filtered[-window_size_sma:] = data[-window_size_sma:]
     return filtered
+
+
+VARIABLE_LABELS = {
+    "GNSS_time"    : "Time",
+    "GNSS_lat"     : "Latitude",
+    "GNSS_lon"     : "Longitude",
+    "GNSS_alt"     : "GPS Altitude",
+    "QNS_alt"      : "Pressure Altitude",
+    "GNSS_speed"   : "GPS Speed",
+    "GNSS_head"    : "GPS Heading",
+    "compass_head" : "Compass Heading",
+    "pitch"        : "Pitch",
+    "roll"         : "Roll",
+    "G_force"      : "G Force",
+    "vario"        : "Vario",
+    "DP"           : "Dynamic Pressure",
+    "T_sensor"     : "Sensor Temperature",
+    "A0_cor_DP"    : "A0 Corrected DP",
+    "A1_cor_DP"    : "A1 Corrected DP",
+    "P_stat"       : "Static Pressure",
+    "air_T"        : "Air Temperature",
+    "air_RH"       : "Relative Humidity",
+    "wind_origin"  : "Wind Direction",
+    "wind_vel"     : "Wind Speed",
+    "netto"        : "Netto",
+    "IAS"          : "Indicated Airspeed",
+    "AirES"        : "Saturation Vapor",
+    "AirE"        : "Vapor Pressure",
+    "AirW"        : "Mixing Ratio",
+    "AirTd"        : "Dew Point",
+    "LCL"        : "Cloud Base",
+    "AirTheta"        : "Potential Temperature",
+    "AirRho"        : "Air Density",
+    "VarioIAS"        : "Vario IAS ",
+    "TAS"        : "True Air Speed",
+    
+}
+
+
+def get_label(variable: str) -> str:
+    """
+    Return a more comprehensive label from the VARIABLE_LEVELS list
+    """
+    return VARIABLE_LABELS.get(variable, variable)

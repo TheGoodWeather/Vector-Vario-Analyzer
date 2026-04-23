@@ -13,6 +13,7 @@ import sys
 import numpy as np
 from pathlib  import Path 
 from units import get_unit, convert_array_to_unit
+from utils import get_label
 
 def update_vva_table(data, table_widget):
     
@@ -201,4 +202,6 @@ def populate_table_1D_variable(flight_dic, table1, table2, choice):
     table1.blockSignals(False)
     table2.blockSignals(False)
     
+
+
 

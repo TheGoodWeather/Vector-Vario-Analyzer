@@ -9,6 +9,7 @@ from units import convert_array_to_unit , get_unit
 from table_handler import create_polar_table
 import math
 import pprint
+from utils import get_label
 
 settings = QSettings("Vector Vario", "VVA") #Initialize settings
 pg.setConfigOptions(useOpenGL=True)
@@ -225,106 +226,16 @@ def toggle_x_link(plot1, plot2, checkbox):
         plot2.setXLink(None)
 
 
-# def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
-#     """
-#     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
-#     """
-   
-#     plot_widget.setAspectLocked(True)
-    
-#     flight_selected = get_flight_variable_2D(tab_widget_flight)
-#     if len(flight_selected) == 0:
-#         plot_widget.clear()
-#         return
-    
-#     for row, flight in enumerate(flight_dic):
-#         if flight['is_data_processed']:
-#             for flight_to_plot, variable in flight_selected:
-#                 if flight['file_name'].split(".")[0] == flight_to_plot or flight['metadata']['alias'] == flight_to_plot :
-                        
-#                     x = flight['data']['GNSS_lon']
-#                     y = flight['data']['GNSS_lat']
-                    
-                    
-#                     #setting the color mapping 
-#                     if not variable:
-#                         if flight['plot']['scatter_map']:
-#                             plot_widget.removeItem(flight['plot']['scatter_map'])
-                                        
-#                         color = flight['plot']['plot_color']
-#                         pen = pg.mkPen(color, width=2)
-#                         brush = None
-                        
-#                         flight['plot']['scatter_map'] = plot_widget.plot(
-#                             x=x,
-#                             y=y,
-#                             brush=brush,
-#                             size=2,
-#                             pen=pen,
-#                             symbol= None
-#                         )
-                            
-#                     else:
-#                         cmap = pg.colormap.get('turbo')
-#                         z = flight['data'][variable]
-                    
-#                         z_min, z_max = np.nanmin(z), np.nanmax(z)
-                        
-#                         if z_max - z_min == 0:
-#                             norm = np.zeros_like(z)
-#                         else:
-#                             norm = (z - z_min) / (z_max - z_min)
-                        
-#                         brush = cmap.map(norm, mode='qcolor')
-#                         pen = None
-                        
-#                         if flight['plot']['scatter_map']:
-#                             plot_widget.removeItem(flight['plot']['scatter_map'])
-                    
-#                         flight['plot']['scatter_map'] = pg.ScatterPlotItem(
-#                             x=x,
-#                             y=y,
-#                             brush=brush,
-#                             size=2,
-#                             pen=pen
-#                         )
-#                         plot_widget.addItem(flight['plot']['scatter_map'])
-    
-                    
-#                     plot_widget.setTitle(f"{flight['file_name'].split('.')[0]} flight trajectory")
-                    
-#                     #START / END
-#                     if not flight['plot']['text_map_start']:
-#                         start = pg.TextItem("Start", color='black')
-#                         plot_widget.addItem(start)
-#                         flight['plot']['text_map_start'] = start
-                       
-#                     if not flight['plot']['text_map_end']:
-#                         end = pg.TextItem("End", color='black')
-#                         plot_widget.addItem(end)
-#                         flight['plot']['text_map_end'] = end
-  
-#                     flight['plot']['text_map_start'].setPos(x[0], y[0])
-#                     flight['plot']['text_map_start'].show()
-#                     flight['plot']['text_map_end'].setPos(x[-1], y[-1])
-#                     flight['plot']['text_map_end'].show()
-                    
-#                     plot_widget.autoRange()
-                    
-#             # for flight_to_plot, variable not in flight_selected:            
-            
-#             #     if flight['plot']['scatter_map']:
-#             #         plot_widget.removeItem(flight['plot']['scatter_map'])
-#             #         plot_widget.removeItem(flight['plot']['text_map_start'])
-#             #         plot_widget.removeItem(flight['plot']['text_map_end'])
-#             #         plot_widget.autoRange()
+
     
 def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
     """
     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
     """
 
-
+    settings.beginGroup("colors")
+    color = QColor(settings.value("plot", "#ff0000"))   
+    settings.endGroup()
     flight_selected = get_flight_variable_2D(tab_widget_flight)
 
     selected_names = [f for f, v in flight_selected]
@@ -360,10 +271,22 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
             if flight['plot']['scatter_map']:
                 plot_widget.removeItem(flight['plot']['scatter_map'])
                 flight['plot']['scatter_map'] = None
+            
+            # Suppression ancienne courbe de liaison si elle existe
+            if flight['plot'].get('link_curve_map'):
+                plot_widget.removeItem(flight['plot']['link_curve_map'])
+                flight['plot']['link_curve_map'] = None
 
             
+            # --- Interpolation x1 . Set to anticipate future improvements---
+            t_orig = np.arange(len(x))
+            t_new  = np.linspace(0, len(x) - 1, len(x) *1)
+            x_interp = np.interp(t_new, t_orig, x)
+            y_interp = np.interp(t_new, t_orig, y)
+            
+            
             if not variable:
-                pen = pg.mkPen('r', width=2)
+                pen = pg.mkPen(color, width=2)
 
                 flight['plot']['scatter_map'] = plot_widget.plot(
                     x=x,
@@ -372,30 +295,52 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
                 )
 
             else:
+                
+       
+                
                 cmap = pg.colormap.get('turbo')
                 z = flight['data'][variable]
             
-                z_min, z_max = np.nanmin(z), np.nanmax(z)
+                # Interpolation de z également
+                z_interp = np.interp(t_new, t_orig, z)
+             
+                z_min, z_max = np.nanmin(z_interp), np.nanmax(z_interp)            
+            
+                #z_min, z_max = np.nanmin(z), np.nanmax(z)
                 
                 if z_max - z_min == 0:
-                    norm = np.zeros_like(z)
+                    norm = np.zeros_like(z_interp)
                 else:
-                    norm = (z - z_min) / (z_max - z_min)
+                    norm = (z_interp - z_min) / (z_max - z_min)
                 
+           
                 brush = cmap.map(norm, mode='qcolor')
                 pen = None
                 
-                if flight['plot']['scatter_map']:
-                    plot_widget.removeItem(flight['plot']['scatter_map'])
-            
+                link_pen = pg.mkPen(QColor(180, 180, 180, 150), width=1)
+                link_curve = pg.PlotCurveItem(x=x_interp, y=y_interp, pen=link_pen)
+                link_curve.setZValue(-1)
+                plot_widget.addItem(link_curve)
+                flight['plot']['link_curve_map'] = link_curve
+             
                 flight['plot']['scatter_map'] = pg.ScatterPlotItem(
-                    x=x,
-                    y=y,
+                    x=x_interp,
+                    y=y_interp,
                     brush=brush,
-                    size=2,
-                    pen=pen
+                    size=6,
+                    pen=None
                 )
                 plot_widget.addItem(flight['plot']['scatter_map'])
+                # if flight['plot']['scatter_map']:
+                #     plot_widget.removeItem(flight['plot']['scatter_map'])
+                # flight['plot']['scatter_map'] = pg.ScatterPlotItem(
+                #     x=x,
+                #     y=y,
+                #     brush=brush,
+                #     size=10,
+                #     pen=pen
+                # )
+                # plot_widget.addItem(flight['plot']['scatter_map'])
               
 
             # START / END
@@ -414,9 +359,14 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
             flight['plot']['text_map_end'].setPos(x[-1], y[-1])
             flight['plot']['text_map_end'].show()
         else:
+            
             if flight['plot']['scatter_map']:
                 plot_widget.removeItem(flight['plot']['scatter_map'])
                 flight['plot']['scatter_map'] = None
+                
+            if flight['plot'].get('link_curve_map'):
+                plot_widget.removeItem(flight['plot']['link_curve_map'])
+                flight['plot']['link_curve_map'] = None
                 
 
             if flight['plot']['text_map_start']:

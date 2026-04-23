@@ -283,6 +283,7 @@ def load_vva_files(flight_dir="flight"):
                      "text_map_end" : None,
                      "roi_emagram": None,
                      "plot_color" : None,
+                     "link_curve_map ": None,
                      "crosshair_v_polar": None,
                      "crosshair_h_polar": None,
                      "highlight_point_map": None,

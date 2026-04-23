@@ -25,6 +25,7 @@ import pprint
 import numpy as np
 from preference_windows import UnitDialog, ColorDialog
 import plot 
+from utils import get_label
 
 
 SOFTWARE_VERSION = "1.0.0"
@@ -47,13 +48,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
-        # self.unit_dialog.unitsChanged.connect(lambda event: self.on_2D_point_clicked(event, self.flight, self.graph_tab2D, self.tableWidget_flights_plot2D, self.tableWidget_data_point_tab2D, self.label_table_data))
+        self.unit_dialog.unitsChanged.connect(lambda : self.populate_table_2D_variable(label_table_data = self.label_table_data, table_data = self.tableWidget_data_point_tab2D))
         # self.unit_dialog.unitsChanged.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph1_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1))
         # self.unit_dialog.unitsChanged.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph2_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2))
         
         self.color_dialog = ColorDialog(parent = self)  
         self.color_dialog.colorWindBarbsChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
-        
+        self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D ))
+
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
@@ -61,7 +63,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.analyze_running = False
         
         
-        
+        self.last_2D_selection = None  # last point clicked in the 2D map
         
         
         self.setWindowTitle(f"Vector Vario Software Utility v{SOFTWARE_VERSION}")
@@ -1020,7 +1022,6 @@ class MainWindow(QtWidgets.QMainWindow):
         It also retrieves the corresponding flight and displays its value on the data table
         Remove previous crosshair from other flights aswell 
         """
-        table_data.setRowCount(0)        
         
         vb = plot_widget.getViewBox()
         click_pos = event.scenePos()
@@ -1062,49 +1063,30 @@ class MainWindow(QtWidgets.QMainWindow):
                 for flight in flight_dic:
                     if (flight['file_name'].split(".")[0] == best_flight) or (flight['metadata']['alias'] == best_flight):
                         flight_to_display_data = flight
+                        self.last_2D_selection = (flight_to_display_data, best_index)  # ← mémorisation
+                        self.populate_table_2D_variable(flight_to_display_data, best_index, table_data, label_table_data)
+
                         break 
-                label_table_data.setText(f"Data from flight : {self.get_alias(flight_to_display_data['file_name'].split('.')[0])}")
-                row = 0
-                for variable in flight_to_display_data['data']: #creating table
-                    if len(flight_to_display_data['data'][variable]) > 0 :
-                        table_data.insertRow(row)
-                                    
-                        item_variable = QTableWidgetItem(variable)
-                        item_variable.setFlags(item_variable.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                        table_data.setItem(row, 0, item_variable)
-                        
-                        data = convert_array_to_unit(flight_to_display_data['data'][variable], variable)
-                        if isinstance(data[best_index], float):
-                            item_value = QTableWidgetItem(str(round(data[best_index],2)))
-                        else:
-                            item_value = QTableWidgetItem(str(data[best_index]))
-    
-                        item_value.setFlags(item_value.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                        table_data.setItem(row, 1, item_value)
-                        
-                        item_unit = QTableWidgetItem(get_unit(variable))
-                        item_unit.setFlags(item_unit.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                        table_data.setItem(row, 2, item_unit)
-                        
-                        row += 1
-                        #setting the point to Highlight 
-                        if flight_to_display_data['plot'].get('highlight_point_map'):
-                            # Déjà existant → on met à jour
-                            flight_to_display_data['plot']['highlight_point_map'].setData([float(flight_to_display_data['data']['GNSS_lon'][best_index])], [float(flight_to_display_data['data']['GNSS_lat'][best_index])])
-                        else:
-                            # Création du point highlight
-                            scatter = pg.ScatterPlotItem(
-                                x=[float(flight_to_display_data['data']['GNSS_lon'][best_index])],
-                                y=[float(flight_to_display_data['data']['GNSS_lat'][best_index])],
-                                size=6,  
-                                pen=pg.mkPen('black', width=2),   # contour
-                                brush=pg.mkBrush(255, 0, 0, 180), # rouge semi-transparent
-                                symbol='o'
-                            )
-                        
-                            plot_widget.addItem(scatter)
-                            flight_to_display_data['plot']['highlight_point_map'] = scatter
+                #setting the point to Highlight 
+                if flight_to_display_data['plot'].get('highlight_point_map'):
+                    # Déjà existant → on met à jour
+                    flight_to_display_data['plot']['highlight_point_map'].setData([float(flight_to_display_data['data']['GNSS_lon'][best_index])], [float(flight_to_display_data['data']['GNSS_lat'][best_index])])
+                else:
+                    # Création du point highlight
+                    scatter = pg.ScatterPlotItem(
+                        x=[float(flight_to_display_data['data']['GNSS_lon'][best_index])],
+                        y=[float(flight_to_display_data['data']['GNSS_lat'][best_index])],
+                        size=6,  
+                        pen=pg.mkPen('black', width=2),   # contour
+                        brush=pg.mkBrush(255, 0, 0, 180), # rouge semi-transparent
+                        symbol='o'
+                    )
+                
+                    plot_widget.addItem(scatter)
+                    flight_to_display_data['plot']['highlight_point_map'] = scatter
             else:
+                print('here')
+                self.last_2D_selection = None
                 for flight in flight_dic:
                     if flight['file_name'].split(".")[0] == best_flight:
                         table_data.clearContents()
@@ -1114,7 +1096,41 @@ class MainWindow(QtWidgets.QMainWindow):
                             flight['plot']['highlight_point_map'] = None
     
 
-            
+    def populate_table_2D_variable(self, flight=None, index=None, table_data=None, label_table_data=None):
+        """
+        Populate the 2D table with all the data from the point clicked in the map
+        """
+        if flight is None:
+            if self.last_2D_selection is None:
+                return
+        flight, index = self.last_2D_selection
+        table_data.setRowCount(0)
+        label_table_data.setText(f"Data from flight : {self.get_alias(flight['file_name'].split('.')[0])}")
+        
+        row = 0
+        for variable in flight['data']:
+            if len(flight['data'][variable]) > 0:
+                table_data.insertRow(row)
+    
+                item_variable = QTableWidgetItem(variable)
+                item_variable.setFlags(item_variable.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                table_data.setItem(row, 0, item_variable)
+    
+                data = convert_array_to_unit(flight['data'][variable], variable)
+    
+                if isinstance(data[index], float):
+                    item_value = QTableWidgetItem(str(round(data[index], 2)))
+                else:
+                    item_value = QTableWidgetItem(str(data[index]))
+    
+                item_value.setFlags(item_value.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                table_data.setItem(row, 1, item_value)
+    
+                item_unit = QTableWidgetItem(get_unit(variable))
+                item_unit.setFlags(item_unit.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                table_data.setItem(row, 2, item_unit)
+    
+                row += 1  
         
     def on_1D_point_clicked(self, event, flight_dic, plot_widget, combobox_flight, table_data):
         """
