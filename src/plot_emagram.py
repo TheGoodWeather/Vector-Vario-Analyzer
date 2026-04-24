@@ -20,11 +20,11 @@ ezero = 6.112# hPa
 
 
 class SkewTWidget:
-    def __init__(self, plot_widget, label_gradient, label_atm_state, P_bot=1013.25, P_b=1013.25, P_t=300., dp=1):
+    def __init__(self, plot_widget, label_gradient_1000, label_gradient_100, P_bot=1013.25, P_b=1013.25, P_t=300., dp=1):
         
-        self.gradient_label = label_gradient
         self.plot_widget = plot_widget
-        self.label_atm_state = label_atm_state
+        self.gradient_label_1000 = label_gradient_1000
+        self.gradient_label_100 = label_gradient_100
         pg.setConfigOptions(antialias=True)
         self.P_bot = P_bot
         self.P_b = P_b
@@ -103,8 +103,8 @@ class SkewTWidget:
         #Gradient 
         self._gradient_reg = self.plot_widget.plot([], [], pen=pg.mkPen(color=(212, 28, 163, 100), width=1, style=QtCore.Qt.PenStyle.SolidLine))
         self._gradient_reg.setVisible(False)
-        self.gradient_label.setVisible(False)
-        self.label_atm_state.setVisible(False)
+        self.gradient_label_1000.setVisible(False)
+        self.gradient_label_100.setVisible(False)
         # Points déplaçables
         self._reg_handle_min = pg.TargetItem(
             pos=(0, 0),
@@ -266,12 +266,12 @@ class SkewTWidget:
         
         self.plot_widget.setYRange(y_range_max, y_range_min)
         self.plot_widget.setXRange(x_range_min, x_range_max)   
-        # self.plot_widget.setLimits(
-        #     xMin=x_range_min - (x_range_max - x_range_min)*0.5,
-        #     xMax=x_range_max + (x_range_max - x_range_min)*0.5,
-        #     yMin=y_range_min - (y_range_max - y_range_min)*0.2,
-        #     yMax=y_range_max + (y_range_max - y_range_min)*0.2
-        # )
+        self.plot_widget.setLimits(
+            xMin=x_range_min - (x_range_max - x_range_min)*0.5,
+            xMax=x_range_max + (x_range_max - x_range_min)*0.5,
+            yMin=y_range_min - (y_range_max - y_range_min)*0.2,
+            yMax=y_range_max + (y_range_max - y_range_min)*0.2
+        )
         
         if flight['plot']['scatter_emagram'][0] and flight['plot']['scatter_emagram'][1]: #if the scatters Tdew and Tdry item already exists
         
@@ -542,18 +542,32 @@ class SkewTWidget:
         idx_max = max(self._reg_point_min, self._reg_point_max)
     
         P_slice    = self._P_data[idx_min:idx_max + 1]
+        Alt_slice = 44109.12 * (1 - ((P_slice/1013.25)**(1/5.255))) #Pressure altitude in meter
+        Alt_slice_100 = Alt_slice / 100 #Pressure altitude in 100meter
+        Alt_slice_1000 =  Alt_slice / 1000 #Pressure altitude in kilometer
+
+
         Tdry_slice = self._Tdry_data[idx_min:idx_max + 1]
     
         if len(P_slice) < 2:
             return
         
-        # #Regression on Tdry (state curve)
+        # #Regression on Tdry (state curve) and P
         dataX = P_slice.reshape(-1, 1)
         reg_t  = self.myreg.fit(dataX, Tdry_slice)
         curve_reg_tdry = reg_t.coef_[0] * P_slice + reg_t.intercept_
         curve_reg_tdry_skewed = curve_reg_tdry + self.skewnessTerm(P_slice, self.P_bot)
         self._gradient_reg.setData(curve_reg_tdry_skewed, P_slice)
-        self.gradient_label.setText(f"{round(reg_t.coef_[0],3)} °C/hPa")
+        
+        # #Regression on Tdry (state curve) and Alt_slice_100
+        dataX100 = Alt_slice_100.reshape(-1, 1)
+        reg_t_100  = self.myreg.fit(dataX100, Tdry_slice)
+        thermal_gradient_100 = reg_t_100.coef_[0] 
+        
+        # #Regression on Tdry (state curve) and Alt_slice_1000
+        dataX1000 = Alt_slice_1000.reshape(-1, 1)
+        reg_t_1000  = self.myreg.fit(dataX1000, Tdry_slice)
+        thermal_gradient_1000 = reg_t_1000.coef_[0] 
         
         # # Régression sur Tdry skewé
         # Tdry_skewed_slice = Tdry_slice + self.skewnessTerm(P_slice, self.P_bot)
@@ -571,22 +585,27 @@ class SkewTWidget:
         # Gradient adiabatique sec analytique : d/dP [Tk*(P/P_bot)^kappa] = kappa*Tk/P_bot*(P/P_bot)^(kappa-1)
         # Evalué au milieu de l'intervalle
         P_mid = np.mean(P_slice)
-        #T_mid_K = (reg_t.coef_[0] * P_mid + reg_t.intercept_) + 273.15
         T_mid_K = np.mean(Tdry_slice) + 273.15
         dry_adiabat_coef = kappa * T_mid_K / P_mid  # dT/dP analytique en °C/hPa
-        # P_mid   = np.mean(P_slice)
-        # T_mid_K = (reg_t.coef_[0] * P_mid + reg_t.intercept_) - self.skewnessTerm(P_mid, self.P_bot) + 273.15
-        # dry_adiabat_coef_skewed = kappa * T_mid_K / P_mid + 37.5 / (P_mid * np.log(10))  # dérivée de skewnessTerm incluse
-        
-        if reg_t.coef_[0] > dry_adiabat_coef:
-            color = (255, 60, 0)   # instable
-            self.label_atm_state.setText("Unstable")
-            self.label_atm_state.setStyleSheet("color: rgb(255, 60, 0);")
-        else:
-            color = (0, 150, 255)  # stable
-            self.label_atm_state.setText("Stable")
-            self.label_atm_state.setStyleSheet("color: rgb(0, 150, 255);")
+        dz_dP = 44109.12 * (-1/5.255) * (1/1013.25) * (P_mid/1013.25) ** (1/5.255 - 1)  # m/hPa
+
+        dry_adiabat_thermal_gradient_100 = dry_adiabat_coef / dz_dP * 100 
+        if thermal_gradient_100 >= -0.65: #Atmosphere stable, set black color to the gradient curve
+            color = (0, 0, 0)   # black
+
+        elif  (thermal_gradient_100 < -0.65)  and (thermal_gradient_100 >= dry_adiabat_thermal_gradient_100 ): #Atmosphere neutral
+            color = (19, 242, 79)  # green
             
+        elif thermal_gradient_100 < dry_adiabat_thermal_gradient_100 :
+            color = (12, 140, 245)  # blue
+
+        
+        font = self.gradient_label_1000.font()
+        font.setBold(True)
+        self.gradient_label_1000.setFont(font)
+
+        self.gradient_label_1000.setText(f"{round(thermal_gradient_1000,2)} °C/km")
+        self.gradient_label_100.setText(f"{round(thermal_gradient_100,3)} °C/100m")
         self._gradient_reg.setPen(pg.mkPen(color=color, width=2,
                                             style=QtCore.Qt.PenStyle.DashLine))
                 
@@ -645,8 +664,8 @@ class SkewTWidget:
         self._gradient_reg.setVisible(state)
         self._reg_handle_min.setVisible(state)
         self._reg_handle_max.setVisible(state)
-        self.gradient_label.setVisible(state)
-        self.label_atm_state.setVisible(state)
+        self.gradient_label_1000.setVisible(state)
+        self.gradient_label_100.setVisible(state)
         
 
                 

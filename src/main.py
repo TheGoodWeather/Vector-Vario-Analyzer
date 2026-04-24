@@ -23,7 +23,7 @@ from polar_generator import update_polar_generator_values
 from pathlib  import Path 
 import pprint
 import numpy as np
-from preference_windows import UnitDialog, ColorDialog
+from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog
 import plot 
 from utils import get_label
 
@@ -81,6 +81,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionUnits.triggered.connect(self.display_unit_window)
         self.actionColors.triggered.connect(self.display_color_window)
         self.actionImport_file.triggered.connect(self.on_button_load_file)
+        self.actionLicense.triggered.connect(self.display_license_window)
+        self.actionDependancies.triggered.connect(self.display_requirements_window)
         """
         Widgets tab import  / export
         """
@@ -381,7 +383,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Widgets tab EMAGRAM
         """
         
-        self.skewt = SkewTWidget(self.graph_skewt, self.label_t_gradient , self.label_state_atm)
+        self.skewt = SkewTWidget(self.graph_skewt, self.label_t_gradient_1000 , self.label_t_gradient_100)
         
         
         self.graph_atmtab_timeserie.setBackground("w")
@@ -393,11 +395,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda choice: self.populate_combobox_variable(self.flight, self.comboBox_variable_select_atmtab, choice, 'emagram'))
         
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_atmtab_timeserie, None))
-        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.skewt, self.comboBox_flight_select_atmtab ))
         self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda: plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
-        #self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_atmtab_timeserie, self.comboBox_flight_select_atmtab, 'roi_emagram'))
-        
+        self.comboBox_flight_select_atmtab.currentTextChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.skewt, self.comboBox_flight_select_atmtab ))
+        self.comboBox_variable_select_atmtab.currentTextChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.skewt, self.comboBox_flight_select_atmtab ))
+
         self.checkBox_isotherm.stateChanged.connect(lambda state: self.horizontalSlider_isotherm.setEnabled(state))
         self.checkBox_dryadia.stateChanged.connect(lambda state: self.horizontalSlider_dry_adia.setEnabled(state))
         self.checkBox_moist_adia.stateChanged.connect(lambda state: self.horizontalSlider_moist_adia.setEnabled(state))
@@ -765,7 +767,7 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         var_to_unit_group_dic = {
             "heading": ["compass_head", "GNSS_head", "wind_origin"],
-            "speed": ["GNSS_speed", "vario", "wind_vel", "IAS", "VarioIAS", "TAS", "netto"],
+            "speed": ["GNSS_speed", "vario", "wind_vel", "IAS", "VarioIAS", "TAS", "netto" ,'GNSS_velD'],
             "altitude": ["GNSS_alt", "QNS_alt", "LCL"],
             "temperature": ["T_sensor", "air_T", "AirTheta", "AirTd"],
             "angle": ["pitch", "roll"],
@@ -801,7 +803,7 @@ class MainWindow(QtWidgets.QMainWindow):
             table_widget.blockSignals(False)
             return
     
-        first_var = items_checked[0].text()
+        first_var = items_checked[0].data(Qt.ItemDataRole.UserRole)
         first_group = var_to_group.get(first_var)
     
         # variable sans groupe
@@ -821,7 +823,7 @@ class MainWindow(QtWidgets.QMainWindow):
             for row in range(table_widget.rowCount()):
                 item = table_widget.item(row, 0)
                 if item:
-                    var = item.text()
+                    var = item.data(Qt.ItemDataRole.UserRole)
                     if var_to_group.get(var) != first_group:
                         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
                         item.setBackground(QBrush(QColor(240, 240, 240)))
@@ -867,7 +869,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 for variable in flight['data']:
                     if variable != 'GNSS_time':
                         if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
-                            combobox_var.addItem(variable)
+                            combobox_var.addItem(get_label(variable), userData=variable)
                 table_widget.setCellWidget(row, 1, combobox_var)
     
                 row += 1
@@ -889,17 +891,17 @@ class MainWindow(QtWidgets.QMainWindow):
                         for variable in priority_vars:
                             if variable in flight['data']:
                                 if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
-                                    combobox_var.addItem(variable)
+                                    combobox_var.addItem(get_label(variable), userData=variable)
                     elif tab == 'emagram':
                         priority_vars = ['GNSS_alt']
                         for variable in priority_vars:
                             if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
-                                combobox_var.addItem(variable)
+                                combobox_var.addItem(get_label(variable), userData=variable)
                         for variable in flight['data'] :
                             if variable in priority_vars or variable == 'GNSS_time':  # ← on skip les prioritaires et GNSS_time
                                 continue
                             if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
-                                combobox_var.addItem(variable)
+                                combobox_var.addItem(get_label(variable), userData=variable)
     
     
 
@@ -927,6 +929,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.color_dialog.hide()
         else:
             self.color_dialog.show()
+            
+    def display_license_window(self):
+        dialog = LicenseDialog(self)
+        dialog.exec()
+        
+    def display_requirements_window(self):
+        dialog = RequirementsDialog(self)
+        dialog.exec()
+        
             
     def on_radiobutton_dis_gen_pol(self, state, scatter_polar, plot_widget_vxvz, line): 
         """
@@ -1085,7 +1096,6 @@ class MainWindow(QtWidgets.QMainWindow):
                     plot_widget.addItem(scatter)
                     flight_to_display_data['plot']['highlight_point_map'] = scatter
             else:
-                print('here')
                 self.last_2D_selection = None
                 for flight in flight_dic:
                     if flight['file_name'].split(".")[0] == best_flight:
@@ -1112,7 +1122,8 @@ class MainWindow(QtWidgets.QMainWindow):
             if len(flight['data'][variable]) > 0:
                 table_data.insertRow(row)
     
-                item_variable = QTableWidgetItem(variable)
+                item_variable = QTableWidgetItem(get_label(variable))
+                item_variable.setData(Qt.ItemDataRole.UserRole, variable)
                 item_variable.setFlags(item_variable.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 table_data.setItem(row, 0, item_variable)
     
@@ -1222,7 +1233,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
              
             for row in range(table_data.rowCount()): #Updating table content
-                variable_already_set = table_data.item(row, 0).text()  
+                variable_already_set = table_data.item(row, 0).data(Qt.ItemDataRole.UserRole) 
                 data = convert_array_to_unit(flight_selected_dic['data'][variable_already_set], variable_already_set)
                 if isinstance(data[idx], float):
                     item_value = QTableWidgetItem(str(round(data[idx],2)))

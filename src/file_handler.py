@@ -7,6 +7,7 @@ from pathlib import Path
 import pyqtgraph as pg
 from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtGui import QColor, QPen, QBrush
+import csv
 
 def generate_vva(filepath, metadata):
     FUNCTION_VERSION = 1.0
@@ -173,12 +174,17 @@ def csv2vva(csv_filepath):
     gnss_time = []
     
     with open(csv_filepath, "r", encoding="utf-8") as file:
-        for line in islice(file,5, None): #To change if there is more comments added into the file
-            if int(line.split(";")[1]) == 1 :  #If the GPS is fixed
-                gps_altitude.append(float(line.split(";")[5]))
-                windspeed.append(float(line.split(";")[21]))
-                winddir.append(int(line.split(";")[20]))
-                gnss_time.append(datetime.strptime(str(line.split(";")[2]), "%Y-%m-%d %H:%M:%S.%f"))
+       # Sauter les lignes de commentaires
+        lines = (line for line in file if not line.startswith("#"))
+        
+        reader = csv.DictReader(lines, delimiter=";")
+        
+        for row in reader:
+            if int(row["GNSS_fix"]) == 1:
+                gps_altitude.append(float(row["GNSS_alt"]))
+                windspeed.append(float(row["wind_vel"]))
+                winddir.append(int(row["wind_origin"]))
+                gnss_time.append(datetime.strptime(row["GNSS_time"], "%Y-%m-%d %H:%M:%S.%f"))
         
     altitude_max = max(gps_altitude)
     altitude_min = min(gps_altitude)

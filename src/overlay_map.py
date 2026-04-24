@@ -31,11 +31,12 @@ from collections import OrderedDict
 from io import BytesIO
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
- 
+
 import numpy as np
 import requests
 from PIL import Image
- 
+
+from logging_handler import QTextEditLogger, logger
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore
  
@@ -331,7 +332,11 @@ class OSMTileOverlay(QtCore.QObject):
  
         # Statistiques
         self._stats = {"l1_hit": 0, "l2_hit": 0, "dl": 0, "dl_err": 0}
- 
+        
+        # Connexion internet : verifiee une seule fois, warning unique
+        self._online = None   # None = pas encore teste
+        threading.Thread(target=self._check_connectivity, daemon=True).start()
+
         # Timer debounce
         self._debounce = QtCore.QTimer(self)
         self._debounce.setSingleShot(True)
@@ -344,6 +349,24 @@ class OSMTileOverlay(QtCore.QObject):
  
         self._view.sigRangeChanged.connect(self._on_range_changed)
         QtCore.QTimer.singleShot(100, self._refresh_tiles)
+        
+    # ------------------------------------------------------------------
+    # Connectivite
+    # ------------------------------------------------------------------
+ 
+    def _check_connectivity(self):
+        """Teste la connexion une seule fois au demarrage (thread daemon)."""
+        try:
+            requests.get("https://tile.openstreetmap.org", timeout=5)
+            self._online = True
+            logger.debug("[OSMTileOverlay] Connexion internet OK.")
+        except Exception:
+            self._online = False
+            logger.warning(
+                "[OSMTileOverlay] No internet connexion detected. "
+                "Only cached tiles will be used. No download will be done."
+            )
+
  
     # ------------------------------------------------------------------
     # Slots Qt (thread principal)
@@ -488,6 +511,11 @@ class OSMTileOverlay(QtCore.QObject):
             return
  
         # 3. Telechargement HTTP
+        if self._online is False:
+            with self._in_flight_lock:
+                self._in_flight.discard(key)
+            return
+
         url = self._tile_url.format(z=zoom, x=tx, y=ty)
         try:
             resp = requests.get(url, headers=self._headers, timeout=10)
@@ -502,7 +530,7 @@ class OSMTileOverlay(QtCore.QObject):
             self._stats["dl_err"] += 1
             with self._in_flight_lock:
                 self._in_flight.discard(key)
-            print(f"[OSMTileOverlay] Erreur ({zoom}/{tx}/{ty}): {exc}")
+            logger.debug(f"[OSMTileOverlay] Erreur tuile ({zoom}/{tx}/{ty}): {exc}")
  
     # ------------------------------------------------------------------
     # API publique

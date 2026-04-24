@@ -72,8 +72,8 @@ def update_1D_plot(flight_dic, comboBox_flight , table_widget, plot_widget, curv
             y1_min_limit= np.min(y1) - (0.1 * (np.max(y1) - np.min(y1)))
             y1_max_limit= np.max(y1) + (0.1 * (np.max(y1) - np.min(y1)))
 
-            plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])}")
-            plot_widget.setTitle(f"{variables[0]} vs time")
+            plot_widget.setLabel("left", f"{get_label(variables[0])} {get_unit(variables[0])}")
+            plot_widget.setTitle(f"{get_label(variables[0])} vs time")
             plot_widget.setLimits(
                 xMin=x_min_limit,
                 xMax=x_max_limit,
@@ -82,7 +82,7 @@ def update_1D_plot(flight_dic, comboBox_flight , table_widget, plot_widget, curv
             )
             
             pen1 = pg.mkPen(flight['plot']['plot_color'], width=1)
-            legend.addItem(curve1, variables[0])
+            legend.addItem(curve1, get_label(variables[0]))
             curve1.setPen(pen1)
             curve1.setData(x, y1,
                 pen=pen1,
@@ -101,8 +101,8 @@ def update_1D_plot(flight_dic, comboBox_flight , table_widget, plot_widget, curv
                 y_min_limit= min(y2_min_limit, y1_min_limit)
                 y_max_limit= max(y2_max_limit, y1_max_limit)
                 
-                plot_widget.setLabel("left", f"{variables[0]} {get_unit(variables[0])} / {variables[1]} {get_unit(variables[1])}")
-                plot_widget.setTitle(f"{variables[0]} and {variables[1]} vs time")
+                plot_widget.setLabel("left", f"{get_label(variables[0])} {get_unit(variables[0])} / {get_label(variables[1])} {get_unit(variables[1])}")
+                plot_widget.setTitle(f"{get_label(variables[0])} and {get_label(variables[1])} vs time")
                 plot_widget.setLimits(
                     xMin=x_min_limit,
                     xMax=x_max_limit,
@@ -110,7 +110,7 @@ def update_1D_plot(flight_dic, comboBox_flight , table_widget, plot_widget, curv
                     yMax=y_max_limit
                 )
                 pen2 = pg.mkPen(flight['plot']['plot_color'].darker(), width=1)
-                legend.addItem(curve2, variables[1])
+                legend.addItem(curve2, get_label(variables[1]))
                 curve2.setPen(pen2)
                 curve2.setData(x, y2, pen=pen2,
                 symbol='o',
@@ -134,7 +134,7 @@ def get_checked_variables(table_widget):
         item = table_widget.item(row, 0)
 
         if item and item.checkState() == Qt.CheckState.Checked:
-            checked_vars.append(item.text())
+            checked_vars.append(item.data(Qt.ItemDataRole.UserRole))
             
     return checked_vars
 
@@ -148,7 +148,7 @@ def get_flight_variable_2D(table_widget):
         if checkbox_item.checkState() == Qt.CheckState.Checked:
             flight_name = checkbox_item.text()
             if table_widget.cellWidget(row, 1).currentText() != 'None':
-                variable = table_widget.cellWidget(row, 1).currentText() #fetch the associated variable
+                variable = table_widget.cellWidget(row, 1).currentData() #fetch the associated variable
             else:
                 variable = None
             flights_selected.append((flight_name,variable))
@@ -169,13 +169,13 @@ def save_checked_variables_1D(flight_dic, comboBox_flight, table_widget1, table_
             for row in range(table_widget1.rowCount()):
                 item_check_1 = table_widget1.item(row, 0)
                 if item_check_1 and item_check_1.checkState() == Qt.CheckState.Checked:
-                        flight['plot']['variables_1D'][0].append(item_check_1.text())
+                        flight['plot']['variables_1D'][0].append(item_check_1.data(Qt.ItemDataRole.UserRole))
             
             
             for row in range(table_widget2.rowCount()):
                 item_check_2 = table_widget2.item(row, 0)            
                 if item_check_2 and item_check_2.checkState() == Qt.CheckState.Checked:
-                    flight['plot']['variables_1D'][1].append(item_check_2.text())
+                    flight['plot']['variables_1D'][1].append(item_check_2.data(Qt.ItemDataRole.UserRole))
             
 
 def restore_checked_variables_1D(flight_dic, comboBox_flight, table_widget1, table_widget2):
@@ -193,7 +193,7 @@ def restore_checked_variables_1D(flight_dic, comboBox_flight, table_widget1, tab
             for row in range(table_widget1.rowCount()):
                 item_check = table_widget1.item(row, 0)
                 if item_check:
-                    if item_check.text() in selected[0]:
+                    if item_check.data(Qt.ItemDataRole.UserRole) in selected[0]:
                         item_check.setCheckState(Qt.CheckState.Checked)
                     else:
                         item_check.setCheckState(Qt.CheckState.Unchecked)
@@ -202,7 +202,7 @@ def restore_checked_variables_1D(flight_dic, comboBox_flight, table_widget1, tab
             for row in range(table_widget2.rowCount()):
                 item_check = table_widget2.item(row, 0)
                 if item_check:
-                    if item_check.text() in selected[1]:
+                    if item_check.data(Qt.ItemDataRole.UserRole) in selected[1]:
                         item_check.setCheckState(Qt.CheckState.Checked)
                     else:
                         item_check.setCheckState(Qt.CheckState.Unchecked)
@@ -509,7 +509,7 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
     It also load the existing ROI
     Used both in Polar and Emagram tab
     """
-    variable = combobox_var.currentText()
+    variable = combobox_var.currentData() 
     if not variable:
         plot_widget.clear()
         return
@@ -539,34 +539,35 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
             yMin=np.min(y), yMax=np.max(y)
         )
 
-        plot_widget.setLabel("left", f"{variable} {get_unit(variable)}")
-        plot_widget.setTitle(f"{variable}")
+        plot_widget.setLabel("left", f"{get_label(variable)} {get_unit(variable)}")
+        plot_widget.setTitle(f"{get_label(variable)}")
         plot_widget.addLegend()
 
         pen = pg.mkPen(flight['plot']['plot_color'], width=1)
-        plot_widget.plot(x, y, pen=pen, name=variable)
+        plot_widget.plot(x, y, pen=pen, name=get_label(variable))
         
-        if flight['plot']['roi_emagram']:
-            plot_widget.addItem(flight['plot']['roi_emagram'])
-
-
         break  
+    plot_widget.autoRange()
 
 def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz, ias_comp):
     """
     Creating a new ROI -> meaning a new polar point
     Used only in polar tab
     """
+    flight_to_analyze = None
     for row, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():
-            roi = pg.LinearRegionItem(values=(calculate_roi(flight, "min"), calculate_roi(flight, "max")), bounds=(calculate_roi(flight, "bound_min"), calculate_roi(flight, "bound_max" )))
-            roi.setMovable(True)
-            roi.setBrush(QColor(100, 100, 100, 25)) 
-            roi.setZValue(10)  # Stay on top
-            plot_widget_time.addItem(roi)
-            flight['plot']['roi_polar'].append([roi, None, None, None, None, None]) #And we add the ROI to the dic,
-            update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp)
-            roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp))
+            flight_to_analyze = flight
+            break
+        
+    roi = pg.LinearRegionItem(values=(calculate_roi(flight_to_analyze, "min"), calculate_roi(flight_to_analyze, "max")), bounds=(calculate_roi(flight_to_analyze, "bound_min"), calculate_roi(flight_to_analyze, "bound_max" )))
+    roi.setMovable(True)
+    roi.setBrush(QColor(100, 100, 100, 25)) 
+    roi.setZValue(10)  # Stay on top
+    plot_widget_time.addItem(roi)
+    flight_to_analyze['plot']['roi_polar'].append([roi, None, None, None, None, None]) #And we add the ROI to the dic,
+    update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp)
+    roi.sigRegionChanged.connect(lambda : update_polar_values(flight_dic, plot_widget_vxvz, table_polar_widget, combobox_flight, legend_vxvz, ias_comp))
             
             
             
@@ -624,7 +625,16 @@ def calculate_roi(flight, edge):
     
     
 def load_polar_roi(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_widget, combobox_flight , legend_vxvz, ias_comp):
-    plot_widget_time.clear()
+    
+    for flight in flight_dic:
+        if flight['is_data_processed']:
+            for roi_data in flight['plot']['roi_polar']:
+                roi = roi_data[0]
+                try:
+                    plot_widget_time.removeItem(roi)
+                except Exception:
+                    pass
+                
     for flight in flight_dic:
         if flight['is_data_processed']:
             if len(flight['plot']['roi_polar']) > 0:
@@ -639,6 +649,14 @@ def load_emagram_roi(flight_dic, plot_widget_time, widget_emagram, combobox_flig
     this function is called when a new emagram is displayed. it retrieves the previous roi if it already exists
     or create a new one , and save it to the dic
     """
+    
+    for flight in flight_dic: #Delete previous ROI on screen
+        if flight['is_data_processed']:
+            try:
+                plot_widget_time.removeItem(flight['plot']['roi_emagram'])
+            except Exception:
+                pass
+    
     flight_selected = None 
     for flight in flight_dic:
         if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText():
@@ -649,23 +667,25 @@ def load_emagram_roi(flight_dic, plot_widget_time, widget_emagram, combobox_flig
 
 
     if flight_selected['plot']['roi_emagram']: #If there is already a ROI saved, we delete it to create a new one. Correct a bug
-        plot_widget_time.removeItem(flight_selected['plot']['roi_emagram'])
-        flight_selected['plot']['roi_emagram'] = None
-    # else: #if no ROI exists yet, we create a new one by default
+        # plot_widget_time.removeItem(flight_selected['plot']['roi_emagram'])
+        # flight_selected['plot']['roi_emagram'] = None
+        plot_widget_time.addItem(flight_selected['plot']['roi_emagram'])
+        
+    else: #if no ROI exists yet, we create a new one by default
 
-    x_min_default = int(len(flight_selected['data']['GNSS_time'])/2 - (0.2 *len(flight_selected['data']['GNSS_time'])))
-    x_max_default = int(len(flight_selected['data']['GNSS_time'])/2 + (0.2 *len(flight_selected['data']['GNSS_time'])))
-    x_bound_max_default = len(flight_selected['data']['GNSS_time'])
-    x_bound_min_default = 1                          
-    roi = pg.LinearRegionItem(values=(x_min_default,x_max_default ), bounds=(x_bound_min_default,x_bound_max_default ))
-    roi.setMovable(True)
-    roi.setBrush(QColor(100, 100, 100, 25)) 
-    roi.setZValue(10)  # Stay on top
-    plot_widget_time.addItem(roi)
-    roi.sigRegionChanged.connect(lambda roi_item, f=flight_selected: widget_emagram.update(f))
+        x_min_default = int(len(flight_selected['data']['GNSS_time'])/2 - (0.2 *len(flight_selected['data']['GNSS_time'])))
+        x_max_default = int(len(flight_selected['data']['GNSS_time'])/2 + (0.2 *len(flight_selected['data']['GNSS_time'])))
+        x_bound_max_default = len(flight_selected['data']['GNSS_time'])
+        x_bound_min_default = 1                          
+        roi = pg.LinearRegionItem(values=(x_min_default,x_max_default ), bounds=(x_bound_min_default,x_bound_max_default ))
+        roi.setMovable(True)
+        roi.setBrush(QColor(100, 100, 100, 25)) 
+        roi.setZValue(10)  # Stay on top
+        plot_widget_time.addItem(roi)
+        roi.sigRegionChanged.connect(lambda roi_item, f=flight_selected: widget_emagram.update(f))
     #roi.sigRegionChanged.connect(lambda roi_item: widget_emagram.update(flight_selected))
 
-    flight_selected['plot']['roi_emagram'] = roi
+        flight_selected['plot']['roi_emagram'] = roi
     
     widget_emagram.update(flight_selected)
          

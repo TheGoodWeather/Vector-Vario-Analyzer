@@ -15,6 +15,7 @@ raw_data_model = {  #available for both csv and igc file
     "QNS_alt": [],
     "GNSS_speed" : [], #native to LOGPRO
     "GNSS_head" : [],#native to LOGPRO
+    "GNSS_velD" : [], #native to LOGPRO
     "compass_head" : [],
     "pitch" : [],
     "roll" : [],
@@ -91,7 +92,8 @@ def fetch_raw_csv(flight_dic , progress_callback):
                     #raw_data[parameter_from_model] = datetime.strptime(str(raw_data_from_csv[parameter_from_csv]),"%Y-%m-%d %H:%M:%S.%f" ) 
                     elif parameter_from_csv in {"GNSS_fix", "GNSS_head" , "compass_head" , "pitch" , "roll" , "P_stat" , "wind_origin"}:
                         raw_data[parameter_from_model] = raw_data_from_csv[parameter_from_csv].astype(int)
-                        
+                    elif parameter_from_csv == "GNSS_velD":
+                        raw_data[parameter_from_model] = raw_data_from_csv[parameter_from_csv].astype(float)
                     else:
                         raw_data[parameter_from_model] = raw_data_from_csv[parameter_from_csv].astype(float)
         
@@ -100,7 +102,7 @@ def fetch_raw_csv(flight_dic , progress_callback):
             #calculating IAS as it is not natively recorded into LOGPRO
             raw_data["IAS"] = np.round(np.divide(np.sqrt(np.abs(np.multiply(2.0 / 1.225, np.add(raw_data["DP"], np.add(raw_data["A0_cor_DP"][-1], np.multiply(raw_data["A1_cor_DP"][-1], raw_data["T_sensor"])))))), flight_dic['metadata']['calib']),2)
         
-        raw_data["P_stat"] = np.divide(raw_data["P_stat"],10)
+        #raw_data["P_stat"] = np.divide(raw_data["P_stat"],10)
         
         raw_data["QNS_alt"] = np.full(len(raw_data["GNSS_time"]),np.nan)
         raw_data["netto"] = np.full(len(raw_data["GNSS_time"]),np.nan)

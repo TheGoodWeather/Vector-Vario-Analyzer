@@ -11,4 +11,5 @@ altitude_start:1376.6
 avg_windspeed:2.05
 avg_winddir:189.26
 comment:
-alias:
+alias:faux
+roi_polar_0:1557.0,1981.0

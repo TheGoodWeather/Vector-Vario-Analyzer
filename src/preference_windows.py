@@ -1,5 +1,5 @@
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QTextEdit, QTableWidget
 from PyQt6.QtCore import Qt, pyqtSignal, QSettings
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
@@ -144,4 +144,92 @@ class ColorDialog(QtWidgets.QDialog):
         self.color_button_plot.setColor(self.settings.value("plot" , "#ff0000"))
 
         self.settings.endGroup()
+
+
+
+class LicenseDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Licence - GNU GPL v3")
+        self.resize(700, 500)
+
+        layout = QVBoxLayout(self)
+
+        # Zone de texte scrollable
+        self.text_edit = QTextEdit()
+        self.text_edit.setReadOnly(True)
+        self.text_edit.setText(self.load_license_text())
+        self.text_edit.setStyleSheet("font-family: monospace;")
+
+        layout.addWidget(self.text_edit)
+
+        # Bouton fermer
+        btn_close = QPushButton("Fermer")
+        btn_close.clicked.connect(self.close)
+        layout.addWidget(btn_close)
+
+    def load_license_text(self):
+        try:
+            base_path = Path(__file__).resolve().parent
+            license_path = base_path.parent / "LICENSE.txt"
+    
+            return license_path.read_text(encoding="utf-8")
+    
+        except Exception as e:
+            return f"Erreur chargement licence : {e}"
         
+        
+        
+class RequirementsDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Software Dependancies")
+        self.resize(500, 400)
+
+        layout = QVBoxLayout(self)
+
+        self.table = QTableWidget()
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(["Package", "Version"])
+        self.table.horizontalHeader().setStretchLastSection(True)
+
+        layout.addWidget(self.table)
+
+        btn_close = QPushButton("Fermer")
+        btn_close.clicked.connect(self.close)
+        layout.addWidget(btn_close)
+
+        self.load_requirements()
+
+    def load_requirements(self):
+        try:
+            base_path = Path(__file__).resolve().parent
+            req_path = base_path.parent / "requirements.txt"
+
+            lines = req_path.read_text(encoding="utf-8").splitlines()
+
+            data = []
+            for line in lines:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+
+                if "==" in line:
+                    pkg, ver = line.split("==")
+                else:
+                    pkg, ver = line, ""
+
+                data.append((pkg, ver))
+
+            self.table.setRowCount(len(data))
+
+            for row, (pkg, ver) in enumerate(data):
+                self.table.setItem(row, 0, QTableWidgetItem(pkg))
+                self.table.setItem(row, 1, QTableWidgetItem(ver))
+
+        except Exception as e:
+            self.table.setRowCount(1)
+            self.table.setItem(0, 0, QTableWidgetItem("Error"))
+            self.table.setItem(0, 1, QTableWidgetItem(str(e)))

@@ -183,13 +183,15 @@ def populate_table_1D_variable(flight_dic, table1, table2, choice):
                             table2.insertRow(row)
 
                             # TABLE 1
-                            item1 = QTableWidgetItem(variable)
+                            item1 = QTableWidgetItem(get_label(variable))
+                            item1.setData(Qt.ItemDataRole.UserRole, variable)
                             item1.setFlags(item1.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                             item1.setFlags(item1.flags() & ~Qt.ItemFlag.ItemIsEditable)
                             item1.setCheckState(Qt.CheckState.Unchecked)
 
                             # TABLE 2
-                            item2 = QTableWidgetItem(variable)
+                            item2 = QTableWidgetItem(get_label(variable))
+                            item2.setData(Qt.ItemDataRole.UserRole, variable)
                             item2.setFlags(item2.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                             item2.setFlags(item2.flags() & ~Qt.ItemFlag.ItemIsEditable)
                             item2.setCheckState(Qt.CheckState.Unchecked)
