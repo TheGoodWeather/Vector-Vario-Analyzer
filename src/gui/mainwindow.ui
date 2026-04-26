@@ -1517,13 +1517,19 @@
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_17">
                      <item>
-                      <widget class="QCheckBox" name="checkBox_T_gradient">
-                       <property name="toolTip">
-                        <string/>
-                       </property>
-                       <property name="text">
-                        <string>Thermal gradient calculator</string>
-                       </property>
+                      <widget class="QWidget" name="widget_20" native="true">
+                       <layout class="QHBoxLayout" name="horizontalLayout_15">
+                        <item>
+                         <widget class="QCheckBox" name="checkBox_T_gradient">
+                          <property name="toolTip">
+                           <string/>
+                          </property>
+                          <property name="text">
+                           <string>Thermal gradient calculator</string>
+                          </property>
+                         </widget>
+                        </item>
+                       </layout>
                       </widget>
                      </item>
                      <item>
@@ -1546,19 +1552,6 @@
                          <widget class="QLabel" name="label_t_gradient_P">
                           <property name="text">
                            <string>°C/hPa</string>
-                          </property>
-                         </widget>
-                        </item>
-                        <item>
-                         <widget class="QLabel" name="label_interrogation">
-                          <property name="sizePolicy">
-                           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                            <horstretch>0</horstretch>
-                            <verstretch>0</verstretch>
-                           </sizepolicy>
-                          </property>
-                          <property name="text">
-                           <string>?</string>
                           </property>
                          </widget>
                         </item>
@@ -1664,7 +1657,7 @@
      <x>0</x>
      <y>0</y>
      <width>973</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1687,8 +1680,6 @@
     <addaction name="actionAbout"/>
     <addaction name="actionDependancies"/>
     <addaction name="actionLicense"/>
-    <addaction name="actionDonate"/>
-    <addaction name="actionReport_bug"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPreferences"/>

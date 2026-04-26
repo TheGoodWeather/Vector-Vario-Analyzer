@@ -1,10 +1,12 @@
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QTextEdit, QTableWidget, QLabel
+from PyQt6.QtWidgets import QScrollArea, QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QTextEdit, QTableWidget, QLabel
 from PyQt6.QtCore import Qt, pyqtSignal, QSettings
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
 import sys
 from pathlib  import Path 
+from constants import SOFTWARE_VERSION
+
 
 class UnitDialog(QtWidgets.QDialog):
     
@@ -234,43 +236,7 @@ class RequirementsDialog(QtWidgets.QDialog):
             self.table.setItem(0, 0, QTableWidgetItem("Error"))
             self.table.setItem(0, 1, QTableWidgetItem(str(e)))
             
-            
-class ContactDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
 
-        self.setWindowTitle("Contact")
-        self.resize(400, 300)
-
-        layout = QVBoxLayout(self)
-
-        label = QLabel()
-        label.setText(self.get_contact_html())
-        label.setTextFormat(Qt.TextFormat.RichText)
-        label.setWordWrap(True)
-        label.setOpenExternalLinks(True)
-
-        layout.addWidget(label)
-
-        btn_close = QPushButton("Close")
-        btn_close.clicked.connect(self.close)
-        layout.addWidget(btn_close)
-
-    def get_contact_html(self):
-        return """
-        <h2>Reach us</h2>
-        
-        If you want to report bugs, suggest improvements or features to the software, please 
-        contact us : 
-        <p><b>By email :</b>
-        <a href="mailto:info@vectorvario.com">info@vectorvario.com</a></p>
-
-        <p><b>or by joining the Discord chat :</b><br>
-        <a href="https://discord.com/invite/NA6kJbpJWa">https://discord.com/invite/NA6kJbpJWa</a></p>
-
-        <hr>
-        </p>
-        """
         
 class AboutDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
@@ -282,29 +248,79 @@ class AboutDialog(QtWidgets.QDialog):
         layout = QVBoxLayout(self)
 
         label = QLabel()
-        label.setText(self.about_html())
         label.setTextFormat(Qt.TextFormat.RichText)
-        label.setWordWrap(True)
         label.setOpenExternalLinks(True)
+        label.setAlignment(Qt.AlignmentFlag.AlignTop)
+        label.setWordWrap(True)
+        label.setText(f"""
+                <h2>Vector Vario Software</h2>
+        
+                <p><b>Software Version:</b></p>
+                <p>
+                    <img src="gui/icons/logo.png" width="80"><br>
+                    Version {SOFTWARE_VERSION}
+                </p>
+        
+                <h3>About the Software</h3>
+                <p>
+                Vector Vario Software is an open-source software.<br>
+                It has been developed to improve the VVA user experience by making it easy to visualize any raw data recorded by the Vector Vario probe.<br><br>
+        
+                Bear in mind that this software is only a handy tool to quickly represent data. It has not been made for scientific purpose.<br><br>
+        
+                New versions are coming with additional features.<br>
+                To stay updated, visit:
+                <a href="https://vectorvario.com/">Vector Vario Website</a>
+                </p>
+        
+                <h3>About the Author</h3>
+                <p>
+                <img src="gui/icons/author.png" width="120"><br><br>
+                My name is Félix Aubourg and I am working on a voluntary basis on this project.<br>
+                I am not affiliated with the Vector Vario team.<br><br>
+        
+                Please keep in mind that I am also not a software developer.<br>
+                I am learning coding through this project, and thus not everything is perfect or well optimised (yet)!
+                </p>
+        
+                <h3>Reach Us</h3>
+                <p>
+                For help with VVS crashes or errors:<br>
+                📧 <a href="mailto:info@vario.com">info@vario.com</a><br><br>
+                To discuss improvements or suggest new features, you can join the Discord channel :<br>
+                <a href="https://discord.com/invite/NA6kJbpJWa">
+                https://discord.com/invite/NA6kJbpJWa
+                </a>
+                </p>
+                You can also follow Vector Vario on Youtube and Instagram :<br>
+                <p>
+                <a href="https://www.youtube.com/@VectorVario">
+                    <img src="gui/icons/youtube_icon.png" width="40">
+                </a>
+                &nbsp;
+                <a href="https://www.instagram.com/vectorvario/">
+                    <img src="gui/icons/instagram_icon.png" width="40">
+                </a>
+                </p>
+        
+                <h3>Buy Me a Coffee ☕</h3>
+                <p>
+                To help the project moving forward, your donation goes directly to funding Vector Vario Analyzer development and maintenance, and helps adding the features you want. <br><br>
+        
+                <a href="https://buymeacoffee.com/TheGoodWeather">
+                    <img src="gui/icons/buy_icon.jpg" width="40">
+                </a>
+                </p>
+                """)
+                
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(label)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        layout.addWidget(label)
+        layout.addWidget(scroll)
+        layout.addWidget(scroll)
 
         btn_close = QPushButton("Close")
         btn_close.clicked.connect(self.close)
         layout.addWidget(btn_close)
-
-    def about_html(self):
-        return """
-        <h2>About the software</h2>
-        
-        If you want to report bugs, suggest improvements or features to the software, please 
-        contact us : 
-        <p><b>By email :</b>
-        <a href="mailto:info@vectorvario.com">info@vectorvario.com</a></p>
-
-        <p><b>or by joining the Discord chat :</b><br>
-        <a href="https://discord.com/invite/NA6kJbpJWa">https://discord.com/invite/NA6kJbpJWa</a></p>
-
-        <hr>
-        </p>
-        """

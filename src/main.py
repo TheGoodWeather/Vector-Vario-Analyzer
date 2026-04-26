@@ -23,12 +23,11 @@ from polar_generator import update_polar_generator_values
 from pathlib  import Path 
 import pprint
 import numpy as np
-from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog, ContactDialog
+from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog, AboutDialog
 import plot 
 from utils import get_label
+from constants import SOFTWARE_VERSION
 
-
-SOFTWARE_VERSION = "1.0.0"
 OPEN = 0.0389250
 POD =  0.0296384
 SUB =  0.0247878
@@ -66,7 +65,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.last_2D_selection = None  # last point clicked in the 2D map
         
         
-        self.setWindowTitle(f"Vector Vario Software Utility v{SOFTWARE_VERSION}")
+        self.setWindowTitle(f"Vector Vario Software v{SOFTWARE_VERSION}")
         self.setFocus()  #allow the main windows to receive key press event 
         self.read_settings_main()
         
@@ -83,7 +82,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionImport_file.triggered.connect(self.on_button_load_file)
         self.actionLicense.triggered.connect(self.display_license_window)
         self.actionDependancies.triggered.connect(self.display_requirements_window)
-        self.actionReport_bug.triggered.connect(self.display_contact_window)
+        self.actionAbout.triggered.connect(self.display_about_window)
         """
         Widgets tab import  / export
         """
@@ -334,7 +333,7 @@ class MainWindow(QtWidgets.QMainWindow):
             pen=pg.mkPen(QColor(116, 97, 194), width=2),
             symbol=None
         )
-        
+        self.polar_generated_curve.setVisible(False)
         self.checkBox_display_generated_polar.setToolTip(
             "The polar model presented here is based on approximately 50 polar measurements taken with the Vector Probe.\n" 
             "It does not accurately describe all configurations.\n" 
@@ -1000,8 +999,8 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog = RequirementsDialog(self)
         dialog.exec()
         
-    def display_contact_window(self):
-        dialog = ContactDialog(self)
+    def display_about_window(self):
+        dialog = AboutDialog(self)
         dialog.exec()
         
             
