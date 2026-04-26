@@ -138,7 +138,7 @@ def get_checked_variables(table_widget):
             
     return checked_vars
 
-def get_flight_variable_2D(table_widget):
+def get_flight_2D(table_widget):
     """
     Returns which flights is selected to be displayed in the 2D map 
     """
@@ -147,11 +147,7 @@ def get_flight_variable_2D(table_widget):
         checkbox_item = table_widget.item(row, 0)
         if checkbox_item.checkState() == Qt.CheckState.Checked:
             flight_name = checkbox_item.text()
-            if table_widget.cellWidget(row, 1).currentText() != 'None':
-                variable = table_widget.cellWidget(row, 1).currentData() #fetch the associated variable
-            else:
-                variable = None
-            flights_selected.append((flight_name,variable))
+            flights_selected.append((flight_name))
     return flights_selected
 
 def save_checked_variables_1D(flight_dic, comboBox_flight, table_widget1, table_widget2):
@@ -228,7 +224,7 @@ def toggle_x_link(plot1, plot2, checkbox):
 
 
     
-def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
+def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable_2D, colorbar):
     """
     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
     """
@@ -236,9 +232,17 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
     settings.beginGroup("colors")
     color = QColor(settings.value("plot", "#ff0000"))   
     settings.endGroup()
-    flight_selected = get_flight_variable_2D(tab_widget_flight)
-
-    selected_names = [f for f, v in flight_selected]
+    flight_selected = get_flight_2D(tab_widget_flight)
+    variable_selected = combobox_variable_2D.currentData() 
+    
+    if variable_selected is None or variable_selected == "None":
+        color_mapping = False
+    else:
+        color_mapping = True
+            
+        
+        
+    selected_names = [f for f in flight_selected]
     
     
     #Removing all previous highlighted point if they exists
@@ -254,14 +258,7 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
         alias = flight['metadata']['alias']
 
         is_selected = flight_name in selected_names or alias in selected_names
-
-        # récupérer variable
-        variable = None
-        for f_name, var in flight_selected:
-            if f_name == flight_name or f_name == alias:
-                variable = var
-                break
-
+        
         if is_selected:
 
             x = flight['data']['GNSS_lon']
@@ -285,7 +282,7 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
             y_interp = np.interp(t_new, t_orig, y)
             
             
-            if not variable:
+            if not color_mapping:
                 pen = pg.mkPen(color, width=2)
 
                 flight['plot']['scatter_map'] = plot_widget.plot(
@@ -293,13 +290,14 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
                     y=y,
                     pen=pen
                 )
+                colorbar.setOpacity(0) 
 
             else:
                 
        
                 
                 cmap = pg.colormap.get('turbo')
-                z = flight['data'][variable]
+                z = flight['data'][variable_selected]
             
                 # Interpolation de z également
                 z_interp = np.interp(t_new, t_orig, z)
@@ -341,7 +339,8 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
                 #     pen=pen
                 # )
                 # plot_widget.addItem(flight['plot']['scatter_map'])
-              
+                
+                update_colorbar(colorbar, plot_widget, z_min, z_max, variable_selected, cmap)
 
             # START / END
             if not flight['plot']['text_map_start']:
@@ -379,8 +378,47 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget):
     plot_widget.autoRange()   
         
 
+def update_colorbar(colorbar, plot_widget_colorbar, z_min, z_max, variable, cmap):
+    """
+    Update colorbar according to the z limits
+    """
+    colorbar.setOpacity(1)
+    colorbar.setLevels((z_min, z_max))
+    colorbar.setColorMap(cmap)
+    
+    # Label de l'axe
+    # plot_widget_colorbar.setLabel('bottom', f"{get_label(variable)} {get_unit(variable)}")
+    
+def apply_colorbar_filter(flight_dic, tab_widget_flight, plot_widget, colorbar, combobox_variable_2D ):
+    """
+    When the limits of the colorbar changes, we update the color mapping
+    """
+    flight_selected = get_flight_2D(tab_widget_flight)
+    variable_selected = combobox_variable_2D.currentData() 
+    cmap = pg.colormap.get('turbo')
+    clim_min, clim_max = colorbar.levels()
+    
+    selected_names = [f for f in flight_selected]
+    for flight in flight_dic:
 
-  
+        flight_name = flight['file_name'].split(".")[0]
+        alias = flight['metadata']['alias']
+
+        is_selected = flight_name in selected_names or alias in selected_names
+        
+        if is_selected:
+            z = np.array(flight['data'][variable_selected], dtype=float)
+            z_min, z_max = clim_min, clim_max           
+            
+            if z_max - z_min == 0:
+                norm = np.zeros_like(z)
+            else:
+                norm = (z - z_min) / (z_max - z_min)
+            
+            brush = cmap.map(norm, mode='qcolor')
+            flight['plot']['scatter_map'].setBrush(brush)
+            
+    
 def update_wind_barbs_2D(flight_dic, table_widget_flight, plot_widget, radiobutton_wind, slider_density, slider_size):
     """
     This function creates or removes windbarbs on the graph according to the checkbox wind barbs state
@@ -392,9 +430,9 @@ def update_wind_barbs_2D(flight_dic, table_widget_flight, plot_widget, radiobutt
     density = slider_density.value()
     size_coeff = slider_size.value()
     increment = int((density - 1) * (20 - 200) // (100 - 1) + 200) #mapping the res of the slider into a increment that goes to a barb every 20 points to every 200 points  
-    flight_selected = get_flight_variable_2D(table_widget_flight)
+    flight_selected = get_flight_2D(table_widget_flight)
     
-    selected_names = {f for f, _ in flight_selected}
+    selected_names = {f for f in flight_selected}
 
     for flight in flight_dic:
         flight_name = flight['file_name'].split(".")[0]
@@ -410,7 +448,7 @@ def update_wind_barbs_2D(flight_dic, table_widget_flight, plot_widget, radiobutt
         return
     
     for row, flight in enumerate(flight_dic):
-        for flight_to_plot, variable in flight_selected:
+        for flight_to_plot in flight_selected:
             if flight['file_name'].split(".")[0] == flight_to_plot or flight['metadata']['alias'] == flight_to_plot:
                 vel_max = np.nanmax(flight['data']['wind_vel'])
                 vel_min = np.nanmin(flight['data']['wind_vel'])    

@@ -20,11 +20,11 @@ ezero = 6.112# hPa
 
 
 class SkewTWidget:
-    def __init__(self, plot_widget, label_gradient_1000, label_gradient_100, P_bot=1013.25, P_b=1013.25, P_t=300., dp=1):
+    def __init__(self, plot_widget, label_gradient_1000, label_gradient_P, P_bot=1013.25, P_b=1013.25, P_t=300., dp=1):
         
         self.plot_widget = plot_widget
         self.gradient_label_1000 = label_gradient_1000
-        self.gradient_label_100 = label_gradient_100
+        self.gradient_label_P = label_gradient_P
         pg.setConfigOptions(antialias=True)
         self.P_bot = P_bot
         self.P_b = P_b
@@ -47,7 +47,9 @@ class SkewTWidget:
         self.wind_barbs = WindBarbs(plot_widget)
         self.wind_barbs.P_bot = self.P_bot
         
-        self.myreg = LinearRegression()
+        self.myregP = LinearRegression()
+        self.myregT100 = LinearRegression()
+        self.myregT1000 = LinearRegression()
         
         self._curves_isotherms = []
         self._curves_isobars = []
@@ -104,7 +106,7 @@ class SkewTWidget:
         self._gradient_reg = self.plot_widget.plot([], [], pen=pg.mkPen(color=(212, 28, 163, 100), width=1, style=QtCore.Qt.PenStyle.SolidLine))
         self._gradient_reg.setVisible(False)
         self.gradient_label_1000.setVisible(False)
-        self.gradient_label_100.setVisible(False)
+        self.gradient_label_P.setVisible(False)
         # Points déplaçables
         self._reg_handle_min = pg.TargetItem(
             pos=(0, 0),
@@ -554,19 +556,19 @@ class SkewTWidget:
         
         # #Regression on Tdry (state curve) and P
         dataX = P_slice.reshape(-1, 1)
-        reg_t  = self.myreg.fit(dataX, Tdry_slice)
+        reg_t  = self.myregP.fit(dataX, Tdry_slice)
         curve_reg_tdry = reg_t.coef_[0] * P_slice + reg_t.intercept_
         curve_reg_tdry_skewed = curve_reg_tdry + self.skewnessTerm(P_slice, self.P_bot)
         self._gradient_reg.setData(curve_reg_tdry_skewed, P_slice)
         
         # #Regression on Tdry (state curve) and Alt_slice_100
         dataX100 = Alt_slice_100.reshape(-1, 1)
-        reg_t_100  = self.myreg.fit(dataX100, Tdry_slice)
+        reg_t_100  = self.myregT100.fit(dataX100, Tdry_slice)
         thermal_gradient_100 = reg_t_100.coef_[0] 
         
         # #Regression on Tdry (state curve) and Alt_slice_1000
         dataX1000 = Alt_slice_1000.reshape(-1, 1)
-        reg_t_1000  = self.myreg.fit(dataX1000, Tdry_slice)
+        reg_t_1000  = self.myregT1000.fit(dataX1000, Tdry_slice)
         thermal_gradient_1000 = reg_t_1000.coef_[0] 
         
         # # Régression sur Tdry skewé
@@ -605,7 +607,7 @@ class SkewTWidget:
         self.gradient_label_1000.setFont(font)
 
         self.gradient_label_1000.setText(f"{round(thermal_gradient_1000,2)} °C/km")
-        self.gradient_label_100.setText(f"{round(thermal_gradient_100,3)} °C/100m")
+        self.gradient_label_P.setText(f"{round(reg_t.coef_[0],3)} °C/hPa")
         self._gradient_reg.setPen(pg.mkPen(color=color, width=2,
                                             style=QtCore.Qt.PenStyle.DashLine))
                 
@@ -665,7 +667,7 @@ class SkewTWidget:
         self._reg_handle_min.setVisible(state)
         self._reg_handle_max.setVisible(state)
         self.gradient_label_1000.setVisible(state)
-        self.gradient_label_100.setVisible(state)
+        self.gradient_label_P.setVisible(state)
         
 
                 

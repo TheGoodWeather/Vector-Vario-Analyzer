@@ -59,9 +59,7 @@ class WindBarbs:
     
     def _get_barb_length(self):
         """Calcule la longueur de la hampe en unités de la viewbox"""
-        # vb = self.plot_widget.getViewBox()
-        # x_range, y_range = vb.viewRange()
-        # return (x_range[1] - x_range[0]) * 0.04  # 4% de la largeur
+        
         vb = self.plot_widget.getViewBox()
         # Guard : valeurs aberrantes si widget pas encore rendu
         px_size_x, px_size_y = vb.viewPixelSize()
@@ -81,7 +79,13 @@ class WindBarbs:
         for seg in barbes: #reset barbs
             seg.setData([], [])
             
-            
+        
+        
+        #Adjusting lenght of the windbarb according to the speed 
+        coeff_len = mapping(speed, 0 , 30 , 0.1 , 2)
+        barb_length_x_corrected = coeff_len * barb_length_x
+        barb_length_y_corrected = coeff_len * barb_length_y
+        
         # if speed < 2.5:  # vent calme : cercle
         #     circle = pg.ScatterPlotItem(
         #         [x], [y],
@@ -95,12 +99,12 @@ class WindBarbs:
 
         
         perp = angle + np.pi / 2
-        barb_step_x = barb_length_x / 8
-        barb_step_y = barb_length_y / 8
+        barb_step_x = barb_length_x_corrected / 8
+        barb_step_y = barb_length_y_corrected / 8
 
         # Hampe principale
-        x_end = x + barb_length_x * np.sin(angle)
-        y_end = y + barb_length_y * np.cos(angle)
+        x_end = x + barb_length_x_corrected * np.sin(angle)
+        y_end = y + barb_length_y_corrected * np.cos(angle)
 
         hampe.setData([x, x_end], [y, y_end])
         
@@ -108,8 +112,8 @@ class WindBarbs:
         n_full  = int((speed % 50) // 10)
         n_half  = int((speed % 10) // 5)
 
-        pos_x = barb_length_x
-        pos_y = barb_length_y
+        pos_x = barb_length_x_corrected
+        pos_y = barb_length_y_corrected
         seg_idx = 0
 
         # Fanions (50 noeuds)

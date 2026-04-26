@@ -3,7 +3,7 @@ import os
 import shutil
 from pyqtgraph_gis import MapWidget
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QListWidgetItem,QComboBox, QHeaderView, QRadioButton, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QMainWindow
+from PyQt6.QtWidgets import  QSizePolicy, QListWidgetItem,QComboBox, QHeaderView, QRadioButton, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QMainWindow
 from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
@@ -23,7 +23,7 @@ from polar_generator import update_polar_generator_values
 from pathlib  import Path 
 import pprint
 import numpy as np
-from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog
+from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog, ContactDialog
 import plot 
 from utils import get_label
 
@@ -54,7 +54,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.color_dialog = ColorDialog(parent = self)  
         self.color_dialog.colorWindBarbsChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
-        self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D ))
+        self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar ))
 
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
@@ -83,6 +83,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionImport_file.triggered.connect(self.on_button_load_file)
         self.actionLicense.triggered.connect(self.display_license_window)
         self.actionDependancies.triggered.connect(self.display_requirements_window)
+        self.actionReport_bug.triggered.connect(self.display_contact_window)
         """
         Widgets tab import  / export
         """
@@ -119,6 +120,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_database.itemChanged.connect(lambda item: save_comment_alias(item, self.flight, self.tableWidget_database))
         
         self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
+        
+        
+        self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
         
         self.drop_zone = DropZone()
@@ -203,17 +207,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph_tab2D.setEnabled(True)
         self.graph_tab2D.setAspectLocked(True)
 
-        
-        # self.colorbar = pg.ColorBarItem(values=(0, 1),width=10,colorMap=pg.colormap.get('turbo'), interactive=False, orientation='horizontal')
-        # self.color_gradient_bar_widget.addItem(self.colorbar)
-        # self.color_gradient_bar_widget.setBackground("w")
-        # self.colorbar.setOpacity(0) 
+
+        # Création de la colorbar sur le PlotWidget
+        self.colorbar = pg.ColorBarItem(
+            values=(0, 1),
+            colorMap=pg.colormap.get('turbo'),
+            interactive=True,
+            orientation='horizontal',
+            colorMapMenu=False,
+        )
+        self.colorbar.sigLevelsChanged.connect(lambda cb: plot.apply_colorbar_filter(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, cb, self.combobox_variable_2D ))
+        plot_item = self.graph_tab2D.getPlotItem()
+        plot_item.layout.addItem(self.colorbar, 2, 1)
+        #self.graph_tab2D.addItem(self.colorbar)
+        self.colorbar.setOpacity(0) 
         
         
         #Table ------------------------------------
-        headers_table_map = ["Flight", "Variable"]
+        headers_table_map = ["Flight"]
         self.tableWidget_flights_plot2D.setColumnCount(len(headers_table_map))
         self.tableWidget_flights_plot2D.setHorizontalHeaderLabels(headers_table_map)
+        self.tableWidget_flights_plot2D.verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         header_table_map = self.tableWidget_flights_plot2D.horizontalHeader()
         header_table_map.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableWidget_flights_plot2D.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
@@ -228,13 +242,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_data_point_tab2D.resizeColumnsToContents()
         
         #signals
-        self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D ))
+        self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar))
         self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
-        
+        self.tableWidget_flights_plot2D.itemChanged.connect(lambda: self.populate_combobox_variable_2D(self.flight, self.tableWidget_flights_plot2D, self.combobox_variable_2D ))
         
         self.horizontalSlider_density_barbs.setRange(1,100)
         self.horizontalSlider_density_barbs.setSingleStep(1)
-        self.horizontalSlider_density_barbs.setSliderPosition(50) 
+        self.horizontalSlider_density_barbs.setSliderPosition(99) 
         self.horizontalSlider_size_barbs.setRange(1,100)
         self.horizontalSlider_size_barbs.setSingleStep(1)
         self.horizontalSlider_size_barbs.setSliderPosition(50) 
@@ -245,6 +259,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalSlider_size_barbs.valueChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         
         self.graph_tab2D.scene().sigMouseClicked.connect(lambda event: self.on_2D_point_clicked(event, self.flight, self.graph_tab2D, self.tableWidget_flights_plot2D, self.tableWidget_data_point_tab2D, self.label_table_data))
+        self.combobox_variable_2D.currentTextChanged.connect(lambda :plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar  ))
+        self.combobox_variable_2D.currentTextChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
 
         # Map
     
@@ -254,12 +270,15 @@ class MainWindow(QtWidgets.QMainWindow):
         user_agent="VVA User (felixaubourg@gmail.com)",
         )
         
-        self.horizontalSlider_set_opacity.setSliderPosition(50)
+        
 
         self.radioButton_background_map.toggled.connect(lambda toggle: map_overlay.display_tiles(toggle))
         self.radioButton_background_map.toggled.connect(lambda toggle: self.widget_opacity.setEnabled(toggle))
         self.radioButton_background_map.toggled.connect(lambda : map_overlay.set_opacity(self.horizontalSlider_set_opacity.value() / 100.0))
         self.horizontalSlider_set_opacity.valueChanged.connect(lambda v: map_overlay.set_opacity(v / 100.0))
+        self.radioButton_background_map.setChecked(True)
+
+        self.horizontalSlider_set_opacity.setSliderPosition(50)
 
         """
         Widgets tab POLAR
@@ -315,6 +334,13 @@ class MainWindow(QtWidgets.QMainWindow):
             pen=pg.mkPen(QColor(116, 97, 194), width=2),
             symbol=None
         )
+        
+        self.checkBox_display_generated_polar.setToolTip(
+            "The polar model presented here is based on approximately 50 polar measurements taken with the Vector Probe.\n" 
+            "It does not accurately describe all configurations.\n" 
+            "This is the model used in the Vector Vario to calculate the vario netto.\n" 
+            "You can adjust the model’s parameters to better match your measurements.\n"
+            "Note: The IAS in the Vector Vario is not corrected for pilot interaction. Please visit : https://vectorvario.com/airspeed/")
         
         self.crosshair_trim_speed = pg.InfiniteLine(
             angle=90,
@@ -383,7 +409,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Widgets tab EMAGRAM
         """
         
-        self.skewt = SkewTWidget(self.graph_skewt, self.label_t_gradient_1000 , self.label_t_gradient_100)
+        self.skewt = SkewTWidget(self.graph_skewt, self.label_t_gradient_1000 , self.label_t_gradient_P)
         
         
         self.graph_atmtab_timeserie.setBackground("w")
@@ -406,6 +432,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkBox_windbarbs_atm.stateChanged.connect(lambda state: self.horizontalSlider_windbarbs_atm.setEnabled(state))
         
         
+        self.checkBox_T_gradient.setToolTip(
+            "The standard lapse rate is about −6.5 °C/km. \n" 
+            "When the temperature gradient is weaker than this, thermal convection is unlikely (black curve). \n" 
+            "The dry adiabatic lapse rate is approximately −9.8 °C/km;\n" 
+            "when the gradient exceeds this value, convection becomes strong (blue line).")
 
         self.checkBox_isotherm.stateChanged.connect(
             lambda state: self.skewt.set_background_visibility(isotherms=bool(state)))  
@@ -573,10 +604,12 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         self.flight = load_vva_files()
+        
+        self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
 
-        self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D )
+        self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D )
             
     def on_drop_load_file(self, filepath):
         """
@@ -636,10 +669,12 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         self.flight = load_vva_files()
+        self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
+        
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
 
-        self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D )
+        self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D , self.combobox_variable_2D)
 
 
         
@@ -668,7 +703,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
-        self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D )
+        self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D)
         return
     
     def on_button_analyze_entries(self):
@@ -695,7 +730,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
-            self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D )
+            self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D )
             return
         
 
@@ -839,7 +874,7 @@ class MainWindow(QtWidgets.QMainWindow):
         table_widget.blockSignals(False)
         
         
-    def populate_flight_table_tab_2D(self, flight_dic, table_widget, plot_widget):
+    def populate_flight_table_tab_2D(self, flight_dic, table_widget, plot_widget, combobox_var):
         """
         Populating the flight table according to flights that are processed
 
@@ -857,24 +892,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 item = QTableWidgetItem(flight_name)
                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-    
-                item.setCheckState(Qt.CheckState.Unchecked)
-    
-                table_widget.setItem(row, 0, item)
-    
-                combobox_var = QComboBox()
-                combobox_var.currentTextChanged.connect(lambda: plot.update_2D_plot(flight_dic, table_widget , plot_widget ))
-                combobox_var.currentTextChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
-                combobox_var.addItem('None')
-                for variable in flight['data']:
-                    if variable != 'GNSS_time':
-                        if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
-                            combobox_var.addItem(get_label(variable), userData=variable)
-                table_widget.setCellWidget(row, 1, combobox_var)
-    
-                row += 1
                 
-              
+                item.setCheckState(Qt.CheckState.Unchecked)
+                table_widget.setItem(row, 0, item)    
+                row += 1
+        first_item = table_widget.item(0, 0)
+        if first_item:
+            first_item.setCheckState(Qt.CheckState.Checked)
+                
+             
   
     def populate_combobox_variable(self, flight_dic, combobox_var, choice, tab):
         """
@@ -902,6 +928,42 @@ class MainWindow(QtWidgets.QMainWindow):
                                 continue
                             if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
                                 combobox_var.addItem(get_label(variable), userData=variable)
+                                
+    
+    def populate_combobox_variable_2D(self, flight_dic, tab_widget_flight, combobox_var):
+        """
+        This function populate the variable according to the flight selected in the 2D table
+        It will only populate with variables that are present in each flight selected
+        """
+        combobox_var.clear()
+        selected_names = plot.get_flight_2D(tab_widget_flight)
+        flight_selected = plot.get_flight_2D(tab_widget_flight)
+        # Retrouver les objets vol correspondant aux noms sélectionnés
+        flight_selected = [
+            flight for flight in flight_dic
+            if self.get_alias(str(Path(flight['file_name']).with_suffix("").with_suffix(""))) in selected_names
+            or flight['metadata']['alias'] in selected_names
+        ]
+        
+        if not flight_selected:
+            return 
+        
+        sets_of_vars = []
+        for flight in flight_selected:
+            valid_vars = set()
+            for variable in flight['data']:
+                if variable != 'GNSS_time':
+                    if len(flight['data'][variable]) > 0 and not np.all(np.isnan(flight['data'][variable])):
+                        valid_vars.add(variable)
+            sets_of_vars.append(valid_vars)
+    
+        # Intersection : uniquement les variables présentes dans TOUS les vols
+        common_vars = sets_of_vars[0].intersection(*sets_of_vars[1:])
+    
+        combobox_var.addItem('None')
+        for variable in sorted(common_vars):
+            combobox_var.addItem(get_label(variable), userData=variable)
+      
     
     
 
@@ -936,6 +998,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def display_requirements_window(self):
         dialog = RequirementsDialog(self)
+        dialog.exec()
+        
+    def display_contact_window(self):
+        dialog = ContactDialog(self)
         dialog.exec()
         
             
@@ -1036,13 +1102,13 @@ class MainWindow(QtWidgets.QMainWindow):
         
         vb = plot_widget.getViewBox()
         click_pos = event.scenePos()
-        flight_selected = plot.get_flight_variable_2D(table_flight)
+        flight_selected = plot.get_flight_2D(table_flight)
         plausible_flight = []
         if len(flight_selected) == 0:
             return
         
         for row, flight in enumerate(flight_dic):
-            for flight_to_plot, variable in flight_selected:
+            for flight_to_plot in flight_selected:
                 if (flight['file_name'].split(".")[0] == flight_to_plot) or (flight['metadata']['alias'] == flight_to_plot):
                     x_click = click_pos.x()
                     y_click = click_pos.y()

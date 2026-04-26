@@ -14,6 +14,7 @@ import numpy as np
 from pathlib  import Path 
 from units import get_unit, convert_array_to_unit
 from utils import get_label
+import datetime
 
 def update_vva_table(data, table_widget):
     
@@ -44,6 +45,21 @@ def update_vva_table(data, table_widget):
         
     table_widget.blockSignals(False)
     return
+
+def sort_vva_table_by_date(data):
+    """
+    Sort the table by the most recent flight as the first row
+    """
+    def parse_date(flight):
+        date = flight["metadata"]["date"]
+        if isinstance(date, datetime):
+            return date
+        try:
+            return datetime.strptime(str(date), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return datetime.min  # En cas de date invalide, on met en dernier
+
+    return sorted(data, key=parse_date, reverse=True)
     
 def delete_table_entries(data, table_widget):
     rows_to_remove = []

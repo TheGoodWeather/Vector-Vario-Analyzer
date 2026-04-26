@@ -1,5 +1,5 @@
 from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QTextEdit, QTableWidget
+from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QTextEdit, QTableWidget, QLabel
 from PyQt6.QtCore import Qt, pyqtSignal, QSettings
 from PyQt6.QtGui import QColor, QPen, QBrush
 from logging_handler import QTextEditLogger, logger
@@ -233,3 +233,78 @@ class RequirementsDialog(QtWidgets.QDialog):
             self.table.setRowCount(1)
             self.table.setItem(0, 0, QTableWidgetItem("Error"))
             self.table.setItem(0, 1, QTableWidgetItem(str(e)))
+            
+            
+class ContactDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Contact")
+        self.resize(400, 300)
+
+        layout = QVBoxLayout(self)
+
+        label = QLabel()
+        label.setText(self.get_contact_html())
+        label.setTextFormat(Qt.TextFormat.RichText)
+        label.setWordWrap(True)
+        label.setOpenExternalLinks(True)
+
+        layout.addWidget(label)
+
+        btn_close = QPushButton("Close")
+        btn_close.clicked.connect(self.close)
+        layout.addWidget(btn_close)
+
+    def get_contact_html(self):
+        return """
+        <h2>Reach us</h2>
+        
+        If you want to report bugs, suggest improvements or features to the software, please 
+        contact us : 
+        <p><b>By email :</b>
+        <a href="mailto:info@vectorvario.com">info@vectorvario.com</a></p>
+
+        <p><b>or by joining the Discord chat :</b><br>
+        <a href="https://discord.com/invite/NA6kJbpJWa">https://discord.com/invite/NA6kJbpJWa</a></p>
+
+        <hr>
+        </p>
+        """
+        
+class AboutDialog(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("About")
+        self.resize(400, 300)
+
+        layout = QVBoxLayout(self)
+
+        label = QLabel()
+        label.setText(self.about_html())
+        label.setTextFormat(Qt.TextFormat.RichText)
+        label.setWordWrap(True)
+        label.setOpenExternalLinks(True)
+
+        layout.addWidget(label)
+
+        btn_close = QPushButton("Close")
+        btn_close.clicked.connect(self.close)
+        layout.addWidget(btn_close)
+
+    def about_html(self):
+        return """
+        <h2>About the software</h2>
+        
+        If you want to report bugs, suggest improvements or features to the software, please 
+        contact us : 
+        <p><b>By email :</b>
+        <a href="mailto:info@vectorvario.com">info@vectorvario.com</a></p>
+
+        <p><b>or by joining the Discord chat :</b><br>
+        <a href="https://discord.com/invite/NA6kJbpJWa">https://discord.com/invite/NA6kJbpJWa</a></p>
+
+        <hr>
+        </p>
+        """
