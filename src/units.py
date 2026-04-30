@@ -1,9 +1,4 @@
-from pyqtgraph import ErrorBarItem 
-import pyqtgraph as pg
-from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox
-from PyQt6.QtCore import Qt, pyqtSignal, QSettings
-from PyQt6.QtGui import QColor, QPen, QBrush
+from PyQt6.QtCore import QSettings
 import numpy as np
 
 units_coeff_dic = {

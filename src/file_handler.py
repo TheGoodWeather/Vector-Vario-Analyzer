@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-from logging_handler import QTextEditLogger, logger
+from logging_handler import logger
 import re
-from itertools import islice
 from datetime import datetime
 from pathlib import Path
 import pyqtgraph as pg
 from PyQt6.QtWidgets import QMessageBox
-from PyQt6.QtGui import QColor, QPen, QBrush
+from PyQt6.QtGui import QColor
 import csv
 
 def generate_vva(filepath, metadata):
@@ -279,6 +278,7 @@ def load_vva_files(flight_dir="flight"):
            "file_name" : None,
            "origin_file_path" : None,
            "is_data_processed" : False,
+           "is_flight_selected": False,
            "plot" : {"variables_1D" : [[],[]],
                      "windbarbs_2D" : [],
                      "roi_polar": [],
@@ -336,7 +336,7 @@ def save_section_to_vva(flight_dic, section_type):
 
     if section_type == 'roi_polar':
         for flight in flight_dic:
-            if flight['is_data_processed']:
+            if flight['is_data_processed'] and flight['is_flight_selected']:
                 
                 with open(flight['file_path'], "r", encoding="utf-8") as file:
                     lines = file.readlines()

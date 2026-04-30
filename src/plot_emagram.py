@@ -1,7 +1,6 @@
 import pyqtgraph as pg
 import numpy as np
 from PyQt6 import QtCore , QtGui
-from units import convert_array_to_unit
 from scipy.optimize import brentq 
 from utils import mapping
 from windbarbs import WindBarbs
@@ -107,6 +106,15 @@ class SkewTWidget:
         self._gradient_reg.setVisible(False)
         self.gradient_label_1000.setVisible(False)
         self.gradient_label_P.setVisible(False)
+        
+        font1000 = self.gradient_label_1000.font()
+        font1000.setBold(True)
+        self.gradient_label_1000.setFont(font1000)
+        
+        fontgrad = self.gradient_label_P.font()
+        fontgrad.setBold(True)
+        self.gradient_label_P.setFont(fontgrad)
+
         # Points déplaçables
         self._reg_handle_min = pg.TargetItem(
             pos=(0, 0),
@@ -602,10 +610,7 @@ class SkewTWidget:
             color = (12, 140, 245)  # blue
 
         
-        font = self.gradient_label_1000.font()
-        font.setBold(True)
-        self.gradient_label_1000.setFont(font)
-
+      
         self.gradient_label_1000.setText(f"{round(thermal_gradient_1000,2)} °C/km")
         self.gradient_label_P.setText(f"{round(reg_t.coef_[0],3)} °C/hPa")
         self._gradient_reg.setPen(pg.mkPen(color=color, width=2,

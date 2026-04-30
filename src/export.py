@@ -1,5 +1,5 @@
 from PyQt6 import QtWidgets
-from logging_handler import QTextEditLogger, logger
+from logging_handler import logger
 from pathlib  import Path 
 import csv
 import simplekml

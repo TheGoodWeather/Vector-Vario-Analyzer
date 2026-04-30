@@ -1,18 +1,12 @@
 #import time
-import os
-import shutil
-import pyqtgraph as pg
-from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QPen, QBrush
-from logging_handler import QTextEditLogger, logger
-from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_alias_comment_to_vva
-from moulinette import fetch_raw_csv, fetch_raw_igc
-import sys
+from PyQt6 import QtWidgets
+from PyQt6.QtWidgets import QTableWidgetItem 
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor, QBrush
+from logging_handler import  logger
+from file_handler import save_alias_comment_to_vva
 import numpy as np
-from pathlib  import Path 
-from units import get_unit, convert_array_to_unit
+from units import get_unit
 from utils import get_label
 import datetime
 
@@ -86,37 +80,74 @@ def update_table_button_state(table_widget, flight, export_button_csv, delete_bu
     It enables the export buttons when all the flight selected are analyzed 
     It enables the other tabs when all the flight selected are analyzed 
     """
-    all_processed = False
-    at_least_one_processed = False
-    selected_row = []
-    #BUTTONS
+    table_widget.blockSignals(True)
+    # Mise à jour des couleurs de lignes
     for row in range(table_widget.rowCount()):
-        checkbox_item = table_widget.item(row, 0)  # colonne checkbox
-        if checkbox_item and checkbox_item.checkState() == Qt.CheckState.Checked:
-            selected_row.append(row)
-            
-    if not selected_row:
+        if flight[row]["is_data_processed"]:
+            for col in range(table_widget.columnCount()):
+                item = table_widget.item(row, col)
+                if item:
+                    item.setBackground(QBrush(QColor(200, 240, 200, 60)))  # vert léger
+      
+    table_widget.blockSignals(False)
+
+    selected_flights = [f for f in flight if f["is_flight_selected"]]
+    # Cas 1 : aucun vol sélectionné → tout désactivé
+    if not selected_flights:
         export_button_csv.setEnabled(False)
+        export_button_ge.setEnabled(False)
         delete_button.setEnabled(False)
         analyze_button.setEnabled(False)
-        export_button_ge.setEnabled(False)
-    else : 
+        for tab in tab_list:
+            tab_widget.setTabEnabled(tab_widget.indexOf(tab), False)
+        return
+
+    all_processed      = all(f["is_data_processed"] for f in selected_flights)
+    any_processed      = any(f["is_data_processed"] for f in selected_flights)
     
+    if all_processed:
+        export_button_csv.setEnabled(True)
+        export_button_ge.setEnabled(True)
+        delete_button.setEnabled(True)
+        analyze_button.setEnabled(False)
+        for tab in tab_list:
+            tab_widget.setTabEnabled(tab_widget.indexOf(tab), True)
+        return
+    
+    if any_processed:
+        export_button_csv.setEnabled(True)
+        export_button_ge.setEnabled(True)
         delete_button.setEnabled(True)
         analyze_button.setEnabled(True)
+        for tab in tab_list:
+            tab_widget.setTabEnabled(tab_widget.indexOf(tab), True)
+    else:
+        export_button_csv.setEnabled(False)
+        export_button_ge.setEnabled(False)
+        delete_button.setEnabled(True)
+        analyze_button.setEnabled(True)
+        for tab in tab_list:
+            tab_widget.setTabEnabled(tab_widget.indexOf(tab), False)
     
-    all_processed = all(flight[row]["is_data_processed"] for row in selected_row)
-    export_button_csv.setEnabled(all_processed)
-    export_button_ge.setEnabled(all_processed)     
-    
-    ##TABS
-    at_least_one_processed = any(flight[row]["is_data_processed"] for row, data in enumerate(flight))
-    for tab in tab_list:
-        index = tab_widget.indexOf(tab)
-        tab_widget.setTabEnabled(index, at_least_one_processed)
-    
+            
+            
+def update_flight_state(data, table_widget):
+    """
+    Update the state of the flight
+    All the comoboboxes flight will be updated according to the state variable "is_data_selected"
+    """
+    for row in range(table_widget.rowCount()):
+        checkbox_item = table_widget.item(row, 0)  
+        if checkbox_item and checkbox_item.checkState() == Qt.CheckState.Unchecked:
+            data[row]['is_flight_selected'] = False
+        if checkbox_item and checkbox_item.checkState() == Qt.CheckState.Checked:
+            data[row]['is_flight_selected'] = True
+        
         
 def return_selected_row(data, table_widget):
+    """
+    Returns the rows selected in the import table
+    """
     rows_selected = []
     for row in range(table_widget.rowCount()):
         checkbox_item = table_widget.item(row, 0)  
@@ -127,6 +158,7 @@ def return_selected_row(data, table_widget):
         return
     
     return rows_selected
+
 
 def create_polar_table(flight_dic, table_widget, combobox_flight):
     """

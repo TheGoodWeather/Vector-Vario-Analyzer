@@ -1,8 +1,6 @@
-from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QScrollArea, QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QTextEdit, QTableWidget, QLabel
+from PyQt6 import QtWidgets, uic, QtGui
+from PyQt6.QtWidgets import QScrollArea, QVBoxLayout, QTextEdit, QPushButton, QTableWidget, QTableWidgetItem, QLabel
 from PyQt6.QtCore import Qt, pyqtSignal, QSettings
-from PyQt6.QtGui import QColor, QPen, QBrush
-from logging_handler import QTextEditLogger, logger
 import sys
 from pathlib  import Path 
 from constants import SOFTWARE_VERSION
@@ -257,7 +255,7 @@ class AboutDialog(QtWidgets.QDialog):
         
                 <p><b>Software Version:</b></p>
                 <p>
-                    <img src="gui/icons/logo.png" width="80"><br>
+                    <img src="ressource_path(gui/icons/logo.png)" width="80"><br>
                     Version {SOFTWARE_VERSION}
                 </p>
         
@@ -285,9 +283,8 @@ class AboutDialog(QtWidgets.QDialog):
         
                 <h3>Reach Us</h3>
                 <p>
-                For help with VVS crashes or errors:<br>
-                📧 <a href="mailto:info@vario.com">info@vario.com</a><br><br>
-                To discuss improvements or suggest new features, you can join the Discord channel :<br>
+                For help with VVS crashes, errors:<br>
+                Or to discuss improvements or suggest new features, you can join the Discord channel :<br>
                 <a href="https://discord.com/invite/NA6kJbpJWa">
                 https://discord.com/invite/NA6kJbpJWa
                 </a>
@@ -295,11 +292,11 @@ class AboutDialog(QtWidgets.QDialog):
                 You can also follow Vector Vario on Youtube and Instagram :<br>
                 <p>
                 <a href="https://www.youtube.com/@VectorVario">
-                    <img src="gui/icons/youtube_icon.png" width="40">
+                    <img src="ressource_path(gui/icons/youtube_icon.png)" width="40">
                 </a>
                 &nbsp;
                 <a href="https://www.instagram.com/vectorvario/">
-                    <img src="gui/icons/instagram_icon.png" width="40">
+                    <img src="ressource_path(gui/icons/instagram_icon.png)" width="40">
                 </a>
                 </p>
         
@@ -308,7 +305,7 @@ class AboutDialog(QtWidgets.QDialog):
                 To help the project moving forward, your donation goes directly to funding Vector Vario Analyzer development and maintenance, and helps adding the features you want. <br><br>
         
                 <a href="https://buymeacoffee.com/TheGoodWeather">
-                    <img src="gui/icons/buy_icon.jpg" width="40">
+                    <img src="ressource_path(gui/icons/buy_icon.jpg)" width="40">
                 </a>
                 </p>
                 """)
@@ -324,3 +321,16 @@ class AboutDialog(QtWidgets.QDialog):
         btn_close = QPushButton("Close")
         btn_close.clicked.connect(self.close)
         layout.addWidget(btn_close)
+
+
+
+def resource_path(relative_path: str) -> Path:
+    """Retourne le chemin absolu, compatible dev et PyInstaller."""
+    if hasattr(sys, '_MEIPASS'):
+        # Mode PyInstaller : ressources extraites dans un dossier temp
+        base = Path(sys._MEIPASS)
+    else:
+        # Mode développement
+        base = Path(__file__).parent.parent  # remonte à src/
+
+    return base / relative_path

@@ -4,7 +4,7 @@ import re
 from gps_calculation import calculateDistance, calculateHeading
 import copy
 from units import convert_gps_coords_DDM_to_DD
-from utils import sma_filter, min_res
+from utils import sma_filter
 
 
 raw_data_model = {  #available for both csv and igc file 

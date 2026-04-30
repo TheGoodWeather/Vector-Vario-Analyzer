@@ -1,14 +1,10 @@
 import pyqtgraph as pg
-from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import QListWidgetItem, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox
-from PyQt6.QtCore import Qt, pyqtSignal, QSettings
-from PyQt6.QtGui import QColor, QPen, QBrush
+from PyQt6 import QtCore
+from PyQt6.QtCore import Qt, QSettings
+from PyQt6.QtGui import QColor
 import numpy as np
-import datetime
 from units import convert_array_to_unit , get_unit
 from table_handler import create_polar_table
-import math
-import pprint
 from utils import get_label
 
 settings = QSettings("Vector Vario", "VVA") #Initialize settings
@@ -234,15 +230,32 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
     settings.endGroup()
     flight_selected = get_flight_2D(tab_widget_flight)
     variable_selected = combobox_variable_2D.currentData() 
+    selected_names = [f for f in flight_selected]
     
     if variable_selected is None or variable_selected == "None":
         color_mapping = False
     else:
         color_mapping = True
+        cmap = pg.colormap.get('turbo')
+        #Creating one mapping that will be applied to all flights. To do so , we find the min of all min and the max of all max
+        z_max_limit = 0
+        z_min_limit = 99999
+        for flight in flight_dic:
+
+            flight_name = flight['file_name'].split(".")[0]
+            alias = flight['metadata']['alias']
+
+            is_selected = flight_name in selected_names or alias in selected_names
             
-        
-        
-    selected_names = [f for f in flight_selected]
+            if is_selected:
+                z = flight['data'][variable_selected]
+                z_max = np.max(z)
+                z_min = np.min(z)
+           
+                if z_max > z_max_limit:
+                    z_max_limit = z_max
+                if z_min < z_min_limit:
+                    z_min_limit = z_min
     
     
     #Removing all previous highlighted point if they exists
@@ -276,10 +289,10 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
 
             
             # --- Interpolation x1 . Set to anticipate future improvements---
-            t_orig = np.arange(len(x))
-            t_new  = np.linspace(0, len(x) - 1, len(x) *1)
-            x_interp = np.interp(t_new, t_orig, x)
-            y_interp = np.interp(t_new, t_orig, y)
+            # t_orig = np.arange(len(x))
+            # t_new  = np.linspace(0, len(x) - 1, len(x) *1)
+            # x_interp = np.interp(t_new, t_orig, x)
+            # y_interp = np.interp(t_new, t_orig, y)
             
             
             if not color_mapping:
@@ -294,53 +307,34 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
 
             else:
                 
-       
+                z_to_map = flight["data"][variable_selected]
                 
-                cmap = pg.colormap.get('turbo')
-                z = flight['data'][variable_selected]
-            
-                # Interpolation de z également
-                z_interp = np.interp(t_new, t_orig, z)
-             
-                z_min, z_max = np.nanmin(z_interp), np.nanmax(z_interp)            
-            
-                #z_min, z_max = np.nanmin(z), np.nanmax(z)
-                
-                if z_max - z_min == 0:
-                    norm = np.zeros_like(z_interp)
+                if z_max_limit - z_min_limit == 0:
+                    norm = np.zeros_like(z_to_map)
                 else:
-                    norm = (z_interp - z_min) / (z_max - z_min)
-                
-           
-                brush = cmap.map(norm, mode='qcolor')
-                pen = None
+                    norm = (z_to_map - z_min_limit) / (z_max_limit - z_min_limit)
+                    
+                brush_map = cmap.map(norm, mode='qcolor')
+                pen = None            
+            
                 
                 link_pen = pg.mkPen(QColor(180, 180, 180, 150), width=1)
-                link_curve = pg.PlotCurveItem(x=x_interp, y=y_interp, pen=link_pen)
+                link_curve = pg.PlotCurveItem(x=x, y=y, pen=link_pen)
                 link_curve.setZValue(-1)
                 plot_widget.addItem(link_curve)
                 flight['plot']['link_curve_map'] = link_curve
              
                 flight['plot']['scatter_map'] = pg.ScatterPlotItem(
-                    x=x_interp,
-                    y=y_interp,
-                    brush=brush,
+                    x=x,
+                    y=y,
+                    brush=brush_map,
                     size=6,
                     pen=None
                 )
                 plot_widget.addItem(flight['plot']['scatter_map'])
-                # if flight['plot']['scatter_map']:
-                #     plot_widget.removeItem(flight['plot']['scatter_map'])
-                # flight['plot']['scatter_map'] = pg.ScatterPlotItem(
-                #     x=x,
-                #     y=y,
-                #     brush=brush,
-                #     size=10,
-                #     pen=pen
-                # )
-                # plot_widget.addItem(flight['plot']['scatter_map'])
+             
                 
-                update_colorbar(colorbar, plot_widget, z_min, z_max, variable_selected, cmap)
+                update_colorbar(colorbar, plot_widget, z_min_limit, z_max_limit, variable_selected, cmap)
 
             # START / END
             if not flight['plot']['text_map_start']:
@@ -385,9 +379,7 @@ def update_colorbar(colorbar, plot_widget_colorbar, z_min, z_max, variable, cmap
     colorbar.setOpacity(1)
     colorbar.setLevels((z_min, z_max))
     colorbar.setColorMap(cmap)
-    
-    # Label de l'axe
-    # plot_widget_colorbar.setLabel('bottom', f"{get_label(variable)} {get_unit(variable)}")
+
     
 def apply_colorbar_filter(flight_dic, tab_widget_flight, plot_widget, colorbar, combobox_variable_2D ):
     """
@@ -665,7 +657,7 @@ def calculate_roi(flight, edge):
 def load_polar_roi(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_widget, combobox_flight , legend_vxvz, ias_comp):
     
     for flight in flight_dic:
-        if flight['is_data_processed']:
+        if flight['is_data_processed'] and flight['is_flight_selected']:
             for roi_data in flight['plot']['roi_polar']:
                 roi = roi_data[0]
                 try:
@@ -674,7 +666,7 @@ def load_polar_roi(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_w
                     pass
                 
     for flight in flight_dic:
-        if flight['is_data_processed']:
+        if flight['is_data_processed'] and flight['is_flight_selected']:
             if len(flight['plot']['roi_polar']) > 0:
                 for roi_data in flight['plot']['roi_polar']:
                     roi = roi_data[0]
@@ -689,7 +681,7 @@ def load_emagram_roi(flight_dic, plot_widget_time, widget_emagram, combobox_flig
     """
     
     for flight in flight_dic: #Delete previous ROI on screen
-        if flight['is_data_processed']:
+        if flight['is_data_processed']and flight['is_flight_selected']:
             try:
                 plot_widget_time.removeItem(flight['plot']['roi_emagram'])
             except Exception:
@@ -749,7 +741,7 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
  
     for row, flight in enumerate(flight_dic):
         # if flight['file_name'].split(".")[0] == combobox_flight.currentText():
-        if flight['is_data_processed']:
+        if flight['is_data_processed'] and flight['is_flight_selected']:
             if len(flight['plot']['roi_polar']) > 0:
                 for roi_data in flight['plot']['roi_polar']:
                     x_min, x_max = roi_data[0].getRegion()
@@ -805,7 +797,7 @@ def reset_highlights(flight_dic, plot_widget):
     And it also removes the crosshair from the previous selection 
     """
     for row, flight in enumerate(flight_dic):
-        if flight['is_data_processed']:
+        if flight['is_data_processed'] and flight['is_flight_selected']:
             for roi in flight['plot']['roi_polar']:
                 roi[0].setBrush(QColor(100, 100, 100, 25))
             if flight['plot']['crosshair_v_polar']:
@@ -822,7 +814,7 @@ def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
     plot_widget.setLabel("left","Vz m/s")
     
     for flight in flight_dic:
-        if flight['is_data_processed'] and len(flight['plot']['roi_polar']) > 0:
+        if flight['is_data_processed'] and len(flight['plot']['roi_polar']) > 0 and  flight['is_flight_selected']:
             if not flight['plot']['scatter_vxvz']: #if no scatter exists yet
                 scatter_polar_vx = []
                 scatter_polar_vz = []

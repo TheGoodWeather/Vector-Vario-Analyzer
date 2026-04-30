@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="inexport_tab">
        <attribute name="title">
@@ -94,9 +94,9 @@
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_4">
               <item>
-               <widget class="QLabel" name="label_3">
+               <widget class="QLabel" name="label_table_import">
                 <property name="text">
-                 <string>Logbook (sorted by date)</string>
+                 <string>2 - Select flights</string>
                 </property>
                </widget>
               </item>
@@ -134,15 +134,21 @@
                 <layout class="QHBoxLayout" name="horizontalLayout_5">
                  <item>
                   <widget class="QPushButton" name="pushButton_delete_entry">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="text">
-                    <string>Delete</string>
+                    <string>Delete flights</string>
                    </property>
                   </widget>
                  </item>
                  <item>
                   <widget class="QPushButton" name="pushButton_analyze_entry">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
                    <property name="text">
-                    <string>Analyze in VVA</string>
+                    <string>3 -Analyze flights</string>
                    </property>
                   </widget>
                  </item>
@@ -165,7 +171,7 @@
                     <bool>false</bool>
                    </property>
                    <property name="text">
-                    <string>Export flights in .kml</string>
+                    <string>Export flights as .kml</string>
                    </property>
                   </widget>
                  </item>
@@ -175,7 +181,7 @@
                     <bool>false</bool>
                    </property>
                    <property name="text">
-                    <string>Export flights in .csv</string>
+                    <string>Export flights as .csv</string>
                    </property>
                   </widget>
                  </item>
@@ -563,22 +569,42 @@
              </widget>
             </item>
             <item>
-             <widget class="QWidget" name="widget_24" native="true">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <layout class="QHBoxLayout" name="horizontalLayout_13">
-               <item>
+             <widget class="QWidget" name="widget_levels_map" native="true">
+              <layout class="QGridLayout" name="gridLayout_3">
+               <item row="1" column="2">
+                <widget class="QLabel" name="label_21">
+                 <property name="text">
+                  <string>Level max</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="3">
+                <widget class="QDoubleSpinBox" name="doubleSpinBox_2"/>
+               </item>
+               <item row="1" column="1">
+                <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
+               </item>
+               <item row="1" column="0">
+                <widget class="QLabel" name="label_2">
+                 <property name="text">
+                  <string>Level min</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="0" column="0">
                 <widget class="QLabel" name="label_23">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
                  <property name="text">
                   <string>Color mapping</string>
                  </property>
                 </widget>
                </item>
-               <item>
+               <item row="0" column="1">
                 <widget class="QComboBox" name="combobox_variable_2D">
                  <property name="sizePolicy">
                   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -992,10 +1018,16 @@
                 </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="checkBox_display_generated_polar">
-                 <property name="text">
-                  <string>Display generated polar </string>
-                 </property>
+                <widget class="QWidget" name="widget_polar_info" native="true">
+                 <layout class="QHBoxLayout" name="horizontalLayout_16">
+                  <item>
+                   <widget class="QCheckBox" name="checkBox_display_generated_polar">
+                    <property name="text">
+                     <string>Display generated polar </string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
                 </widget>
                </item>
                <item>
@@ -1517,7 +1549,7 @@
                     </property>
                     <layout class="QVBoxLayout" name="verticalLayout_17">
                      <item>
-                      <widget class="QWidget" name="widget_20" native="true">
+                      <widget class="QWidget" name="widget_gradient_info" native="true">
                        <layout class="QHBoxLayout" name="horizontalLayout_15">
                         <item>
                          <widget class="QCheckBox" name="checkBox_T_gradient">
@@ -1550,6 +1582,12 @@
                         </item>
                         <item>
                          <widget class="QLabel" name="label_t_gradient_P">
+                          <property name="font">
+                           <font>
+                            <weight>75</weight>
+                            <bold>true</bold>
+                           </font>
+                          </property>
                           <property name="text">
                            <string>°C/hPa</string>
                           </property>
@@ -1617,36 +1655,6 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="dynamic_tab">
-       <attribute name="title">
-        <string>Dynamic</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_19">
-        <item>
-         <widget class="QLabel" name="label_2">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Work in progress. This feature will be soon realeased </string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_21">
-          <property name="text">
-           <string/>
-          </property>
-          <property name="pixmap">
-           <pixmap>image_dynamic.jpg</pixmap>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
      </widget>
     </item>
    </layout>
@@ -1657,7 +1665,7 @@
      <x>0</x>
      <y>0</y>
      <width>973</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

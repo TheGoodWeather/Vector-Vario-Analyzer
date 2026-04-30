@@ -1,5 +1,4 @@
 import numpy as np
-import pyqtgraph as pg
 from units import convert_array_to_unit
 from PyQt6.QtWidgets import QRadioButton
 #constants

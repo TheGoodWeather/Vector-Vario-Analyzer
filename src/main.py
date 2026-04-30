@@ -1,17 +1,15 @@
 #import time
 import os
 import shutil
-from pyqtgraph_gis import MapWidget
-from PyQt6 import QtWidgets, uic, QtCore, QtGui
-from PyQt6.QtWidgets import  QSizePolicy, QListWidgetItem,QComboBox, QHeaderView, QRadioButton, QApplication, QLineEdit, QWidget, QVBoxLayout,QTableWidgetItem ,QButtonGroup , QPushButton, QHBoxLayout, QFileDialog, QMessageBox, QMainWindow
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QSize
-from PyQt6.QtGui import QColor, QPen, QBrush
+from PyQt6 import QtWidgets, uic, QtCore
+from PyQt6.QtWidgets import   QRadioButton, QTableWidgetItem , QMessageBox, QHeaderView
+from PyQt6.QtCore import Qt, QPoint, QSize
+from PyQt6.QtGui import QColor, QBrush, QIcon
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
-from table_handler import update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table, save_comment_alias, populate_table_1D_variable
-from PyQt6.QtCore import QThread, QThreadPool, QSettings
-from moulinette_worker import MoulinetteWorker
-from pyqtgraph import ErrorBarItem 
+from table_handler import update_flight_state, update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table, save_comment_alias, populate_table_1D_variable
+from PyQt6.QtCore import QThreadPool, QSettings
+from moulinette_worker import MoulinetteWorker 
 import pyqtgraph as pg
 from export import export_file_csv, export_file_kml
 from plot_emagram import SkewTWidget
@@ -21,12 +19,12 @@ from overlay_map import OSMTileOverlay
 from dropzone import DropZone
 from polar_generator import update_polar_generator_values
 from pathlib  import Path 
-import pprint
 import numpy as np
 from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog, AboutDialog
 import plot 
 from utils import get_label
 from constants import SOFTWARE_VERSION
+import qtawesome as qta
 
 OPEN = 0.0389250
 POD =  0.0296384
@@ -39,6 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super(MainWindow, self).__init__()
     
         uic.loadUi(self.resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
+        
         self.unit_dialog = UnitDialog(parent = self)  
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.graph1_tab1D, self.curve_1D_11,self.curve_1D_12))
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2, self.graph2_tab1D, self.curve_1D_21, self.curve_1D_22))
@@ -102,7 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #Table ------------------------------------
         headers = ["","Flight Name", "Flight date", "Start altitude","Max altitude", "Pilot", "Comment", "Alias"]
-        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab, self.dynamic_tab]
+        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab]
         for tab in self.tab_list:
             index = self.tabWidget.indexOf(tab)
             self.tabWidget.setTabEnabled(index, False)
@@ -115,8 +114,18 @@ class MainWindow(QtWidgets.QMainWindow):
         #self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
   
         self.tableWidget_database.resizeColumnsToContents()
+        
+        self.tableWidget_database.itemChanged.connect(lambda : update_flight_state(self.flight, self.tableWidget_database))
         self.tableWidget_database.itemChanged.connect(lambda : update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget))
         self.tableWidget_database.itemChanged.connect(lambda item: save_comment_alias(item, self.flight, self.tableWidget_database))
+        
+        self.tableWidget_database.itemChanged.connect(lambda : self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D))
+        self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab))
+        self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab))
+        self.tableWidget_database.itemChanged.connect(lambda : self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D ))
+        
+        
+        
         
         self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
         
@@ -211,7 +220,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.colorbar = pg.ColorBarItem(
             values=(0, 1),
             colorMap=pg.colormap.get('turbo'),
-            interactive=True,
+            interactive=False,
             orientation='horizontal',
             colorMapMenu=False,
         )
@@ -283,6 +292,12 @@ class MainWindow(QtWidgets.QMainWindow):
         Widgets tab POLAR
         """
         
+        self.help_polar_button = QtWidgets.QPushButton(qta.icon('mdi.help-circle-outline'), '')
+        self.help_polar_button.setFixedSize(20, 20)
+        self.widget_polar_info.layout().addWidget(self.help_polar_button)
+        self.help_polar_button.clicked.connect(self.button_help_polar_clicked)
+        
+        
         #Table ------------------------------------
         headers_table_polar = ["Vx", "Vz", "Glide Ratio"]
         self.tableView_polar_points.setColumnCount(len(headers_table_polar))
@@ -334,12 +349,7 @@ class MainWindow(QtWidgets.QMainWindow):
             symbol=None
         )
         self.polar_generated_curve.setVisible(False)
-        self.checkBox_display_generated_polar.setToolTip(
-            "The polar model presented here is based on approximately 50 polar measurements taken with the Vector Probe.\n" 
-            "It does not accurately describe all configurations.\n" 
-            "This is the model used in the Vector Vario to calculate the vario netto.\n" 
-            "You can adjust the model’s parameters to better match your measurements.\n"
-            "Note: The IAS in the Vector Vario is not corrected for pilot interaction. Please visit : https://vectorvario.com/airspeed/")
+        
         
         self.crosshair_trim_speed = pg.InfiniteLine(
             angle=90,
@@ -411,6 +421,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.skewt = SkewTWidget(self.graph_skewt, self.label_t_gradient_1000 , self.label_t_gradient_P)
         
         
+        
+        self.help_grad_button = QtWidgets.QPushButton(qta.icon('mdi.help-circle-outline'), '')
+        self.help_grad_button.setFixedSize(20, 20)
+        self.widget_gradient_info.layout().addWidget(self.help_grad_button)
+        self.help_grad_button.clicked.connect(self.button_help_grad_clicked)
+        
         self.graph_atmtab_timeserie.setBackground("w")
         self.graph_atmtab_timeserie.setLabel("bottom", "Sample")
         self.graph_atmtab_timeserie.addLegend()
@@ -430,12 +446,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkBox_moist_adia.stateChanged.connect(lambda state: self.horizontalSlider_moist_adia.setEnabled(state))
         self.checkBox_windbarbs_atm.stateChanged.connect(lambda state: self.horizontalSlider_windbarbs_atm.setEnabled(state))
         
-        
-        self.checkBox_T_gradient.setToolTip(
-            "The standard lapse rate is about −6.5 °C/km. \n" 
-            "When the temperature gradient is weaker than this, thermal convection is unlikely (black curve). \n" 
-            "The dry adiabatic lapse rate is approximately −9.8 °C/km;\n" 
-            "when the gradient exceeds this value, convection becomes strong (blue line).")
 
         self.checkBox_isotherm.stateChanged.connect(
             lambda state: self.skewt.set_background_visibility(isotherms=bool(state)))  
@@ -685,7 +695,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def on_button_delete_entries(self):
         
-        reply =  QMessageBox.question(
+        reply =  QMessageBox.warning(
         self,
         "Warning",
         "The source files will be deleted from the database.\n"
@@ -713,12 +723,12 @@ class MainWindow(QtWidgets.QMainWindow):
         row_to_analyze = return_selected_row(self.flight, self.tableWidget_database)
         if not row_to_analyze:
             return 
+        
         self.analyze_queue = row_to_analyze.copy()
         
         if not self.analyze_running: #If the analyze hasn't started yet
             self.start_next_analysis_thread(self.pushButton_analyze_entry)
             
-        
     
     def start_next_analysis_thread(self, button_analyse):
         
@@ -785,9 +795,9 @@ class MainWindow(QtWidgets.QMainWindow):
             original_filename_wo_extension = original_filename.with_suffix("")
             original_filename_wo_extension = str(original_filename_wo_extension.with_suffix(""))
             alias = self.get_alias(original_filename_wo_extension)
-            if combo_box_flight.findText(alias) >= 0 and not flight['is_data_processed'] :
+            if combo_box_flight.findText(alias) >= 0 and not flight['is_data_processed'] and not flight['is_flight_selected']:
                 combo_box_flight.removeItem(combo_box_flight.findText(alias))
-            elif flight['is_data_processed'] and combo_box_flight.findText(alias) < 0:
+            elif flight['is_data_processed'] and combo_box_flight.findText(alias) < 0 and flight['is_flight_selected']:
                 combo_box_flight.addItem(f"{alias}")
                 
     
@@ -878,12 +888,12 @@ class MainWindow(QtWidgets.QMainWindow):
         Populating the flight table according to flights that are processed
 
         """
-
+        table_widget.clear()
         table_widget.setRowCount(0)        
         row = 0
     
         for flight in flight_dic:
-            if flight['is_data_processed'] and flight['data']:
+            if flight['is_data_processed'] and flight['data'] and flight['is_flight_selected']:
     
                 table_widget.insertRow(row)
                 flight_name = self.get_alias(str(Path(flight['file_name']).with_suffix("").with_suffix("")))
@@ -910,7 +920,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         for flight in flight_dic:
             if flight['file_name'].split(".")[0] == choice or (flight['metadata']['alias'] == choice):
-                if flight['is_data_processed'] and flight['data']:
+                if flight['is_data_processed'] and flight['data'] and flight['is_flight_selected']:
                     if tab == 'polar':
                         priority_vars = ['IAS', 'GNSS_alt']
                         for variable in priority_vars:
@@ -970,7 +980,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def set_colors_to_flights(self, flight_dic):
         for row, flight in enumerate(flight_dic):
-            if flight['is_data_processed']: 
+            if flight['is_data_processed'] and flight['is_flight_selected']: 
                 flight['plot']['plot_color'] = plot.colors[row % len(plot.colors)]
     
     
@@ -1003,6 +1013,27 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog = AboutDialog(self)
         dialog.exec()
         
+        
+    def button_help_grad_clicked(self):
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle("About thermal gradient")
+        dlg.setText("The standard lapse rate is about −6.5 °C/km. \n" 
+        "When the temperature gradient is weaker than this, thermal convection is unlikely (black curve). \n" 
+        "The dry adiabatic lapse rate is approximately −9.8 °C/km;\n" 
+        "when the gradient exceeds this value, convection becomes strong (blue line).")
+        dlg.exec()
+        
+    def button_help_polar_clicked(self):
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle("About generated polar")
+        dlg.setText("The polar model presented here is based on approximately 50 polar measurements taken with the Vector Probe.\n" 
+        "It does not accurately describe all configurations.\n" 
+        "This is the model used in the Vector Vario to calculate the vario netto.\n" 
+        "You can adjust the model’s parameters to better match your measurements.\n"
+        "Note: The IAS in the Vector Vario is not corrected for pilot interaction. Please visit : https://vectorvario.com/airspeed/")
+        dlg.exec()
+
+ 
             
     def on_radiobutton_dis_gen_pol(self, state, scatter_polar, plot_widget_vxvz, line): 
         """
@@ -1051,7 +1082,7 @@ class MainWindow(QtWidgets.QMainWindow):
         x = click_pos.x()
      
         for flight in flight_dic:
-            if not flight['is_data_processed']:
+            if not flight['is_data_processed'] :
                 continue
      
             for i, roi_data in enumerate(flight['plot']['roi_polar']):
@@ -1355,19 +1386,43 @@ class MainWindow(QtWidgets.QMainWindow):
         widget_wind.setEnabled(toggle)
         
         
-    def on_mouse_hovering(self, point_list):
-        print(point_list)
+
+    
         
+        
+def resource_path(relative_path: str) -> Path:
+    """Retourne le chemin absolu, compatible dev et PyInstaller."""
+    if hasattr(sys, '_MEIPASS'):
+        # Mode PyInstaller : ressources extraites dans un dossier temp
+        base = Path(sys._MEIPASS)
+    else:
+        # Mode développement
+        base = Path(__file__).parent.parent  # remonte à src/
+
+    return base / relative_path
+
+def flight_data_path() -> Path:
+    """Retourne le chemin du dossier 'flight' à côté de l'executable."""
+    if hasattr(sys, '_MEIPASS'):
+        exe_dir = Path(sys.executable).parent
+    else:
+        exe_dir = Path(__file__).parent.parent
+    
+    path = exe_dir / "flight"
+    path.mkdir(exist_ok=True)
+    return path
+
 if __name__ == "__main__":
-   #try:
-    if not QtWidgets.QApplication.instance():
-        app = QtWidgets.QApplication(sys.argv)
-    else : 
-        app = QtWidgets.QApplication.instance() 
-    app.setStyle("Fusion")
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
-    # except Exception as e:
-    #     print(f"Fatal error {e}")
-    #     # logger.exception(f"Fatal error occurred during startup {e}")
+    try:
+        if not QtWidgets.QApplication.instance():
+            app = QtWidgets.QApplication(sys.argv)
+        else : 
+            app = QtWidgets.QApplication.instance() 
+        app.setStyle("Fusion")
+        app.setWindowIcon(QIcon(str(resource_path("src/gui/icons/app_icon.ico"))))
+        window = MainWindow()
+        window.show()
+        sys.exit(app.exec())
+    except Exception as e:
+        print(f"Fatal error {e}")
+        # logger.exception(f"Fatal error occurred during startup {e}")

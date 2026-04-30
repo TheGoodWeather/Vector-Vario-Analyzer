@@ -36,7 +36,7 @@ import numpy as np
 import requests
 from PIL import Image
 
-from logging_handler import QTextEditLogger, logger
+from logging_handler import  logger
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore
  
