@@ -47,12 +47,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         self.unit_dialog.unitsChanged.connect(lambda : self.populate_table_2D_variable(label_table_data = self.label_table_data, table_data = self.tableWidget_data_point_tab2D))
-        # self.unit_dialog.unitsChanged.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph1_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1))
-        # self.unit_dialog.unitsChanged.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph2_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2))
-        
+        self.unit_dialog.unitsChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar,self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap))
+       
         self.color_dialog = ColorDialog(parent = self)  
         self.color_dialog.colorWindBarbsChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
-        self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max ))
+        self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap ))
 
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
@@ -239,8 +238,8 @@ class MainWindow(QtWidgets.QMainWindow):
         #Spinboxes
         self.doubleSpinBox_colorbar_min.valueChanged.connect(lambda value_min:  self.colorbar.setLevels(low=value_min))
         self.doubleSpinBox_colorbar_max.valueChanged.connect(lambda value_max:  self.colorbar.setLevels(high=value_max))
-        self.doubleSpinBox_colorbar_min.valueChanged.connect(lambda _: plot.apply_colorbar_filter(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.colorbar, self.combobox_variable_2D ))
-        self.doubleSpinBox_colorbar_max.valueChanged.connect(lambda _: plot.apply_colorbar_filter(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.colorbar, self.combobox_variable_2D ))
+        self.doubleSpinBox_colorbar_min.editingFinished.connect(lambda: plot.apply_colorbar_filter(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.colorbar, self.combobox_variable_2D ))
+        self.doubleSpinBox_colorbar_max.editingFinished.connect(lambda: plot.apply_colorbar_filter(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.colorbar, self.combobox_variable_2D ))
         #Table ------------------------------------
         headers_table_map = ["Flight"]
         self.tableWidget_flights_plot2D.setColumnCount(len(headers_table_map))
@@ -260,7 +259,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_data_point_tab2D.resizeColumnsToContents()
         
         #signals
-        self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar,self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max))
+        self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar,self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap))
         self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         self.tableWidget_flights_plot2D.itemChanged.connect(lambda: self.populate_combobox_variable_2D(self.flight, self.tableWidget_flights_plot2D, self.combobox_variable_2D ))
         
@@ -277,7 +276,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalSlider_size_barbs.valueChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         
         self.graph_tab2D.scene().sigMouseClicked.connect(lambda event: self.on_2D_point_clicked(event, self.flight, self.graph_tab2D, self.tableWidget_flights_plot2D, self.tableWidget_data_point_tab2D, self.label_table_data))
-        self.combobox_variable_2D.currentTextChanged.connect(lambda :plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max ))
+        self.combobox_variable_2D.currentTextChanged.connect(lambda :plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max , self.label_unit_cmap))
         self.combobox_variable_2D.currentTextChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
 
         # Map

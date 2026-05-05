@@ -5,7 +5,7 @@ from PyQt6.QtGui import QColor
 import numpy as np
 from units import convert_array_to_unit , get_unit
 from table_handler import create_polar_table
-from utils import get_label
+from utils import get_label, mapping
 
 settings = QSettings("Vector Vario", "VVA") #Initialize settings
 pg.setConfigOptions(useOpenGL=True)
@@ -220,7 +220,7 @@ def toggle_x_link(plot1, plot2, checkbox):
 
 
     
-def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable_2D, colorbar, widget_min, widget_max):
+def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable_2D, colorbar, widget_min, widget_max, label_unit):
     """
     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
     """
@@ -238,7 +238,7 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
         color_mapping = True
         cmap = pg.colormap.get('turbo')
         #Creating one mapping that will be applied to all flights. To do so , we find the min of all min and the max of all max
-        z_max_limit = 0
+        z_max_limit = -99999
         z_min_limit = 99999
         for flight in flight_dic:
 
@@ -248,9 +248,9 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
             is_selected = flight_name in selected_names or alias in selected_names
             
             if is_selected:
-                z = flight['data'][variable_selected]
-                z_max = np.max(z)
-                z_min = np.min(z)
+                z = convert_array_to_unit(np.array(flight["data"][variable_selected], dtype=float),variable_selected)
+                z_max = np.nanmax(z)
+                z_min = np.nanmin(z)
            
                 if z_max > z_max_limit:
                     z_max_limit = z_max
@@ -259,6 +259,7 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
     
     widget_min.setEnabled(color_mapping)
     widget_max.setEnabled(color_mapping)
+    label_unit.setVisible(color_mapping)
     #Removing all previous highlighted point if they exists
     for flight in flight_dic:
         if flight['plot']['highlight_point_map']: 
@@ -312,8 +313,9 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
 
             else:
                 
-                z_to_map = flight["data"][variable_selected]
-                
+                z_to_map = convert_array_to_unit(np.array(flight["data"][variable_selected], dtype=float),variable_selected)
+                label_unit.setText(f"{get_unit(variable_selected)}")
+         
                 if z_max_limit - z_min_limit == 0:
                     norm = np.zeros_like(z_to_map)
                 else:
@@ -385,12 +387,20 @@ def update_colorbar(colorbar, plot_widget_colorbar, z_min, z_max, variable, cmap
     colorbar.setOpacity(1)
     colorbar.setLevels((z_min, z_max))
     colorbar.setColorMap(cmap)
-    widget_min.setRange(z_min, z_max)
-    widget_max.setRange(z_min, z_max)
-    widget_max.setSingleStep((z_max - z_min) / 100)
-    widget_min.setSingleStep((z_max - z_min) / 100)
+    # margin = (z_max - z_min) * 0.2 if z_max != z_min else abs(z_max) * 0.2 or 1.0
+
+    widget_min.blockSignals(True)
+    widget_max.blockSignals(True)
+
+    # widget_min.setRange(z_min - margin, z_max + margin)
+    # widget_max.setRange(z_min - margin, z_max + margin)
+    widget_min.setSingleStep((z_max - z_min) / 100 or 0.01)
+    widget_max.setSingleStep((z_max - z_min) / 100 or 0.01)
     widget_min.setValue(z_min)
     widget_max.setValue(z_max)
+
+    widget_min.blockSignals(False)
+    widget_max.blockSignals(False)
     
 def apply_colorbar_filter(flight_dic, tab_widget_flight, plot_widget, colorbar, combobox_variable_2D ):
     """
@@ -418,7 +428,8 @@ def apply_colorbar_filter(flight_dic, tab_widget_flight, plot_widget, colorbar, 
                 return
             if not isinstance(flight['plot']['scatter_map'], pg.ScatterPlotItem): #This prevent to apply a brush when the flight display is not a scatter (but a plot widget)
                 return
-            z = np.array(flight['data'][variable_selected], dtype=float)
+            
+            z = convert_array_to_unit(np.array(flight['data'][variable_selected], dtype=float), variable_selected)
 
             if clim_max - clim_min == 0:
                 norm = np.zeros_like(z)
@@ -439,7 +450,7 @@ def update_wind_barbs_2D(flight_dic, table_widget_flight, plot_widget, radiobutt
     settings.endGroup()
     density = slider_density.value()
     size_coeff = slider_size.value()
-    increment = int((density - 1) * (20 - 200) // (100 - 1) + 200) #mapping the res of the slider into a increment that goes to a barb every 20 points to every 200 points  
+    increment = int(mapping(density, 0, 100 , 50, 5))
     flight_selected = get_flight_2D(table_widget_flight)
     
     selected_names = {f for f in flight_selected}
