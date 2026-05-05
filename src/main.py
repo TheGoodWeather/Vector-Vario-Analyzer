@@ -43,7 +43,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2, self.graph2_tab1D, self.curve_1D_21, self.curve_1D_22))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
-        self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
+        self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp ))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_atmtab, self.comboBox_variable_select_atmtab, self.graph_atmtab_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         self.unit_dialog.unitsChanged.connect(lambda : self.populate_table_2D_variable(label_table_data = self.label_table_data, table_data = self.tableWidget_data_point_tab2D))
@@ -52,7 +52,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.color_dialog = ColorDialog(parent = self)  
         self.color_dialog.colorWindBarbsChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
-        self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar ))
+        self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max ))
 
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
@@ -224,13 +224,23 @@ class MainWindow(QtWidgets.QMainWindow):
             orientation='horizontal',
             colorMapMenu=False,
         )
-        self.colorbar.sigLevelsChanged.connect(lambda cb: plot.apply_colorbar_filter(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, cb, self.combobox_variable_2D ))
+        
+        axis = self.colorbar.axis
+        axis.setTextPen(pg.mkPen('k'))
+        axis.setTickPen(pg.mkPen('k'))
+
+        
+        #self.colorbar.sigLevelsChanged.connect(lambda cb: plot.apply_colorbar_filter(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, cb, self.combobox_variable_2D ))
         plot_item = self.graph_tab2D.getPlotItem()
         plot_item.layout.addItem(self.colorbar, 2, 1)
         #self.graph_tab2D.addItem(self.colorbar)
         self.colorbar.setOpacity(0) 
         
-        
+        #Spinboxes
+        self.doubleSpinBox_colorbar_min.valueChanged.connect(lambda value_min:  self.colorbar.setLevels(low=value_min))
+        self.doubleSpinBox_colorbar_max.valueChanged.connect(lambda value_max:  self.colorbar.setLevels(high=value_max))
+        self.doubleSpinBox_colorbar_min.valueChanged.connect(lambda _: plot.apply_colorbar_filter(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.colorbar, self.combobox_variable_2D ))
+        self.doubleSpinBox_colorbar_max.valueChanged.connect(lambda _: plot.apply_colorbar_filter(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.colorbar, self.combobox_variable_2D ))
         #Table ------------------------------------
         headers_table_map = ["Flight"]
         self.tableWidget_flights_plot2D.setColumnCount(len(headers_table_map))
@@ -250,7 +260,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_data_point_tab2D.resizeColumnsToContents()
         
         #signals
-        self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar))
+        self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar,self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max))
         self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         self.tableWidget_flights_plot2D.itemChanged.connect(lambda: self.populate_combobox_variable_2D(self.flight, self.tableWidget_flights_plot2D, self.combobox_variable_2D ))
         
@@ -267,7 +277,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalSlider_size_barbs.valueChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         
         self.graph_tab2D.scene().sigMouseClicked.connect(lambda event: self.on_2D_point_clicked(event, self.flight, self.graph_tab2D, self.tableWidget_flights_plot2D, self.tableWidget_data_point_tab2D, self.label_table_data))
-        self.combobox_variable_2D.currentTextChanged.connect(lambda :plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar  ))
+        self.combobox_variable_2D.currentTextChanged.connect(lambda :plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max ))
         self.combobox_variable_2D.currentTextChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
 
         # Map
@@ -328,16 +338,16 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda choice: self.populate_combobox_variable(self.flight, self.comboBox_variable_select_polartab, choice, 'polar'))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda: plot.clear_plots_1D(self.graph_tabpolar_timeserie, None))
-        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.load_polar_roi(self.flight, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz,  self.tableView_polar_points,  self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp.value() ))
+        self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.load_polar_roi(self.flight, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz,  self.tableView_polar_points,  self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp ))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda:plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.comboBox_variable_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab , 'roi_polar'))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.display_rois(self.flight, self.graph_tabpolar_timeserie, self.comboBox_flight_select_polartab, 'roi_polar'))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda : plot.reset_highlights(self.flight, self.graph_tabpolar_vxvz ))
         self.comboBox_flight_select_polartab.currentTextChanged.connect(lambda :create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
-        self.pushButton_add_polar_point.clicked.connect(lambda : plot.create_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp.value()))
+        self.pushButton_add_polar_point.clicked.connect(lambda : plot.create_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp))
         self.pushButton_add_polar_point.clicked.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
-        self.pushButton_remove_polar_point.clicked.connect(lambda : plot.remove_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp.value()))
+        self.pushButton_remove_polar_point.clicked.connect(lambda : plot.remove_roi(self.flight,self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp))
         self.pushButton_save_polar.clicked.connect(lambda : save_section_to_vva(self.flight, 'roi_polar'))
         
         #Polar Generator
@@ -401,13 +411,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.horizontalSlider_sproj.valueChanged.connect(lambda sproj: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), sproj, self.widget_harness_polar , self.polar_generated_curve, self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         self.horizontalSlider_auw.valueChanged.connect(lambda auw: update_polar_generator_values(auw, self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve,self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         self.horizontalSlider_ar.valueChanged.connect(lambda ar: update_polar_generator_values(self.horizontalSlider_auw.value(), ar, self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve,self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
-        self.horizontalSlider_ias_comp.valueChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
+        self.horizontalSlider_ias_comp.valueChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp))
 
         self.checkBox_display_generated_polar.stateChanged.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve,self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         for button in self.widget_harness_polar.findChildren(QRadioButton):
             button.toggled.connect(lambda: update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve , self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         
-        self.checkBox_display_generated_polar.stateChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp.value() ))
+        self.checkBox_display_generated_polar.stateChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp))
         
         self.graph_tabpolar_timeserie.scene().sigMouseClicked.connect(
         lambda pos: self.on_roi_clicked(pos, self.flight, self.graph_tabpolar_timeserie, self.tableView_polar_points, self.graph_tabpolar_vxvz)
@@ -1413,16 +1423,16 @@ def flight_data_path() -> Path:
     return path
 
 if __name__ == "__main__":
-    try:
-        if not QtWidgets.QApplication.instance():
-            app = QtWidgets.QApplication(sys.argv)
-        else : 
-            app = QtWidgets.QApplication.instance() 
-        app.setStyle("Fusion")
-        app.setWindowIcon(QIcon(str(resource_path("src/gui/icons/app_icon.ico"))))
-        window = MainWindow()
-        window.show()
-        sys.exit(app.exec())
-    except Exception as e:
-        print(f"Fatal error {e}")
-        # logger.exception(f"Fatal error occurred during startup {e}")
+    # try:
+    if not QtWidgets.QApplication.instance():
+        app = QtWidgets.QApplication(sys.argv)
+    else : 
+        app = QtWidgets.QApplication.instance() 
+    app.setStyle("Fusion")
+    app.setWindowIcon(QIcon(str(resource_path("src/gui/icons/app_icon.ico"))))
+    window = MainWindow()
+    window.show()
+    sys.exit(app.exec())
+    # except Exception as e:
+    #     print(f"Fatal error {e}")
+    #     # logger.exception(f"Fatal error occurred during startup {e}")

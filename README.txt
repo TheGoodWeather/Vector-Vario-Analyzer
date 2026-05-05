@@ -1,9 +1,9 @@
-Flight Data Analyzer v1.0.0
+Flight Data Analyzer v0.01
 
 
 ### Fonctionnement : 
 
-Se référer au mnuel utilisateur 
+Se référer au manuel utilisateur 
 
 
 ### Prérequis pour lancer en python
@@ -45,5 +45,5 @@ Puis dans le dossier Source :
 ### Version
 
 
-version 1.0.0  
+version 0.01  
 date de sortie : 

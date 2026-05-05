@@ -242,7 +242,13 @@ class AboutDialog(QtWidgets.QDialog):
 
         self.setWindowTitle("About")
         self.resize(400, 300)
-
+        
+        logo_path      = str(resource_path("src/gui/icons/logo.png")).replace("\\", "/")
+        author_path    = str(resource_path("src/gui/icons/author.png")).replace("\\", "/")
+        youtube_path   = str(resource_path("src/gui/icons/youtube_icon.png")).replace("\\", "/")
+        instagram_path = str(resource_path("src/gui/icons/instagram_icon.png")).replace("\\", "/")
+        buy_path       = str(resource_path("src/gui/icons/buy_icon.jpg")).replace("\\", "/")
+                
         layout = QVBoxLayout(self)
 
         label = QLabel()
@@ -255,7 +261,7 @@ class AboutDialog(QtWidgets.QDialog):
         
                 <p><b>Software Version:</b></p>
                 <p>
-                    <img src="ressource_path(gui/icons/logo.png)" width="80"><br>
+                    <img src="{logo_path}" width="80"><br>
                     Version {SOFTWARE_VERSION}
                 </p>
         
@@ -273,7 +279,7 @@ class AboutDialog(QtWidgets.QDialog):
         
                 <h3>About the Author</h3>
                 <p>
-                <img src="gui/icons/author.png" width="120"><br><br>
+                <img src="{author_path}" width="120"><br><br>
                 My name is Félix Aubourg and I am working on a voluntary basis on this project.<br>
                 I am not affiliated with the Vector Vario team.<br><br>
         
@@ -292,11 +298,11 @@ class AboutDialog(QtWidgets.QDialog):
                 You can also follow Vector Vario on Youtube and Instagram :<br>
                 <p>
                 <a href="https://www.youtube.com/@VectorVario">
-                    <img src="ressource_path(gui/icons/youtube_icon.png)" width="40">
+                    <img src="{youtube_path}" width="40">
                 </a>
                 &nbsp;
                 <a href="https://www.instagram.com/vectorvario/">
-                    <img src="ressource_path(gui/icons/instagram_icon.png)" width="40">
+                    <img src="{instagram_path}" width="40">
                 </a>
                 </p>
         
@@ -305,7 +311,7 @@ class AboutDialog(QtWidgets.QDialog):
                 To help the project moving forward, your donation goes directly to funding Vector Vario Analyzer development and maintenance, and helps adding the features you want. <br><br>
         
                 <a href="https://buymeacoffee.com/TheGoodWeather">
-                    <img src="ressource_path(gui/icons/buy_icon.jpg)" width="40">
+                    <img src="{buy_path}" width="40">
                 </a>
                 </p>
                 """)
@@ -315,7 +321,6 @@ class AboutDialog(QtWidgets.QDialog):
         scroll.setWidget(label)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        layout.addWidget(scroll)
         layout.addWidget(scroll)
 
         btn_close = QPushButton("Close")
