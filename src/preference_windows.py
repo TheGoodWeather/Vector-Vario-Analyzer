@@ -244,7 +244,7 @@ class AboutDialog(QtWidgets.QDialog):
         self.resize(400, 300)
         
         logo_path      = str(resource_path("src/gui/icons/logo.png")).replace("\\", "/")
-        author_path    = str(resource_path("src/gui/icons/author.png")).replace("\\", "/")
+        author_path    = str(resource_path("src/gui/icons/author.jpg")).replace("\\", "/")
         youtube_path   = str(resource_path("src/gui/icons/youtube_icon.png")).replace("\\", "/")
         instagram_path = str(resource_path("src/gui/icons/instagram_icon.png")).replace("\\", "/")
         buy_path       = str(resource_path("src/gui/icons/buy_icon.jpg")).replace("\\", "/")
@@ -268,7 +268,7 @@ class AboutDialog(QtWidgets.QDialog):
                 <h3>About the Software</h3>
                 <p>
                 Vector Vario Software is an open-source software.<br>
-                It has been developed to improve the VVA user experience by making it easy to visualize any raw data recorded by the Vector Vario probe.<br><br>
+                It has been developed to improve the VVA user experience by making it easy to visualize any raw data recorded by the Vector Vario.<br><br>
         
                 Bear in mind that this software is only a handy tool to quickly represent data. It has not been made for scientific purpose.<br><br>
         
@@ -280,8 +280,10 @@ class AboutDialog(QtWidgets.QDialog):
                 <h3>About the Author</h3>
                 <p>
                 <img src="{author_path}" width="120"><br><br>
-                My name is Félix Aubourg and I am working on a voluntary basis on this project.<br>
-                I am not affiliated with the Vector Vario team.<br><br>
+                My name is Félix, the main developer behind VV Software.<br><br>
+                As a polar field engineer, I develop this project voluntarily alongside my field work, dedicating my free time to its growth and improvement.<br><br>
+
+                The origins of VV Software trace back to the remote and frozen environments of Antarctica, where the project first came to life.<br><br>
         
                 Please keep in mind that I am also not a software developer.<br>
                 I am learning coding through this project, and thus not everything is perfect or well optimised (yet)!
