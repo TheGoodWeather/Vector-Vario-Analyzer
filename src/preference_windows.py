@@ -235,7 +235,7 @@ class AboutDialog(QtWidgets.QDialog):
         label.setAlignment(Qt.AlignmentFlag.AlignTop)
         label.setWordWrap(True)
         label.setText(f"""
-                <h2>Vector Vario Software</h2>
+                <h2>Vector Vario Analyzer</h2>
         
                 <p><b>Software Version:</b></p>
                 <p>
@@ -245,8 +245,8 @@ class AboutDialog(QtWidgets.QDialog):
         
                 <h3>About the Software</h3>
                 <p>
-                Vector Vario Software is an open-source software.<br>
-                It has been developed to improve the VVA user experience by making it easy to visualize any raw data recorded by the Vector Vario.<br><br>
+                Vector Vario Analyzer is an open-source software.<br>
+                It has been developed to improve the VV user experience by making it easy to visualize any raw data recorded by the Vector Vario.<br><br>
         
                 Bear in mind that this software is only a handy tool to quickly represent data. It has not been made for scientific purpose.<br><br>
         
@@ -258,10 +258,10 @@ class AboutDialog(QtWidgets.QDialog):
                 <h3>About the Author</h3>
                 <p>
                 <img src="{author_path}" width="120"><br><br>
-                My name is Félix, the main developer behind VV Software.<br><br>
+                My name is Félix, the main developer behind VV Analyzer.<br><br>
                 As a polar field engineer, I develop this project voluntarily alongside my field work, dedicating my free time to its growth and improvement.<br><br>
 
-                The origins of VV Software trace back to the remote and frozen environments of Antarctica, where the project first came to life.<br><br>
+                The origins of VV Analyzer trace back to the remote and frozen environments of Antarctica, where the project first came to life.<br><br>
         
                 Please keep in mind that I am also not a software developer.<br>
                 I am learning coding through this project, and thus not everything is perfect or well optimised (yet)!
@@ -269,8 +269,7 @@ class AboutDialog(QtWidgets.QDialog):
         
                 <h3>Reach Us</h3>
                 <p>
-                For help with VVS crashes, errors:<br>
-                Or to discuss improvements or suggest new features, you can join the Discord channel :<br>
+                For help with VVS crashes, errors, or to discuss improvements or suggest new features, you can join the Discord channel :<br>
                 <a href="https://discord.com/invite/NA6kJbpJWa">
                 https://discord.com/invite/NA6kJbpJWa
                 </a>

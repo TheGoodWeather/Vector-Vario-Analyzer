@@ -63,7 +63,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.last_2D_selection = None  # last point clicked in the 2D map
         
         
-        self.setWindowTitle(f"Vector Vario Software v{SOFTWARE_VERSION}")
+        self.setWindowTitle(f"Vector Vario Analyzer v{SOFTWARE_VERSION}")
         self.setFocus()  #allow the main windows to receive key press event 
         self.read_settings_main()
         
