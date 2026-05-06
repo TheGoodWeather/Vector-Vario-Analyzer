@@ -224,7 +224,6 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
     """
     Big function that creates the 2D graph, and add mapping colors to it according to a selected variable
     """
-
     settings.beginGroup("colors")
     color = QColor(settings.value("plot", "#ff0000"))   
     settings.endGroup()
@@ -245,7 +244,11 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
             flight_name = flight['file_name'].split(".")[0]
             alias = flight['metadata']['alias']
 
-            is_selected = flight_name in selected_names or alias in selected_names
+            is_selected = (
+                (flight_name in selected_names or alias in selected_names)
+                and flight["is_data_processed"]
+                and flight["is_flight_selected"]
+            )
             
             if is_selected:
                 z = convert_array_to_unit(np.array(flight["data"][variable_selected], dtype=float),variable_selected)
@@ -260,6 +263,8 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
     widget_min.setEnabled(color_mapping)
     widget_max.setEnabled(color_mapping)
     label_unit.setVisible(color_mapping)
+    
+    
     #Removing all previous highlighted point if they exists
     for flight in flight_dic:
         if flight['plot']['highlight_point_map']: 
@@ -272,10 +277,13 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
         flight_name = flight['file_name'].split(".")[0]
         alias = flight['metadata']['alias']
 
-        is_selected = flight_name in selected_names or alias in selected_names
+        is_selected = (
+            (flight_name in selected_names or alias in selected_names)
+            and flight["is_data_processed"]
+            and flight["is_flight_selected"]
+        )
         
         if is_selected:
-
             x = flight['data']['GNSS_lon']
             y = flight['data']['GNSS_lat']
 

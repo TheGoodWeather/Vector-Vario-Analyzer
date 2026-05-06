@@ -71,7 +71,8 @@ def delete_table_entries(data, table_widget):
         data[row]["file_path"].unlink() # delete source file 
         data[row]["origin_file_path"].unlink() # delete source file 
         data.pop(row)
-        
+    
+    print(len(data))
     return
 
 def update_table_button_state(table_widget, flight, export_button_csv, delete_button, analyze_button, export_button_ge , tab_list, tab_widget):

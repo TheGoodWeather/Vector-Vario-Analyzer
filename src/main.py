@@ -36,7 +36,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
     
-        uic.loadUi(self.resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
+        uic.loadUi(resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
         
         self.unit_dialog = UnitDialog(parent = self)  
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.graph1_tab1D, self.curve_1D_11,self.curve_1D_12))
@@ -490,27 +490,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         
-    def resource_path(self, relative_path):
-        """
-        Get absolute path to resource (for PyInstaller and development) 
-        """
-        if hasattr(sys, '_MEIPASS'):
-            return Path(sys._MEIPASS) / relative_path
-        return Path(__file__).parent / relative_path
+    # def resource_path(self, relative_path):
+    #     """
+    #     Get absolute path to resource (for PyInstaller and development) 
+    #     """
+    #     if hasattr(sys, '_MEIPASS'):
+    #         return Path(sys._MEIPASS) / relative_path
+    #     return Path(__file__).parent / relative_path
     
-    def external_path(self, relative_path):
-        """
-        Get the absolute path to an external file or folder (like config/) that is located
-        next to the executable or script, but NOT bundled inside the .exe.
-        """
-        if getattr(sys, 'frozen', False):
-            # Running from a PyInstaller bundle (.exe)
-            base_path = Path(sys.executable).parent
-        else:
-            # Running from source (.py)
-            base_path = Path(__file__).parent
+    # def external_path(self, relative_path):
+    #     """
+    #     Get the absolute path to an external file or folder (like config/) that is located
+    #     next to the executable or script, but NOT bundled inside the .exe.
+    #     """
+    #     if getattr(sys, 'frozen', False):
+    #         # Running from a PyInstaller bundle (.exe)
+    #         base_path = Path(sys.executable).parent
+    #     else:
+    #         # Running from source (.py)
+    #         base_path = Path(__file__).parent
     
-        return base_path / relative_path
+    #     return base_path / relative_path
+    
     def write_settings_main(self):
         """
         This function will be called when the main window is closed. 
@@ -722,6 +723,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D)
+        
         return
     
     def on_button_analyze_entries(self):
@@ -897,6 +899,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Populating the flight table according to flights that are processed
 
         """
+        plot_widget.clear()
         table_widget.clear()
         table_widget.setRowCount(0)        
         row = 0
@@ -918,7 +921,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if first_item:
             first_item.setCheckState(Qt.CheckState.Checked)
                 
-             
+        plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar,self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap)    
   
     def populate_combobox_variable(self, flight_dic, combobox_var, choice, tab):
         """
@@ -1406,7 +1409,7 @@ def resource_path(relative_path: str) -> Path:
         base = Path(sys._MEIPASS)
     else:
         # Mode développement
-        base = Path(__file__).parent.parent  # remonte à src/
+        base = Path(__file__).parent  # remonte à src/
 
     return base / relative_path
 
@@ -1422,16 +1425,16 @@ def flight_data_path() -> Path:
     return path
 
 if __name__ == "__main__":
-    # try:
-    if not QtWidgets.QApplication.instance():
-        app = QtWidgets.QApplication(sys.argv)
-    else : 
-        app = QtWidgets.QApplication.instance() 
-    app.setStyle("Fusion")
-    app.setWindowIcon(QIcon(str(resource_path("src/gui/icons/app_icon.ico"))))
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
-    # except Exception as e:
-    #     print(f"Fatal error {e}")
-    #     # logger.exception(f"Fatal error occurred during startup {e}")
+    try:
+        if not QtWidgets.QApplication.instance():
+            app = QtWidgets.QApplication(sys.argv)
+        else : 
+            app = QtWidgets.QApplication.instance() 
+        app.setStyle("Fusion")
+        app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
+        window = MainWindow()
+        window.show()
+        sys.exit(app.exec())
+    except Exception as e:
+        print(f"Fatal error {e}")
+        # logger.exception(f"Fatal error occurred during startup {e}")
