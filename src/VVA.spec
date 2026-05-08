@@ -1,6 +1,8 @@
 # MonApp.spec
 import sys
 from pathlib import Path
+from PyInstaller.building.splash import Splash
+
 
 block_cipher = None
 
@@ -16,26 +18,27 @@ a = Analysis(
     ],
     hiddenimports=[],
     excludes=[
-        'tkinter',
         'IPython',
-        'jupyter',
         'pytest',
         'sphinx',
         'matplotlib',
         'matplotlib.backends',
         'pyqtgraph.widgets.MatplotlibWidget',
-        'pyqtgraph.flowchart',
-        'pyqtgraph.parametertree',
         'h5py',
-        'OpenGL',
-        'notebook',
-        'PIL',
         'numba',
     ],
     cipher=block_cipher,
 )
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+
+splash = Splash(
+    'gui/icons/logo.png',
+    binaries=a.binaries,
+    datas=a.datas,
+    text_pos=None,
+)
 
 exe = EXE(
     pyz,

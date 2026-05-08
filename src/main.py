@@ -5,9 +5,9 @@ from pathlib import Path
 
 # PyQt6 
 from PyQt6 import QtWidgets, uic, QtCore
-from PyQt6.QtWidgets import QRadioButton, QTableWidgetItem, QMessageBox, QHeaderView
+from PyQt6.QtWidgets import QRadioButton, QTableWidgetItem, QMessageBox, QHeaderView, QSplashScreen
 from PyQt6.QtCore import Qt, QPoint, QSize, QThreadPool, QSettings  # ← fusionné
-from PyQt6.QtGui import QColor, QBrush, QIcon
+from PyQt6.QtGui import QColor, QBrush, QIcon, QPixmap
 
 # Libs tierces lourdes
 import numpy as np
@@ -1407,7 +1407,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     
         
-        
+#RESSOURCE PATH FOR PYINSTALLER
 def resource_path(relative_path: str) -> Path:
     """Retourne le chemin absolu, compatible dev et PyInstaller."""
     if hasattr(sys, '_MEIPASS'):
@@ -1418,6 +1418,15 @@ def resource_path(relative_path: str) -> Path:
         base = Path(__file__).parent  # remonte à src/
 
     return base / relative_path
+
+#RESSOURCE PATH FOR NUITKA
+# def resource_path(relative_path: str) -> Path:
+#     if getattr(sys, 'frozen', False):
+#         base = Path(sys.argv[0]).parent
+#     else:
+#         base = Path(__file__).parent
+
+#     return base / relative_path
 
 def flight_data_path() -> Path:
     """Retourne le chemin du dossier 'flight' à côté de l'executable."""
@@ -1432,15 +1441,25 @@ def flight_data_path() -> Path:
 
 if __name__ == "__main__":
     try:
+        
         if not QtWidgets.QApplication.instance():
             app = QtWidgets.QApplication(sys.argv)
         else : 
             app = QtWidgets.QApplication.instance() 
+        
+        #splash screen
+        pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
+        splash = QSplashScreen(pixmap)
+        splash.show()
+        
+        app.processEvents()
         app.setStyle("Fusion")
         app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
         window = MainWindow()
+        
         window.show()
+        splash.finish(window)
         sys.exit(app.exec())
     except Exception as e:
         print(f"Fatal error {e}")
-        # logger.exception(f"Fatal error occurred during startup {e}")
+        logger.exception(f"Fatal error occurred during startup {e}")

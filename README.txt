@@ -34,16 +34,13 @@ source ./venv/Scripts/activate
 
 Puis dans le dossier Source : 
 
-
-
-### Structure
-
-
- 
+pyinstaller VVA.spec --clean
 
 
 ### Version
 
 
-version 0.01  
-date de sortie : 
+Version : 0.01  
+Date de sortie : 07-05-2026
+Auteur : Félix
+Description : Première release avec les outils "Import-Export", "Time Series", "Map Explorer", "Polar" et "Skew-T"
