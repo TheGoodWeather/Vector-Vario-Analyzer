@@ -14,19 +14,23 @@ a = Analysis(
 		('../requirements.txt', '.'),      # ← à la racine du bundle
 		('../LICENSE.txt', '.'),               # ← à la racine du bundl# icônes
     ],
-    hiddenimports=[
-        'pyqtgraph',
-        'scipy._lib.array_api_compat.numpy.fft',
-        'sklearn.utils._cython_blas',
-        'MetPy',
-        'pyproj',
-    ],
+    hiddenimports=[],
     excludes=[
         'tkinter',
         'IPython',
         'jupyter',
         'pytest',
         'sphinx',
+        'matplotlib',
+        'matplotlib.backends',
+        'pyqtgraph.widgets.MatplotlibWidget',
+        'pyqtgraph.flowchart',
+        'pyqtgraph.parametertree',
+        'h5py',
+        'OpenGL',
+        'notebook',
+        'PIL',
+        'numba',
     ],
     cipher=block_cipher,
 )

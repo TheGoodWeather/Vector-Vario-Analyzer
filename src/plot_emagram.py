@@ -1,10 +1,8 @@
 import pyqtgraph as pg
 import numpy as np
 from PyQt6 import QtCore , QtGui
-from scipy.optimize import brentq 
 from utils import mapping
 from windbarbs import WindBarbs
-from sklearn.linear_model import LinearRegression
 
 L = 2.501e6 # J/kg : latent heat of vaporization at 0°C (2.257 J/kg at 100°C)
 Ra = 287.04  # J/kg : gas constant for dry air
@@ -46,9 +44,9 @@ class SkewTWidget:
         self.wind_barbs = WindBarbs(plot_widget)
         self.wind_barbs.P_bot = self.P_bot
         
-        self.myregP = LinearRegression()
-        self.myregT100 = LinearRegression()
-        self.myregT1000 = LinearRegression()
+        # self.myregP = LinearRegression()
+        # self.myregT100 = LinearRegression()
+        # self.myregT1000 = LinearRegression()
         
         self._curves_isotherms = []
         self._curves_isobars = []
@@ -357,18 +355,7 @@ class SkewTWidget:
         dry = (Tk + 273.15) * (self.plevs / self.P_bot) ** kappa - 273.15 + self.skewnessTerm(self.plevs, self.P_bot)
         self._curve_dry_adia_cursor.setData(dry, self.plevs , pen=pg.mkPen(color=(0, 180, 0, 90), width=0.5, style=QtCore.Qt.PenStyle.SolidLine))
 
-        # # # Adiabatique saturée depuis T_mouse, P_mouse
-        # T_init = self._find_moist_adiabat_T(T_mouse_unskewed, P_mouse) #We use a numerical inversion as gamma_s is non linear so non invertible
-        # if T_init is not None:
-        #     temp = T_init  
-        #     moist_skewed = []
-        #     ps = [p for p in self.plevs if p <= self.P_bot]
-            
-        #     for p in ps:
-        #         temp -= self.dp * self.gamma_s(temp, p * 100) * 100  # ← temp mis à jour
-        #         moist_skewed.append(temp + self.skewnessTerm(p, self.P_bot))
-            
-        #     self._curve_moist_adiabat.setData(moist_skewed, ps) 
+      
     
     def skewnessTerm(self, P,P_bot):
         return 45 * (P_bot - P) / P_bot 
@@ -393,27 +380,7 @@ class SkewTWidget:
         return 243.5 * np.log(esat/ezero)/(17.67-np.log(esat/ezero))
 
 
-    def _find_moist_adiabat_T(self, T_mouse_unskewed, P_mouse):
-        """
-        Trouve T_init tel que l'adiabatique humide partant de (T_init, P_bot)
-        passe par T_mouse_unskewed à P_mouse
-        """
-        def residual(T_init):
-            # Intègre l'adiabatique humide de P_bot jusqu'à P_mouse
-            temp = T_init
-            plevs_integration = np.arange(self.P_bot, P_mouse - 1, -self.dp)
-            for p in plevs_integration:
-                temp -= self.dp * self.gamma_s(temp, p * 100) * 100
-            # La valeur skewée à P_mouse
-            T_skewed_at_P = temp + self.skewnessTerm(P_mouse, self.P_bot)
-            return T_skewed_at_P - T_mouse_unskewed
-    
-        # Cherche T_init dans une plage raisonnable
-        try:
-            T_init = brentq(residual, -60, 50, xtol=0.01)
-            return T_init
-        except ValueError:
-            return None
+
         
     def _update_labels_cursor(self):
         
@@ -563,21 +530,30 @@ class SkewTWidget:
             return
         
         # #Regression on Tdry (state curve) and P
-        dataX = P_slice.reshape(-1, 1)
-        reg_t  = self.myregP.fit(dataX, Tdry_slice)
-        curve_reg_tdry = reg_t.coef_[0] * P_slice + reg_t.intercept_
+        #dataX = P_slice.reshape(-1, 1)
+        # reg_t  = self.myregP.fit(dataX, Tdry_slice)
+        # curve_reg_tdry = reg_t.coef_[0] * P_slice + reg_t.intercept_
+        dataX = P_slice.flatten()
+        reg_t_coef_, reg_t_intercept_ = np.polyfit(dataX, Tdry_slice, 1)
+        
+        curve_reg_tdry = reg_t_coef_ * P_slice + reg_t_intercept_
+
         curve_reg_tdry_skewed = curve_reg_tdry + self.skewnessTerm(P_slice, self.P_bot)
         self._gradient_reg.setData(curve_reg_tdry_skewed, P_slice)
         
         # #Regression on Tdry (state curve) and Alt_slice_100
-        dataX100 = Alt_slice_100.reshape(-1, 1)
-        reg_t_100  = self.myregT100.fit(dataX100, Tdry_slice)
-        thermal_gradient_100 = reg_t_100.coef_[0] 
+        dataX100 = Alt_slice_100.flatten()
+        # reg_t_100  = self.myregT100.fit(dataX100, Tdry_slice)
+        # thermal_gradient_100 = reg_t_100.coef_[0] 
+        reg_t_100_coeff, reg_t_100_intercept_ = np.polyfit(dataX100, Tdry_slice, 1)
+        thermal_gradient_100 = reg_t_100_coeff
         
         # #Regression on Tdry (state curve) and Alt_slice_1000
-        dataX1000 = Alt_slice_1000.reshape(-1, 1)
-        reg_t_1000  = self.myregT1000.fit(dataX1000, Tdry_slice)
-        thermal_gradient_1000 = reg_t_1000.coef_[0] 
+        dataX1000 = Alt_slice_1000.flatten()
+        # reg_t_1000  = self.myregT1000.fit(dataX1000, Tdry_slice)
+        # thermal_gradient_1000 = reg_t_1000.coef_[0] 
+        reg_t_1000_coeff, reg_t_1000_intercept_ = np.polyfit(dataX1000, Tdry_slice, 1)
+        thermal_gradient_1000 = reg_t_1000_coeff
         
         # # Régression sur Tdry skewé
         # Tdry_skewed_slice = Tdry_slice + self.skewnessTerm(P_slice, self.P_bot)
@@ -612,7 +588,7 @@ class SkewTWidget:
         
       
         self.gradient_label_1000.setText(f"{round(thermal_gradient_1000,2)} °C/km")
-        self.gradient_label_P.setText(f"{round(reg_t.coef_[0],3)} °C/hPa")
+        self.gradient_label_P.setText(f"{round(reg_t_coef_,3)} °C/hPa")
         self._gradient_reg.setPen(pg.mkPen(color=color, width=2,
                                             style=QtCore.Qt.PenStyle.DashLine))
                 

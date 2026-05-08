@@ -1,29 +1,35 @@
-#import time
+import sys
 import os
 import shutil
+from pathlib import Path
+
+# PyQt6 
 from PyQt6 import QtWidgets, uic, QtCore
-from PyQt6.QtWidgets import   QRadioButton, QTableWidgetItem , QMessageBox, QHeaderView
-from PyQt6.QtCore import Qt, QPoint, QSize
+from PyQt6.QtWidgets import QRadioButton, QTableWidgetItem, QMessageBox, QHeaderView
+from PyQt6.QtCore import Qt, QPoint, QSize, QThreadPool, QSettings  # ← fusionné
 from PyQt6.QtGui import QColor, QBrush, QIcon
+
+# Libs tierces lourdes
+import numpy as np
+import pyqtgraph as pg
+
+# Modules internes
+from constants import SOFTWARE_VERSION
+from utils import get_label
+from units import get_unit, convert_array_to_unit
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
-from table_handler import update_flight_state, update_vva_table, delete_table_entries, update_table_button_state, return_selected_row, create_polar_table, save_comment_alias, populate_table_1D_variable
-from PyQt6.QtCore import QThreadPool, QSettings
-from moulinette_worker import MoulinetteWorker 
-import pyqtgraph as pg
+from table_handler import (update_flight_state, update_vva_table, delete_table_entries,
+                           update_table_button_state, return_selected_row,
+                           create_polar_table, save_comment_alias, populate_table_1D_variable)
+from moulinette_worker import MoulinetteWorker
 from export import export_file_csv, export_file_kml
 from plot_emagram import SkewTWidget
-import sys
-from units import get_unit, convert_array_to_unit
 from overlay_map import OSMTileOverlay
 from dropzone import DropZone
 from polar_generator import update_polar_generator_values
-from pathlib  import Path 
-import numpy as np
 from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog, AboutDialog
-import plot 
-from utils import get_label
-from constants import SOFTWARE_VERSION
+import plot
 import qtawesome as qta
 
 OPEN = 0.0389250
