@@ -116,8 +116,14 @@ class MainWindow(QtWidgets.QMainWindow):
         header = self.tableWidget_database.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableWidget_database.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        #self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
-  
+        self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+
+        # Autoriser l'édition uniquement sur double-clic pour les colonnes Comment et Alias
+        self.tableWidget_database.itemDoubleClicked.connect(
+            lambda item: self.tableWidget_database.editItem(item)
+            if item.column() in (6, 7)  # 6=Comment, 7=Alias
+            else None
+)
         self.tableWidget_database.resizeColumnsToContents()
         
         self.tableWidget_database.itemChanged.connect(lambda : update_flight_state(self.flight, self.tableWidget_database))
@@ -1461,5 +1467,4 @@ if __name__ == "__main__":
         splash.finish(window)
         sys.exit(app.exec())
     except Exception as e:
-        print(f"Fatal error {e}")
         logger.exception(f"Fatal error occurred during startup {e}")

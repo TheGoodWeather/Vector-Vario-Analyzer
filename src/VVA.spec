@@ -2,7 +2,8 @@
 import sys
 from pathlib import Path
 from PyInstaller.building.splash import Splash
-
+sys.path.insert(0, '.')   # ajoute src/ au path pour trouver constants.py
+from constants import SOFTWARE_VERSION
 
 block_cipher = None
 
@@ -45,7 +46,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='Vector Vario Analyzer',
+    name=f'Vector Vario Analyzer {SOFTWARE_VERSION}',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -61,5 +62,5 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    name='Vector Vario Analyzer',
+    name=f'Vector Vario Analyzer {SOFTWARE_VERSION}',
 )

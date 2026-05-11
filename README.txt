@@ -37,10 +37,3 @@ Puis dans le dossier Source :
 pyinstaller VVA.spec --clean
 
 
-### Version
-
-
-Version : 0.01  
-Date de sortie : 07-05-2026
-Auteur : Félix
-Description : Première release avec les outils "Import-Export", "Time Series", "Map Explorer", "Polar" et "Skew-T"

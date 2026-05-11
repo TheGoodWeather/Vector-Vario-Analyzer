@@ -6,4 +6,4 @@ Created on Sun Apr 26 17:33:51 2026
 """
 
 
-SOFTWARE_VERSION = "0.01"
+SOFTWARE_VERSION = "0.02"

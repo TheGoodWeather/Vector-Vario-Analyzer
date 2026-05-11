@@ -5,7 +5,7 @@ from gps_calculation import calculateDistance, calculateHeading
 import copy
 from units import convert_gps_coords_DDM_to_DD
 from utils import sma_filter
-
+import logging_handler as logger
 
 raw_data_model = {  #available for both csv and igc file 
     "GNSS_time" : [],
@@ -129,7 +129,17 @@ def fetch_raw_igc(flight_dic, progress_callback):
     None.
 
     """
-
+    REQUIRED_FIELDS = {
+        "T": "Temperature",
+        "H": "Humidity",
+        "I": "IAS",
+        "N": "Netto",
+        "W": "Wind",
+        "D": "Attitude",
+        "G": "G-Force"
+    }
+    
+    
     total_lines = 0 
     raw_data = copy.deepcopy(raw_data_model) #initializing the dic that will be returned
     #Remove spaces and blank lines
@@ -155,23 +165,70 @@ def fetch_raw_igc(flight_dic, progress_callback):
                 date_wo_hour = line.split(",")[0]
 
             if line.startswith("B"):
-                nord_index = line.index("N")
-                east_index = line.index("E")
-                alti_index = line.index("A")
+                
+                
+                gps_fix_char = line[24]  # 'A' ou 'V'
+                if gps_fix_char == "A":
+                    gps_fixed = True
+                    alti_index = 24
+                elif gps_fix_char == "V":
+                    gps_fixed = False
+                    alti_index = 24  
+                else:
+                    raise ValueError(f"Invalid GPS fix character: {gps_fix_char}")
+                
                 time_index = line.index("B")
+                # Latitude
+                if "N" in line:
+                    lat_index = line.index("N")
+                    lat_sign = 1
+                elif "S" in line:
+                    lat_index = line.index("S")
+                    lat_sign = -1
+                else:
+                    raise ValueError("No latitude direction found")
+                    logger.error("No latitude direction found")
+                # Longitude
+                if "E" in line:
+                    lon_index = line.index("E")
+                    lon_sign = 1
+                elif "W" in line:
+                    lon_index = line.index("W")
+                    lon_sign = -1
+                else:
+                    raise ValueError("No longitude direction found")
+                    logger.error("No longitude direction found")
+                    
+                    
+                
                 raw_data["GNSS_time"].append(datetime.strptime(date_wo_hour + line[time_index+1 : time_index+7],"%d%m%y%H%M%S" ))
                 
-                lat_DMD = float(line[nord_index-7 : nord_index])/100000
-                lon_DMD = float(line[east_index-8 : east_index])/100000
-                lat_DD, lon_DD = convert_gps_coords_DDM_to_DD(lat_DMD, lon_DMD )
-                raw_data["GNSS_lat"].append(lat_DD) # decimal degrees 
-                raw_data["GNSS_lon"].append(lon_DD) # decimal degrees
-                #With IGC , GPS coordinates are in degrees minutes decimals
+                if gps_fixed:
+                    lat_DMD = float(line[lat_index-7:lat_index]) / 100000 * lat_sign
+                    lon_DMD = float(line[lon_index-8:lon_index]) / 100000 * lon_sign
+                    lat_DD, lon_DD = convert_gps_coords_DDM_to_DD(lat_DMD, lon_DMD)
+                    #With IGC , GPS coordinates are in degrees minutes decimals
+
+                    raw_data["GNSS_lat"].append(lat_DD)
+                    raw_data["GNSS_lon"].append(lon_DD)
+                    raw_data["GNSS_alt"].append(int(line[alti_index+7 : alti_index+11]))
+                else:
+                    # GPS non fixé → NaN pour lat, lon et altitude GPS
+                    raw_data["GNSS_lat"].append(np.nan)
+                    raw_data["GNSS_lon"].append(np.nan)
+                    raw_data["GNSS_alt"].append(np.nan)
+                
                 raw_data["QNS_alt"].append(int(line[alti_index+1 : alti_index+6]))
-                raw_data["GNSS_alt"].append(int(line[alti_index+7 : alti_index+11]))
                 
                 
+                
+                #LXVV line
                 lxvv_line = next(file, None)
+                missing = [f"{char} ({name})" for char, name in REQUIRED_FIELDS.items() if char not in lxvv_line]
+            
+                if missing:
+                    raise ValueError(f"Missing fields in LXVV line: {', '.join(missing)}")
+
                 temp_index = lxvv_line.index("T")
                 hum_index = lxvv_line.index("H")
                 ias_index = lxvv_line.index("I")
@@ -196,28 +253,33 @@ def fetch_raw_igc(flight_dic, progress_callback):
         # computing heading
         raw_data["GNSS_head"] = []
         for i in range(len(raw_data["GNSS_lat"]) - 1):
-            head = calculateHeading(
-                raw_data["GNSS_lat"][i], raw_data["GNSS_lon"][i],
-                raw_data["GNSS_lat"][i+1], raw_data["GNSS_lon"][i+1]
-            )
-            raw_data["GNSS_head"].append(round(head))
-        raw_data["GNSS_head"].append(np.nan)  #To complete the array
+            lat1, lon1 = raw_data["GNSS_lat"][i], raw_data["GNSS_lon"][i]
+            lat2, lon2 = raw_data["GNSS_lat"][i+1], raw_data["GNSS_lon"][i+1]
+            
+            if any(np.isnan(v) for v in [lat1, lon1, lat2, lon2]):
+                raw_data["GNSS_head"].append(np.nan)
+            else:
+                head = calculateHeading(lat1, lon1, lat2, lon2)
+                raw_data["GNSS_head"].append(round(head))
         
-        # computing speed 
+        raw_data["GNSS_head"].append(np.nan)  # compléter le tableau
+        
+        # computing speed
         GNSS_speed = []
         for i in range(len(raw_data["GNSS_lat"]) - 1):
-            distance = calculateDistance(
-                raw_data["GNSS_lat"][i], raw_data["GNSS_lon"][i],
-                raw_data["GNSS_lat"][i+1], raw_data["GNSS_lon"][i+1]
-            )
-            speed = distance / dt  #speed is in m/s
-         
-            GNSS_speed.append(round(speed,2))
+            lat1, lon1 = raw_data["GNSS_lat"][i], raw_data["GNSS_lon"][i]
+            lat2, lon2 = raw_data["GNSS_lat"][i+1], raw_data["GNSS_lon"][i+1]
         
-        # Simple Moving Average (SMA) for filtering data
+            if any(np.isnan(v) for v in [lat1, lon1, lat2, lon2]):
+                GNSS_speed.append(np.nan)
+            else:
+                distance = calculateDistance(lat1, lon1, lat2, lon2)
+                speed = distance / dt  # m/s
+                GNSS_speed.append(round(speed, 2))
         
+        # Simple Moving Average (SMA) — np.nan propagés naturellement
         raw_data["GNSS_speed"] = sma_filter(GNSS_speed, 4)
-        raw_data["GNSS_speed"] = np.append(raw_data["GNSS_speed"], np.nan) #to complete the array
+        raw_data["GNSS_speed"] = np.append(raw_data["GNSS_speed"], np.nan)
         
         raw_data["DP"] = np.full(len(raw_data["GNSS_time"]),np.nan)
         raw_data["T_sensor"] = np.full(len(raw_data["GNSS_time"]),np.nan)

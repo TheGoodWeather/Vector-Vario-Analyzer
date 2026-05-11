@@ -388,8 +388,8 @@ def save_alias_comment_to_vva(vva_file_path, comment="", alias=""):
     with open(vva_file_path, "w", encoding="utf-8") as file:
         file.writelines(new_lines)
         
-    QMessageBox.information(
-        None,
-        "Saved",
-        "The modifications have been saved successfully."
-    )
+    # QMessageBox.information(
+    #     None,
+    #     "Saved",
+    #     "The modifications have been saved successfully."
+    # )
