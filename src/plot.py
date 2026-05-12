@@ -667,16 +667,19 @@ def calculate_roi(flight, edge):
 
     else:
         last_xmin, last_xmax = existing_rois[-1]
+        print(f"last min max {last_xmin} {last_xmax}")
         remaining = max(t_end - last_xmax, 0)
+        print(f"remaining {remaining}")
 
-        if remaining > 0:
+        if remaining > total_duration * 0.08:
             interval = max(
                 remaining * 0.1,
                 total_duration * 0.08
             )
 
             start = last_xmax + total_duration * 0.08
-            end = min(start + interval, t_end)
+            end = max(start + interval, t_end)
+            print(f"start {start + interval}, end {end}")
 
         else:
             start = t_end - total_duration * 0.08

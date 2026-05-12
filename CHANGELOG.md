@@ -12,6 +12,7 @@ All notable changes to Vector Vario Software will be documented in this file.
 
 ### Fixed
 
+Bug while creating polar region -> None value returned when region is close to end
 
 ## [0.02] - 11-05-2026
 
