@@ -316,6 +316,8 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
                 colorbar.setOpacity(0) 
                 widget_min.setValue(0)
                 widget_max.setValue(0)
+                plot_widget.autoRange()   
+
                 
 
 
@@ -384,7 +386,6 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
             if flight['plot']['text_map_end']:
                 flight['plot']['text_map_end'].hide()
         
-    plot_widget.autoRange()   
         
 
 def update_colorbar(colorbar, plot_widget_colorbar, z_min, z_max, variable, cmap, widget_min, widget_max):
@@ -667,9 +668,7 @@ def calculate_roi(flight, edge):
 
     else:
         last_xmin, last_xmax = existing_rois[-1]
-        print(f"last min max {last_xmin} {last_xmax}")
         remaining = max(t_end - last_xmax, 0)
-        print(f"remaining {remaining}")
 
         if remaining > total_duration * 0.08:
             interval = max(
@@ -679,7 +678,6 @@ def calculate_roi(flight, edge):
 
             start = last_xmax + total_duration * 0.08
             end = max(start + interval, t_end)
-            print(f"start {start + interval}, end {end}")
 
         else:
             start = t_end - total_duration * 0.08

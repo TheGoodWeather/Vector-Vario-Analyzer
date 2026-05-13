@@ -9,6 +9,8 @@ All notable changes to Vector Vario Software will be documented in this file.
 
 ### Changed
 
+No Autorange when changing color mapping in 2D Map
+README updated
 
 ### Fixed
 
