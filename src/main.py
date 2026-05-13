@@ -14,6 +14,7 @@ import numpy as np
 import pyqtgraph as pg
 
 # Modules internes
+from dynamic import DynamicTab
 from constants import SOFTWARE_VERSION
 from utils import get_label
 from units import get_unit, convert_array_to_unit
@@ -500,29 +501,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkBox_windbarbs_atm.setCheckState(Qt.CheckState.Unchecked)
 
 
-
+        """
+        Widgets tab DYNAMIC
+        """
         
-    # def resource_path(self, relative_path):
-    #     """
-    #     Get absolute path to resource (for PyInstaller and development) 
-    #     """
-    #     if hasattr(sys, '_MEIPASS'):
-    #         return Path(sys._MEIPASS) / relative_path
-    #     return Path(__file__).parent / relative_path
-    
-    # def external_path(self, relative_path):
-    #     """
-    #     Get the absolute path to an external file or folder (like config/) that is located
-    #     next to the executable or script, but NOT bundled inside the .exe.
-    #     """
-    #     if getattr(sys, 'frozen', False):
-    #         # Running from a PyInstaller bundle (.exe)
-    #         base_path = Path(sys.executable).parent
-    #     else:
-    #         # Running from source (.py)
-    #         base_path = Path(__file__).parent
-    
-    #     return base_path / relative_path
+        self.dynamic = DynamicTab(self.yaw_plotwidget, self.roll_plotwidget, self.pitch_plotwidget, self.model_window, str(resource_path("gui/models/para.obj")))
+        
     
     def write_settings_main(self):
         """
@@ -1446,25 +1430,29 @@ def flight_data_path() -> Path:
     return path
 
 if __name__ == "__main__":
-    try:
+    # try:
+    
         
-        if not QtWidgets.QApplication.instance():
-            app = QtWidgets.QApplication(sys.argv)
-        else : 
-            app = QtWidgets.QApplication.instance() 
+    app = QtWidgets.QApplication.instance()
+
+    if app is None:
+        app = QtWidgets.QApplication(sys.argv)
         
-        #splash screen
-        pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
-        splash = QSplashScreen(pixmap)
-        splash.show()
         
-        app.processEvents()
-        app.setStyle("Fusion")
-        app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
-        window = MainWindow()
+    #splash screen
+    pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
+    splash = QSplashScreen(pixmap)
+    splash.show()
+    
+    app.processEvents()
+    app.setStyle("Fusion")
+    app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
+    window = MainWindow()
+    
+    window.show()
+    splash.finish(window)
+    sys.exit(app.exec())
         
-        window.show()
-        splash.finish(window)
-        sys.exit(app.exec())
-    except Exception as e:
-        logger.exception(f"Fatal error occurred during startup {e}")
+    # except Exception as e:
+    #     logger.exception(f"Fatal error occurred during startup {e}")
+        
