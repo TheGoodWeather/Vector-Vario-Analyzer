@@ -35,7 +35,7 @@ Using Git:
 Go the a specific location where you want the app to be cloned :
 
 ```bash
-git clone <https://github.com/TheGoodWeather/vector_software>
+git clone https://github.com/TheGoodWeather/vector_software
 cd vector_software
 ```
 
