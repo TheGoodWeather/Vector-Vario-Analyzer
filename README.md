@@ -1,8 +1,11 @@
-# Flight Data Analyzer v0.01
+# Flight Data Analyzer v0.02
 
 ## Overview
 
-Flight Data Analyzer is a Python application for flight data analysis and visualization.
+
+This software was developed to fully explore the data recorded by the Vector Vario in its enriched files (IGC+ format).
+
+It enables a high level of scientific flight analysis, as well as in-depth discussions about the data and its interpretation.
 
 Please refer to the user manual for detailed usage instructions, or visit [Vector Vario website](https://vectorvario.com/softwares/)
 
@@ -29,9 +32,11 @@ requirements.txt
 
 Using Git:
 
+Go the a specific location where you want the app to be cloned :
+
 ```bash
-git clone <YOUR_GITHUB_URL>
-cd FlightDataAnalyzer
+git clone <https://github.com/TheGoodWeather/vector_software>
+cd vector_software
 ```
 
 Or download the ZIP archive from GitHub and extract it.
@@ -42,7 +47,7 @@ Or download the ZIP archive from GitHub and extract it.
 
 ## Create a Virtual Environment
 
-In the folder where the files are extracted : 
+In the folder vector_software where the files are extracted : 
 
 ```bash
 python -m venv .venv
