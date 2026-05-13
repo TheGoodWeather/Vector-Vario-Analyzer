@@ -2,8 +2,8 @@ __pycache__/
 *.pyc
 .idea/
 venv/
-src/build
-src/dist
-src/installer
+src/build/
+src/dist/
+src/installer/
 test.txt
 ressources/
