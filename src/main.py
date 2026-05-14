@@ -505,7 +505,7 @@ class MainWindow(QtWidgets.QMainWindow):
         Widgets tab DYNAMIC
         """
         
-        self.dynamic = DynamicTab(self.yaw_plotwidget, self.roll_plotwidget, self.pitch_plotwidget, self.model_window, str(resource_path("gui/models/para.obj")))
+        self.dynamic = DynamicTab(self.yaw_plotwidget, self.roll_plotwidget, self.pitch_plotwidget, self.model_container, str(resource_path("gui/models/para.obj")))
         
     
     def write_settings_main(self):

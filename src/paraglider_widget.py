@@ -30,7 +30,8 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
         faceColors=colors,
         smooth=True,
         drawEdges=False,
-        shader = "shaded"
+        shaders = "shaded"
+        
     )
     return item
 
@@ -58,8 +59,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.setBackgroundColor((200, 200, 200, 200))   # fond sombre
         self.setCameraPosition(distance=14, elevation=20, azimuth=45)
 
-        self.items= []
-    
+        self._items = []
         # Grille de référence au sol
         self._grid = gl.GLGridItem()
         self._grid.setSize(200, 200)
@@ -67,9 +67,19 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._grid.setColor(QColor(13, 143, 9))
         self._grid.translate(0, 0, -4)
         self.addItem(self._grid)
-        self.items.append(self._grid)
+        self._items.append(self._grid)
+        # Axe de référence (debug, optionnel)
+        self._axis = gl.GLAxisItem()
+        self._axis.setSize(3, 3, 3)
+        self.addItem(self._axis)
+        self._items.append(self._axis)
         # Construction du modèle
-        self._build_model(obj_path)
+        self._model = None
+
+        if obj_path:
+            self._model = load_obj_mesh(obj_path)
+            self.addItem(self._model)
+            self._items.append(self._model)
 
         # État courant
         self._pitch = 0.0
@@ -82,35 +92,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         # self._play_index   = 0
         # self._play_timer.timeout.connect(self._play_step)
 
-    # ------------------------------------------------------------------
-    # Construction du modèle parapente (maillage simplifié)
-    # ------------------------------------------------------------------
-
-    def _build_model(self, obj_path: str = None):
-        """Construit la voile et les suspentes."""
-
-        if obj_path:
-            self._model = load_obj_mesh(obj_path)
-        else:
-            return
-        self.addItem(self._model)
-        self.items.append(self._model)
-        # self._canopy = gl.GLMeshItem(
-        #     vertexes=verts,
-        #     faces=faces,
-        #     faceColors=colors,
-        #     smooth=True,
-        #     drawEdges=False,
-        # )
-        # self.addItem(self._canopy)
-
-        # --- Suspentes (lignes entre voile et sellette) ---------------
- 
-        # Axe de référence (debug, optionnel)
-        self._axis = gl.GLAxisItem()
-        self._axis.setSize(3, 3, 3)
-        self.addItem(self._axis)
-        self.items.append(self._axis)
+    
 
     # ------------------------------------------------------------------
     # Rotation du modèle
@@ -118,7 +100,7 @@ class ParaGliderWidget(gl.GLViewWidget):
 
     def _apply_rotation(self):
         """Applique pitch / roll / yaw à tous les éléments du modèle."""
-        for item in self.items:
+        for item in self._items:
             item.resetTransform()
             item.rotate(self._yaw,   0, 0, 1)   # lacet  (Z)
             item.rotate(self._pitch, 1, 0, 0)   # tangage (X)
@@ -129,11 +111,9 @@ class ParaGliderWidget(gl.GLViewWidget):
     # ------------------------------------------------------------------
     def cleanup(self):
         
-        print("cleaning")
         self.clear()
     
-        for item in self.items:
-            self.removeItem(item)
+      
         
     def set_attitude(self, pitch: float = 0.0, roll: float = 0.0, yaw: float = 0.0):
         """

@@ -1755,7 +1755,7 @@
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout_13">
         <item>
-         <widget class="ParaGliderWidget" name="model_window" native="true">
+         <widget class="QWidget" name="model_container" native="true">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>0</horstretch>
@@ -1975,12 +1975,6 @@
    <class>PlotWidget</class>
    <extends>QGraphicsView</extends>
    <header>pyqtgraph</header>
-  </customwidget>
-  <customwidget>
-   <class>ParaGliderWidget</class>
-   <extends>QWidget</extends>
-   <header location="global">paraglider_widget</header>
-   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources/>

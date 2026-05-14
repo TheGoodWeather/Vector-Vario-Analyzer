@@ -3,15 +3,19 @@ import numpy as np
 from PyQt6 import QtCore , QtGui
 from utils import mapping
 from paraglider_widget import ParaGliderWidget
-
+from PyQt6.QtWidgets import QVBoxLayout
 
 class DynamicTab:
-    def __init__(self, yaw_plotwidget, roll_plotwidget, pitch_plotwidget, model_widget, obj_path: str = None):
+    def __init__(self, yaw_plotwidget, roll_plotwidget, pitch_plotwidget, model_container, obj_path: str = None):
         
         self.yaw_plotwidget = yaw_plotwidget
         self.roll_plotwidget = roll_plotwidget
         self.pitch_plotwidget = pitch_plotwidget
-        self.model_widget = ParaGliderWidget(model_widget, obj_path)
+        self.model_widget = ParaGliderWidget(obj_path=obj_path)
+        layout = QVBoxLayout(model_container)
+        layout.setContentsMargins(0,0,0,0)
+
+        layout.addWidget(self.model_widget)
    
         self._setup_widget()
         
