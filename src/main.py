@@ -134,6 +134,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_database.itemChanged.connect(lambda : self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D))
         self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab))
         self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab))
+        self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab))
         self.tableWidget_database.itemChanged.connect(lambda : self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D ))
         
         
@@ -505,7 +506,43 @@ class MainWindow(QtWidgets.QMainWindow):
         Widgets tab DYNAMIC
         """
         
-        self.dynamic = DynamicTab(self.yaw_plotwidget, self.roll_plotwidget, self.pitch_plotwidget, self.model_container, str(resource_path("gui/models/para.obj")))
+        self.pushButton_previous = QtWidgets.QPushButton(qta.icon('mdi6.skip-previous'), '')
+        self.pushButton_previous.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_previous)
+        
+        self.pushButton_pause = QtWidgets.QPushButton(qta.icon('mdi6.pause'), '')
+        self.pushButton_pause.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_pause)
+        
+        self.pushButton_play = QtWidgets.QPushButton(qta.icon('mdi6.play'), '')
+        self.pushButton_play.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_play)
+        
+        
+        self.pushButton_next = QtWidgets.QPushButton(qta.icon('mdi6.skip-next'), '')
+        self.pushButton_next.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_next)
+        
+        self.dynamic = DynamicTab(
+            self.flight,
+            self.comboBox_select_flight_dyntab,
+            self.plotwidget_1_dyntab, 
+            self.plotwidget_2_dyntab, 
+            self.plotwidget_3_dyntab,
+            self.comboBox_var_1_dyntab,
+            self.comboBox_var_2_dyntab,
+            self.comboBox_var_3_dyntab,
+            self.lcdNumber_var_1,
+            self.lcdNumber_var_2,
+            self.lcdNumber_var_3,
+            self.model_window, 
+            
+            self.pushButton_previous,
+            self.pushButton_pause ,
+            self.pushButton_play,
+            self.pushButton_next,
+            str(resource_path("gui/models/para.obj")))
+        
         
     
     def write_settings_main(self):
@@ -719,6 +756,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+        self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D)
         
         return
@@ -747,6 +785,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+            self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
             self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D )
             return
         
@@ -791,7 +830,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
     def populate_combobox_flight(self, data, combo_box_flight):
         """
-        Set the flights that has been analyzed into the specified combobox. Used in 1D plot, polar and emagram
+        Set the flights that has been analyzed into the specified combobox. Used in 1D plot, polar, emagram and dynamics
 
         """
         #first we remove all the items in the combobox 

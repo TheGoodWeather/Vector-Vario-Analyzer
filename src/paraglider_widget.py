@@ -11,7 +11,9 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
     """
     Charge un fichier .obj et retourne un GLMeshItem prêt à ajouter au GLViewWidget.
     """
-    mesh = trimesh.load(obj_path, force='mesh')
+    from pathlib import Path
+
+    mesh = trimesh.load(Path(obj_path), force='mesh')
 
     verts  = np.array(mesh.vertices, dtype=float)
     faces  = np.array(mesh.faces,    dtype=int)
@@ -30,7 +32,7 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
         faceColors=colors,
         smooth=True,
         drawEdges=False,
-        shaders = "shaded"
+        shader = "shaded"
         
     )
     return item
@@ -61,26 +63,24 @@ class ParaGliderWidget(gl.GLViewWidget):
 
         self._items = []
         # Grille de référence au sol
-        self._grid = gl.GLGridItem()
-        self._grid.setSize(200, 200)
-        self._grid.setSpacing(20, 20)
-        self._grid.setColor(QColor(13, 143, 9))
-        self._grid.translate(0, 0, -4)
-        self.addItem(self._grid)
-        self._items.append(self._grid)
-        # Axe de référence (debug, optionnel)
-        self._axis = gl.GLAxisItem()
-        self._axis.setSize(3, 3, 3)
-        self.addItem(self._axis)
-        self._items.append(self._axis)
-        # Construction du modèle
-        self._model = None
-
-        if obj_path:
-            self._model = load_obj_mesh(obj_path)
-            self.addItem(self._model)
-            self._items.append(self._model)
-
+        # self._grid = gl.GLGridItem()
+        # self._grid.setSize(200, 200)
+        # self._grid.setSpacing(20, 20)
+        # self._grid.setColor(QColor(13, 143, 9))
+        # self._grid.translate(0, 0, -4)
+        # self.addItem(self._grid)
+        # self._items.append(self._grid)
+        # # Axe de référence (debug, optionnel)
+        # self._axis = gl.GLAxisItem()
+        # self._axis.setSize(3, 3, 3)
+        # self.addItem(self._axis)
+        # self._items.append(self._axis)
+        # # Construction du modèle
+        # self._model = load_obj_mesh(obj_path)
+        # self.addItem(self._model)
+        # self._items.append(self._model)
+        # self._model.rotate(90,1, 0, 0)
+        # self._model.translate(0,0,50)
         # État courant
         self._pitch = 0.0
         self._roll  = 0.0

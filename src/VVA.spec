@@ -13,7 +13,8 @@ a = Analysis(
     binaries=[],
     datas=[
         ('gui/*.ui', 'gui'),              # fichiers .ui
-        ('gui/icons/*', 'gui/icons'),  
+        ('gui/icons/*', 'gui/icons'),
+        ('gui/models/*', 'gui/models'),
 		('../requirements.txt', '.'),      # ← à la racine du bundle
 		('../LICENSE.txt', '.'),               # ← à la racine du bundl# icônes
     ],
