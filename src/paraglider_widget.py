@@ -58,6 +58,8 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.setBackgroundColor((200, 200, 200, 200))   # fond sombre
         self.setCameraPosition(distance=14, elevation=20, azimuth=45)
 
+        self.items= []
+    
         # Grille de référence au sol
         self._grid = gl.GLGridItem()
         self._grid.setSize(200, 200)
@@ -65,7 +67,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._grid.setColor(QColor(13, 143, 9))
         self._grid.translate(0, 0, -4)
         self.addItem(self._grid)
-
+        self.items.append(self._grid)
         # Construction du modèle
         self._build_model(obj_path)
 
@@ -87,9 +89,12 @@ class ParaGliderWidget(gl.GLViewWidget):
     def _build_model(self, obj_path: str = None):
         """Construit la voile et les suspentes."""
 
-        print(obj_path)
-        self._model = load_obj_mesh("gui/models/para.obj")
+        if obj_path:
+            self._model = load_obj_mesh(obj_path)
+        else:
+            return
         self.addItem(self._model)
+        self.items.append(self._model)
         # self._canopy = gl.GLMeshItem(
         #     vertexes=verts,
         #     faces=faces,
@@ -105,7 +110,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._axis = gl.GLAxisItem()
         self._axis.setSize(3, 3, 3)
         self.addItem(self._axis)
-
+        self.items.append(self._axis)
 
     # ------------------------------------------------------------------
     # Rotation du modèle
@@ -113,7 +118,7 @@ class ParaGliderWidget(gl.GLViewWidget):
 
     def _apply_rotation(self):
         """Applique pitch / roll / yaw à tous les éléments du modèle."""
-        for item in [self._axis]:
+        for item in self.items:
             item.resetTransform()
             item.rotate(self._yaw,   0, 0, 1)   # lacet  (Z)
             item.rotate(self._pitch, 1, 0, 0)   # tangage (X)
@@ -122,7 +127,14 @@ class ParaGliderWidget(gl.GLViewWidget):
     # ------------------------------------------------------------------
     # API publique
     # ------------------------------------------------------------------
-
+    def cleanup(self):
+        
+        print("cleaning")
+        self.clear()
+    
+        for item in self.items:
+            self.removeItem(item)
+        
     def set_attitude(self, pitch: float = 0.0, roll: float = 0.0, yaw: float = 0.0):
         """
         Met à jour l'attitude du modèle.
@@ -213,27 +225,3 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._play_index += 1
 
 
-# ---------------------------------------------------------------------------
-# Exemple autonome
-# ---------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    from pyqtgraph.Qt import QtWidgets
-    import pyqtgraph as pg
-
-    app = QtWidgets.QApplication([])
-
-    widget = ParaGliderWidget()
-    widget.setWindowTitle("Paraglider 3D Attitude Viewer")
-    widget.resize(800, 600)
-    widget.show()
-
-    # Simulation d'un vol : oscillations de pitch et roll
-    t = np.linspace(0, 4 * np.pi, 200)
-    pitch_data = 5  * np.sin(t)
-    roll_data  = 15 * np.sin(t * 0.7 + 0.5)
-    yaw_data   = 30 * np.cumsum(np.ones(200) * 0.5) % 360
-
-    widget.play(pitch_data, roll_data, yaw_data, dt_ms=50)
-
-    app.exec()

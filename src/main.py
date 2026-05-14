@@ -556,6 +556,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.write_settings_main()
+        self.dynamic.cleanup() 
         super().closeEvent(event)
         event.accept()
         
@@ -1451,7 +1452,9 @@ if __name__ == "__main__":
     
     window.show()
     splash.finish(window)
-    sys.exit(app.exec())
+    # sys.exit(app.exec())
+    app.exec()
+    window.close()
         
     # except Exception as e:
     #     logger.exception(f"Fatal error occurred during startup {e}")
