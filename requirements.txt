@@ -21,6 +21,7 @@ jupyter_client==8.6.3
 jupyter_core==5.7.2
 kiwisolver==1.4.8
 nest-asyncio==1.6.0
+Nuitka==4.0.8
 numpy==2.2.5
 packaging==25.0
 pandas==3.0.1
@@ -36,6 +37,7 @@ pure_eval==0.2.3
 Pygments==2.19.1
 pyinstaller==6.20.0
 pyinstaller-hooks-contrib==2026.4
+PyOpenGL==3.1.10
 pyparsing==3.2.3
 pyproj==3.7.2
 PyQt6==6.9.0
@@ -58,9 +60,9 @@ six==1.17.0
 spyder-kernels==3.0.3
 stack-data==0.6.3
 threadpoolctl==3.6.0
-tinydb==4.8.2
 tornado==6.4.2
 traitlets==5.14.3
+trimesh==4.12.2
 typing_extensions==4.13.2
 tzdata==2025.3
 urllib3==2.6.3

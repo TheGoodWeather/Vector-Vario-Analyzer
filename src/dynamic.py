@@ -175,7 +175,10 @@ class DynamicTab:
         n = len(next(iter(self._flight['data'].values())))
     
         self._index = max(0, min(index, n - 1))
-    
+        
+        if self._index == n -1 :
+            self._index = 10
+        
         for line in self._cursor_lines:
     
             line.blockSignals(True)
@@ -213,7 +216,9 @@ class DynamicTab:
             return
     
         self._set_index(self._index + 1)
-        
+    
+
+            
     def _update_lcds(self):
 
         combos = [
