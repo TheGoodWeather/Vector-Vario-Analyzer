@@ -600,6 +600,7 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
         if y is None or len(y) == 0:
             return
 
+
         x = np.arange(len(y))
 
         plot_widget.setLimits(
@@ -616,6 +617,8 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
         
         break  
     plot_widget.autoRange()
+    
+
 
 def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz, ias_comp):
     """
@@ -677,7 +680,7 @@ def calculate_roi(flight, edge):
             )
 
             start = last_xmax + total_duration * 0.08
-            end = max(start + interval, t_end)
+            end = min(start + interval, t_end)
 
         else:
             start = t_end - total_duration * 0.08
@@ -787,23 +790,20 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
                             
                             # we set the ias compensation 
                             ias_comp = np.multiply(flight['data']['IAS'] , (1+ (ias_comp_coeff/100) ))
-                            #Then the array are converted into the desired unit
-                            ias_comp = convert_array_to_unit(ias_comp, 'IAS')
+                            #Then the array are converted into the desired unit NO 
+                            #ias_comp = convert_array_to_unit(ias_comp, 'IAS')
                             vario_ias = flight['data']['VarioIAS']
                             vx = np.sqrt(np.subtract(np.square(ias_comp), np.square(vario_ias)))
-                            
-                            
-                            
 
                             vx_avg = round(np.nanmean(vx[int(x_min):int(x_max)]),2)
                             ias_avg = round(np.nanmean(ias_comp[int(x_min):int(x_max)]),2)
                             vario_avg = round(np.nanmean(vario_ias[int(x_min):int(x_max)]),2)
                             glide_ratio_avg = round(np.divide(vx_avg, vario_avg ), 2)
                             
-                            roi_data[1] = ias_avg
-                            roi_data[2] = vx_avg
-                            roi_data[3] = vario_avg
-                            roi_data[4] = glide_ratio_avg
+                            roi_data[1] = ias_avg #m/s
+                            roi_data[2] = vx_avg #m/s
+                            roi_data[3] = vario_avg #m/s
+                            roi_data[4] = glide_ratio_avg 
                             
                             if flight['plot']['crosshair_v_polar']:
                                 flight['plot']['crosshair_v_polar'].hide()

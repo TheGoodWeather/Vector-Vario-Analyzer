@@ -164,7 +164,7 @@ class DynamicTab:
         variable = combobox_var.currentData() 
         if not variable:
             curve.clear()
-            plot_widget.setTitle("Select a variable")
+            # plot_widget.setTitle("Select a variable")
             return
         y = convert_array_to_unit(self._flight['data'][variable], variable)
         if y is None or len(y) == 0:
@@ -177,7 +177,7 @@ class DynamicTab:
             yMin=np.min(y), yMax=np.max(y)
         )
 
-        plot_widget.setTitle(f"{get_label(variable)}")
+        # plot_widget.setTitle(f"{get_label(variable)}")
         plot_widget.setLimits(
             xMin=np.min(x),
             xMax=np.max(x),
@@ -217,13 +217,18 @@ class DynamicTab:
     
         self._update_lcds()
         self._update_hud()
-        
-        # self.model_widget.set_attitude(
-        #     pitch=self._flight['data']['pitch'][self._index],
-        #     roll=self._flight['data']['roll'][self._index],
-        #     yaw=self._flight['data']['yaw'][self._index],
-        #     )
+        self._update_model()
     
+    def _update_model(self):
+        pitch= self._flight['data']['pitch'][self._index]
+        roll= self._flight['data']['roll'][self._index]
+        yaw= self._flight['data']['compass_head'][self._index]
+        x = self._flight['data']['GNSS_lat'][self._index]
+        y = self._flight['data']['GNSS_lon'][self._index]
+        z = self._flight['data']['GNSS_alt'][self._index]
+        self.model_widget.set_attitude(pitch,roll,yaw)
+        self.model_widget.set_position(x,y,z)
+
     def next_frame(self):
 
         self._set_index(min(

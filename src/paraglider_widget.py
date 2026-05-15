@@ -63,36 +63,31 @@ class ParaGliderWidget(gl.GLViewWidget):
 
         self._items = []
         # Grille de référence au sol
-        # self._grid = gl.GLGridItem()
-        # self._grid.setSize(200, 200)
-        # self._grid.setSpacing(20, 20)
-        # self._grid.setColor(QColor(13, 143, 9))
-        # self._grid.translate(0, 0, -4)
-        # self.addItem(self._grid)
-        # self._items.append(self._grid)
-        # # Axe de référence (debug, optionnel)
-        # self._axis = gl.GLAxisItem()
-        # self._axis.setSize(3, 3, 3)
-        # self.addItem(self._axis)
-        # self._items.append(self._axis)
-        # # Construction du modèle
-        # self._model = load_obj_mesh(obj_path)
-        # self.addItem(self._model)
-        # self._items.append(self._model)
-        # self._model.rotate(90,1, 0, 0)
-        # self._model.translate(0,0,50)
+        self._grid = gl.GLGridItem()
+        self._grid.setSize(200, 200)
+        self._grid.setSpacing(20, 20)
+        self._grid.setColor(QColor(13, 143, 9))
+        self._grid.translate(0, 0, -4)
+        self.addItem(self._grid)
+        self._items.append(self._grid)
+        # Axe de référence (debug, optionnel)
+        self._axis = gl.GLAxisItem()
+        self._axis.setSize(3, 3, 3)
+        self.addItem(self._axis)
+        self._items.append(self._axis)
+        # Construction du modèle
+        self._model = load_obj_mesh(obj_path)
+        self.addItem(self._model)
+        self._items.append(self._model)
+        
         # État courant
         self._pitch = 0.0
         self._roll  = 0.0
         self._yaw   = 0.0
+        self._x = 0.0
+        self._y = 0.0
+        self._z = 0.0
 
-        # # Timer pour la lecture animée
-        # self._play_timer   = QTimer(self)
-        # self._play_data    = None
-        # self._play_index   = 0
-        # self._play_timer.timeout.connect(self._play_step)
-
-    
 
     # ------------------------------------------------------------------
     # Rotation du modèle
@@ -100,11 +95,19 @@ class ParaGliderWidget(gl.GLViewWidget):
 
     def _apply_rotation(self):
         """Applique pitch / roll / yaw à tous les éléments du modèle."""
-        for item in self._items:
+        for item in [self._model]:
             item.resetTransform()
             item.rotate(self._yaw,   0, 0, 1)   # lacet  (Z)
             item.rotate(self._pitch, 1, 0, 0)   # tangage (X)
-            item.rotate(self._roll,  0, 1, 0)   # roulis  (Y)
+            item.rotate(self._roll + 90,  0, 1, 0)   # roulis  (Y)
+
+
+    def _apply_translation(self):
+        """Applique x/y/z à tous les éléments du modèle."""
+        for item in [self._model]:
+            item.resetTransform()
+            item.translate(self._x,self._y, self._z)  
+           
 
     # ------------------------------------------------------------------
     # API publique
@@ -134,74 +137,18 @@ class ParaGliderWidget(gl.GLViewWidget):
         """Remet le modèle en position neutre."""
         self.set_attitude(0.0, 0.0, 0.0)
 
-    # ------------------------------------------------------------------
-    # Lecture animée d'un vol
-    # ------------------------------------------------------------------
-
-    def play(self, pitch_array, roll_array, yaw_array, dt_ms: int = 200):
+    def set_position(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
         """
-        Anime le modèle en lisant les tableaux de données.
-
-        Parameters
-        ----------
-        pitch_array : array-like
-        roll_array  : array-like
-        yaw_array   : array-like
-        dt_ms       : int  Intervalle entre chaque frame en millisecondes
+        Met à jour la position du modèle
         """
-        self._play_data  = (
-            np.array(pitch_array, dtype=float),
-            np.array(roll_array,  dtype=float),
-            np.array(yaw_array,   dtype=float),
-        )
-        self._play_index = 0
-        self._play_timer.setInterval(dt_ms)
-        self._play_timer.start()
+        self._x = x
+        self._y  = y
+        self._z   = z
+        self._apply_translation()
 
-    def pause(self):
-        self._play_timer.stop()
+    def reset_position(self):
+        """Remet le modèle en position neutre."""
+        self.set_position(0.0, 0.0, 0.0)
 
-    def resume(self):
-        if self._play_data is not None:
-            self._play_timer.start()
-
-    def stop(self):
-        self._play_timer.stop()
-        self._play_index = 0
-        self.reset_attitude()
-
-    def seek(self, index: int):
-        """Saute à un index précis dans les données de vol."""
-        if self._play_data is None:
-            return
-        n = len(self._play_data[0])
-        self._play_index = max(0, min(index, n - 1))
-        p, r, y = (arr[self._play_index] for arr in self._play_data)
-        self.set_attitude(
-            pitch=0.0 if np.isnan(p) else p,
-            roll =0.0 if np.isnan(r) else r,
-            yaw  =0.0 if np.isnan(y) else y,
-        )
-
-    def _play_step(self):
-        if self._play_data is None:
-            return
-        pitches, rolls, yaws = self._play_data
-        n = len(pitches)
-
-        if self._play_index >= n:
-            self._play_timer.stop()
-            return
-
-        p = pitches[self._play_index]
-        r = rolls[self._play_index]
-        y = yaws[self._play_index]
-
-        self.set_attitude(
-            pitch=0.0 if np.isnan(p) else p,
-            roll =0.0 if np.isnan(r) else r,
-            yaw  =0.0 if np.isnan(y) else y,
-        )
-        self._play_index += 1
-
-
+ 
+    

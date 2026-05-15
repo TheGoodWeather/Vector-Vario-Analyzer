@@ -12,9 +12,12 @@ All notable changes to Vector Vario Software will be documented in this file.
 No Autorange when changing color mapping in 2D Map
 README updated
 
+
 ### Fixed
 
 Bug while creating polar region -> None value returned when region is close to end
+Corecting calculus errors in Glide Ratio 
+New linear region width corrected in Polar Tab 
 
 ## [0.02] - 11-05-2026
 
