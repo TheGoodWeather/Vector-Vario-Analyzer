@@ -523,6 +523,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pushButton_next.setFixedSize(25, 25)
         self.widget_control_buttons.layout().addWidget(self.pushButton_next)
         
+        self.pushButton_speed = QtWidgets.QPushButton(qta.icon('mdi6.speedometer'), '')
+        self.pushButton_speed.setFixedSize(40, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_speed)
+        
         self.dynamic = DynamicTab(
             self.flight,
             self.comboBox_select_flight_dyntab,
@@ -541,6 +545,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pushButton_pause ,
             self.pushButton_play,
             self.pushButton_next,
+            self.pushButton_speed,
             str(resource_path("gui/models/para.obj")))
         
         
