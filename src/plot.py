@@ -693,7 +693,6 @@ def calculate_roi(flight, edge):
     
     
 def load_polar_roi(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_widget, combobox_flight , legend_vxvz, ias_comp):
-    
     for flight in flight_dic:
         if flight['is_data_processed'] and flight['is_flight_selected']:
             for roi_data in flight['plot']['roi_polar']:
@@ -843,9 +842,7 @@ def reset_highlights(flight_dic, plot_widget):
 
 def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
     
-    #plot_widget.clear()
     legend_vxvz.clear()  
-    plot_widget.setAspectLocked(True)
     plot_widget.enableAutoRange(True)
     plot_widget.setLabel("top", f"Vx {get_unit('IAS')}")
     plot_widget.setLabel("left","Vz m/s")

@@ -11,11 +11,11 @@ All notable changes to Vector Vario Software will be documented in this file.
 
 No Autorange when changing color mapping in 2D Map
 README updated
-
+AspectRatio disable on polar graph
 ### Fixed
 
 Bug while creating polar region -> None value returned when region is close to end
-
+Bug while updating preferences ->  Linear Regions vanished
 ## [0.02] - 11-05-2026
 
 ### Added
