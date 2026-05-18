@@ -79,6 +79,16 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._model = load_obj_mesh(obj_path)
         self.addItem(self._model)
         self._items.append(self._model)
+        # Trajectoire du parapente 
+        self._trajectory = gl.GLLinePlotItem(
+            pos=np.zeros((1,3)),
+            color=(1, 0, 0, 1),  # rouge RGBA
+            width=2,
+            antialias=True,
+            mode='line_strip'
+        )
+
+        self.addItem(self._trajectory)
         
         # debug_points = self.debug_points()
         # self.addItem(debug_points)
@@ -115,8 +125,8 @@ class ParaGliderWidget(gl.GLViewWidget):
 
         # rotations locales
         item.rotate(self._yaw, 0, 0, 1, True)
-        item.rotate(- self._roll - 90, 1, 0, 0, True)
         item.rotate(- self._pitch, 0, 1,0 , True)  
+        item.rotate(self._roll - 90, 1, 0, 0, True)
            
 
     # ------------------------------------------------------------------
@@ -173,6 +183,14 @@ class ParaGliderWidget(gl.GLViewWidget):
     def reset_position(self):
         """Remet le modèle en position neutre."""
         self.set_position(0.0, 0.0, 0.0)
+
+    def set_trajectory(self, x, y, z):
+
+        pts = np.column_stack((x, y, z))
+
+        self._trajectory.setData(
+            pos=pts
+        )
 
  
     

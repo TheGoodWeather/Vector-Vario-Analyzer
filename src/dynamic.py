@@ -222,6 +222,12 @@ class DynamicTab:
             t_seconds,
             self._flight['data']['GNSS_alt']
         )
+
+        self.model_widget.set_trajectory(
+            self._x_interp / 10,
+            self._y_interp / 10,
+            self._z_interp / 10
+        )
     
     def _populate_var_combobox(self):
 
@@ -365,6 +371,7 @@ class DynamicTab:
 
         self.model_widget.set_attitude(pitch =pitch, roll = roll, yaw= yaw)
         self.model_widget.set_position(x/10,y/10,z/10)
+      
 
     def next_frame(self):
         dt = 1 / fps    
