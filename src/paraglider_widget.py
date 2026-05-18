@@ -79,7 +79,6 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._model = load_obj_mesh(obj_path)
         self.addItem(self._model)
         self._items.append(self._model)
-        self.set_attitude(0,0,0)
         
         # debug_points = self.debug_points()
         # self.addItem(debug_points)
@@ -91,6 +90,9 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._x = 0.0
         self._y = 0.0
         self._z = 0.0
+        
+        self.set_attitude(0,0,0)
+        self.set_position(0,0,0)
 
 
     # ------------------------------------------------------------------
@@ -98,20 +100,23 @@ class ParaGliderWidget(gl.GLViewWidget):
     # ------------------------------------------------------------------
     
 
-    def _apply_rotation(self):
-        """Applique pitch / roll / yaw à tous les éléments du modèle."""
-        for item in [self._model]:
-            item.resetTransform()
-            item.rotate(self._yaw,   0, 1, 0)   #   (general Z)
-            item.rotate(self._roll - 90, 1, 0, 0)   #  (general X)
-            item.rotate(- self._pitch ,  0, 1, 0)   #   (general Y)
+    def _update_transform(self):
 
+        item = self._model
 
-    def _apply_translation(self):
-        """Applique x/y/z à tous les éléments du modèle."""
-        for item in [self._model]:
-            item.resetTransform()
-            item.translate(self._x,self._y, self._z)  
+        item.resetTransform()
+
+        # translation monde
+        item.translate(
+            self._x,
+            self._y,
+            self._z
+        )
+
+        # rotations locales
+        item.rotate(self._yaw, 0, 0, 1, True)
+        item.rotate(- self._roll - 90, 1, 0, 0, True)
+        item.rotate(- self._pitch, 0, 1,0 , True)  
            
 
     # ------------------------------------------------------------------
@@ -150,7 +155,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._pitch = pitch
         self._roll  = roll
         self._yaw   = yaw
-        self._apply_rotation()
+        self._update_transform()
 
     def reset_attitude(self):
         """Remet le modèle en position neutre."""
@@ -163,7 +168,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._x = x
         self._y  = y
         self._z   = z
-        self._apply_translation()
+        self._update_transform()
 
     def reset_position(self):
         """Remet le modèle en position neutre."""

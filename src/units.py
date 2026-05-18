@@ -91,28 +91,27 @@ def convert_gps_coords_DDM_to_DD(lat_DDM, lon_DDM):
     return lat_DD, lon_DD
 
 
-def convert_gps_to_local_xy(lat, lon):
+def convert_gps_to_local_xy(lon, lat):
 
-    lat_dd = np.array([
-        convert_gps_coords_DDM_to_DD(v[0], v[1])[0] if isinstance(v, tuple)
-        else convert_gps_coords_DDM_to_DD(v, lon[i])[0]
-        for i, v in enumerate(lat)
-    ])
+    lat_dd = np.asarray(lat, dtype=np.float64)
+    lon_dd = np.asarray(lon, dtype=np.float64)
 
-    lon_dd = np.array([
-        convert_gps_coords_DDM_to_DD(lat[i], lon[i])[1]
-        for i in range(len(lat))
-    ])
+    lat0 = lat_dd[0]
+    lon0 = lon_dd[0]
 
-    lat = np.asarray(lat_dd, dtype=np.float64)
-    lon = np.asarray(lon_dd, dtype=np.float64)
+    R = 6371000
 
-    lat0 = lat[0]
-    lon0 = lon[0]
+    x = (lon_dd - lon0) * np.cos(np.radians(lat0)) * R * np.pi / 180
+    y = (lat_dd - lat0) * R * np.pi / 180
 
-    R = 6371000.0
+    # print(f"lat 0 : {lat_dd[0]}")
+    # print(f"lat 100 : {lat_dd[100]}")
+    # print(f"delta lat = {(lat_dd[100] - lat_dd[0])}")
+    # print(f"y : {y[100]}")
 
-    x = (lon - lon0) * np.cos(np.radians(lat0)) * R
-    y = (lat - lat0) * R
+    # print(f"lon 0 : {lon_dd[0]}")
+    # print(f"lon 100 : {lon_dd[100]}")
+    # print(f"delta lon = {(lon_dd[100] - lon_dd[0])}")
+    # print(f"x : {x[100]}")
 
     return x, y

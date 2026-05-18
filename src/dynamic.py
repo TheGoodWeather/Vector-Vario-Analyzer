@@ -203,10 +203,7 @@ class DynamicTab:
 
         self._yaw_interp = np.degrees(yaw_interp)
 
-        _x_local , _y_local = convert_gps_to_local_xy(self._flight['data']['GNSS_lat'], self._flight['data']['GNSS_lon'])
-        
-        print(_x_local[400:420])
-        print(_y_local[400:420])
+        _x_local, _y_local = convert_gps_to_local_xy(self._flight['data']['GNSS_lon'], self._flight['data']['GNSS_lat'])
 
         self._x_interp = np.interp(
             self._time_interp,
@@ -362,11 +359,12 @@ class DynamicTab:
         roll= self._roll_interp[i]
         yaw= self._yaw_interp[i]
         x = self._x_interp[i]
-        print(x)
         y = self._y_interp[i]
         z = self._z_interp[i]
+
+
         self.model_widget.set_attitude(pitch =pitch, roll = roll, yaw= yaw)
-        self.model_widget.set_position(10,0,0)
+        self.model_widget.set_position(x/10,y/10,z/10)
 
     def next_frame(self):
         dt = 1 / fps    
