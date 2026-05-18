@@ -9,8 +9,11 @@ from utils import get_label
 from PyQt6.QtGui import QPainter, QColor, QPen, QFont
 from PyQt6.QtCore import Qt
 
+fps = 30
 
 class DynamicTab:
+
+
     def __init__(self, 
                  flight_data_set,
                  comboBox_select_flight_dyntab,
@@ -50,13 +53,18 @@ class DynamicTab:
         self.pushButton_speed = pushButton_speed
         
         self._cursor_lines = []
-        self._index = 400 
+        self._current_time = 0.0 #second
+        self._interp_index = 0
+        self._raw_index = 0
+
         self._flight = None
+
+        self._pitch_interp = None
+        self._roll_interp = None
+        self._yaw_interp = None
+        self._time_interp = None
         
-        # self.model_widget = ParaGliderWidget(obj_path=obj_path)
-        # layout = QVBoxLayout(model_container)
-        # layout.setContentsMargins(0,0,0,0)
-        # layout.addWidget(self.model_widget)
+  
         
         self.gl_container = QWidget()
         stack = QStackedLayout(self.gl_container)
@@ -127,7 +135,7 @@ class DynamicTab:
             line = pg.InfiniteLine(
                 angle=90,
                 movable=True,
-                pos = self._index,
+                pos = self._raw_index,
                 pen=pg.mkPen('r', width=2)
             )
             line.sigPositionChanged.connect(lambda line: self._cursor_moved(line))
@@ -145,6 +153,53 @@ class DynamicTab:
         
         if self._flight:
             self._populate_var_combobox()
+            self._interpolate_data()
+
+    def _interpolate_data(self):
+
+        times = self._flight['data']['GNSS_time']
+
+        t0 = times[0]
+
+        t_seconds = np.array([
+            (t - t0).total_seconds()
+            for t in times
+        ], dtype=np.float64)
+
+        self._time_raw = t_seconds
+
+        self._time_interp = np.arange(
+            0,
+            t_seconds[-1],
+            1/fps
+        )
+
+
+        self._pitch_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['pitch']
+        )
+
+        self._roll_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['roll']
+        )
+
+        yaw = np.unwrap(
+            np.radians(
+                self._flight['data']['compass_head']
+            )
+        )
+
+        yaw_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            yaw
+        )
+
+        self._yaw_interp = np.degrees(yaw_interp)
     
     def _populate_var_combobox(self):
 
@@ -194,55 +249,113 @@ class DynamicTab:
     
     def _cursor_moved(self, line):
 
-        index = int(line.value())
-        self._set_index(index)
+        self._raw_index = int(line.value())
+
+        # sécurité
+        self._raw_index = np.clip(
+            self._raw_index,
+            0,
+            len(self._time_raw) - 1
+        )
+
+        # 1) convertir raw index → temps
+        self._current_time = self._time_raw[self._raw_index]
+
+        # 2) convertir temps → index interpolé
+        self._interp_index = int(self._current_time * fps)
+
+        self._interp_index = np.clip(
+            self._interp_index,
+            0,
+            len(self._time_interp) - 1
+        )
+
+        # 3) sync UI
+        self._update_model()
+        self._update_lcds()
+        self._update_hud()
+
     
-    def _set_index(self, index):
+    def _set_time(self, current_time):
 
         if self._flight is None:
             return
-    
-        n = len(next(iter(self._flight['data'].values())))
-    
-        self._index = max(0, min(index, n - 1))
-        
-        if self._index == n -1 :
-            self._index = 10
-        
-        for line in self._cursor_lines:
-    
-            line.blockSignals(True)
-            line.setValue(self._index)
-            line.blockSignals(False)
-    
+
+        self._current_time = np.clip(
+            current_time,
+            0,
+            self._time_interp[-1]
+        )
+
+        # -------------------------
+        # index interpolation 30 fps
+        # -------------------------
+
+        self._interp_index = int(
+            self._current_time * fps
+        )
+
+        self._interp_index = min(
+            self._interp_index,
+            len(self._time_interp) - 1
+        )
+
+        # -------------------------
+        # index données brutes
+        # -------------------------
+
+        self._raw_index = np.searchsorted(
+            self._time_raw,
+            self._current_time
+        )
+
+        self._raw_index = min(
+            self._raw_index,
+            len(self._time_raw) - 1
+        )
+
+        # -------------------------
+        # update UI
+        # -------------------------
+
+        self._update_cursor()
+        self._update_model()
         self._update_lcds()
         self._update_hud()
-        self._update_model()
     
+    def _update_cursor(self):
+
+        for line in self._cursor_lines:
+            line.blockSignals(True)
+            line.setValue(self._raw_index)
+            line.blockSignals(False)
+
     def _update_model(self):
-        pitch= self._flight['data']['pitch'][self._index]
-        roll= self._flight['data']['roll'][self._index]
-        yaw= self._flight['data']['compass_head'][self._index]
-        x = self._flight['data']['GNSS_lat'][self._index]
-        y = self._flight['data']['GNSS_lon'][self._index]
-        z = self._flight['data']['GNSS_alt'][self._index]
-        self.model_widget.set_attitude(pitch,roll,yaw)
-        self.model_widget.set_position(x,y,z)
+
+        i = self._interp_index
+        pitch= self._pitch_interp[i]
+        roll= self._roll_interp[i]
+        yaw= self._yaw_interp[i]
+        # x = self._flight['data']['GNSS_lat'][self._index]
+        # y = self._flight['data']['GNSS_lon'][self._index]
+        # z = self._flight['data']['GNSS_alt'][self._index]
+        self.model_widget.set_attitude(pitch =pitch, roll = roll, yaw= yaw)
+        # self.model_widget.set_position(x,y,z)
 
     def next_frame(self):
-
-        self._set_index(min(
-        self._index + 1,
-        len(self._flight['data']['GNSS_time']) - 1
+        dt = 1 / fps    
+        self._set_time(min(
+        self._current_time + dt,
+        self._time_interp[-1]
     ))
         
     def previous_frame(self):
-
-        self._set_index(max(0, self._index - 1))
+        dt = 1 / fps
+        self._set_time(max(0, self._current_time - dt))
         
     def play(self):
 
-        self._play_timer.start(30)
+        self._play_timer.start(int(1000 / fps))
         
     def pause(self):
 
@@ -259,52 +372,28 @@ class DynamicTab:
         
         
     def _play_step(self):
-
-        if self._flight is None:
-            return
-    
-        times = self._flight['data']['GNSS_time']
-    
-        if self._index >= len(times) - 1:
+        dt = 1 / fps
+        if self._current_time >= self._time_interp[-1]:
             self.pause()
             return
-    
-        # temps simulé ajouté à chaque frame
-        dt_frame = (1 / 30.0) * self._playback_speed
-    
-        self._play_elapsed += dt_frame
-    
-        current_time = times[self._index]
-    
-        # avance tant que le temps simulé dépasse
-        while self._index < len(times) - 1:
-    
-            next_time = times[self._index + 1]
-    
-            real_dt = (next_time - current_time).total_seconds()
-    
-            if self._play_elapsed >= real_dt:
-    
-                self._play_elapsed -= real_dt
-                self._index += 1
-    
-                current_time = next_time
-    
-            else:
-                break
-    
-        self._set_index(self._index)
+
+        self._current_time += dt * self._playback_speed
+
+        self._set_time(self._current_time)
+        
+       
     
 
     
     def _update_hud(self):
         
-        netto = self._flight['data']['netto'][self._index]
-        altitude = self._flight['data']['GNSS_alt'][self._index]
-        time = self._flight['data']['GNSS_time'][self._index]
+        i = self._raw_index
+        netto = self._flight['data']['netto'][i]
+        altitude = self._flight['data']['GNSS_alt'][i]
+        time = self._flight['data']['GNSS_time'][i]
         formatted_time = time.strftime("%H:%M")
-        ground_speed = self._flight['data']['GNSS_speed'][self._index]
-        duration = self._flight['data']['GNSS_time'][self._index] - self._flight['data']['GNSS_time'][0]
+        ground_speed = self._flight['data']['GNSS_speed'][i]
+        duration = self._flight['data']['GNSS_time'][i] - self._flight['data']['GNSS_time'][0]
         total_seconds = int(duration.total_seconds())
 
         hours = total_seconds // 3600
@@ -322,7 +411,7 @@ class DynamicTab:
         self.hud_widget.set_duration(formatted_duration)
         
     def _update_lcds(self):
-
+        i = self._raw_index
         combos = [
         self.comboBox_var_1_dyntab,
         self.comboBox_var_2_dyntab,
@@ -348,10 +437,10 @@ class DynamicTab:
             variable
             )
             
-            if self._index >= len(data):
+            if i >= len(data):
                 continue
             
-            value = data[self._index]
+            value = data[i]
             
             if np.isnan(value):
                 lcd.display("---")

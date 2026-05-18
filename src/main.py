@@ -546,7 +546,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pushButton_play,
             self.pushButton_next,
             self.pushButton_speed,
-            str(resource_path("gui/models/para.obj")))
+            str(resource_path("gui/models/para_v2.obj")))
         
         
     

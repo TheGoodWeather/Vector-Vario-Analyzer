@@ -79,7 +79,11 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._model = load_obj_mesh(obj_path)
         self.addItem(self._model)
         self._items.append(self._model)
+        self.set_attitude(0,0,0)
         
+        # debug_points = self.debug_points()
+        # self.addItem(debug_points)
+
         # État courant
         self._pitch = 0.0
         self._roll  = 0.0
@@ -92,14 +96,15 @@ class ParaGliderWidget(gl.GLViewWidget):
     # ------------------------------------------------------------------
     # Rotation du modèle
     # ------------------------------------------------------------------
+    
 
     def _apply_rotation(self):
         """Applique pitch / roll / yaw à tous les éléments du modèle."""
         for item in [self._model]:
             item.resetTransform()
-            item.rotate(self._yaw,   0, 0, 1)   # lacet  (Z)
-            item.rotate(self._pitch, 1, 0, 0)   # tangage (X)
-            item.rotate(self._roll + 90,  0, 1, 0)   # roulis  (Y)
+            item.rotate(self._yaw,   0, 1, 0)   #   (general Z)
+            item.rotate(self._roll - 90, 1, 0, 0)   #  (general X)
+            item.rotate(- self._pitch ,  0, 1, 0)   #   (general Y)
 
 
     def _apply_translation(self):
@@ -116,7 +121,21 @@ class ParaGliderWidget(gl.GLViewWidget):
         
         self.clear()
     
-      
+    def debug_points(self):
+        pts = np.array([
+            [1,0,0],   # rouge = X
+            [0,1,0],   # vert  = Y
+            [0,0,1],   # bleu  = Z
+        ])
+
+        colors = np.array([
+            [1,0,0,1],
+            [0,1,0,1],
+            [0,0,1,1],
+        ])
+
+        sp = gl.GLScatterPlotItem(pos=pts, color=colors, size=10)
+        return sp 
         
     def set_attitude(self, pitch: float = 0.0, roll: float = 0.0, yaw: float = 0.0):
         """
