@@ -89,3 +89,30 @@ def convert_gps_coords_DDM_to_DD(lat_DDM, lon_DDM):
 
     
     return lat_DD, lon_DD
+
+
+def convert_gps_to_local_xy(lat, lon):
+
+    lat_dd = np.array([
+        convert_gps_coords_DDM_to_DD(v[0], v[1])[0] if isinstance(v, tuple)
+        else convert_gps_coords_DDM_to_DD(v, lon[i])[0]
+        for i, v in enumerate(lat)
+    ])
+
+    lon_dd = np.array([
+        convert_gps_coords_DDM_to_DD(lat[i], lon[i])[1]
+        for i in range(len(lat))
+    ])
+
+    lat = np.asarray(lat_dd, dtype=np.float64)
+    lon = np.asarray(lon_dd, dtype=np.float64)
+
+    lat0 = lat[0]
+    lon0 = lon[0]
+
+    R = 6371000.0
+
+    x = (lon - lon0) * np.cos(np.radians(lat0)) * R
+    y = (lat - lat0) * R
+
+    return x, y

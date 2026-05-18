@@ -4,7 +4,7 @@ from PyQt6 import QtCore , QtGui
 from utils import mapping
 from paraglider_widget import ParaGliderWidget
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QStackedLayout
-from units import convert_array_to_unit, get_unit
+from units import convert_array_to_unit, get_unit, convert_gps_to_local_xy
 from utils import get_label
 from PyQt6.QtGui import QPainter, QColor, QPen, QFont
 from PyQt6.QtCore import Qt
@@ -63,7 +63,9 @@ class DynamicTab:
         self._roll_interp = None
         self._yaw_interp = None
         self._time_interp = None
-        
+        self._x_interp = None
+        self._y_interp = None
+        self._z_interp = None
   
         
         self.gl_container = QWidget()
@@ -200,6 +202,29 @@ class DynamicTab:
         )
 
         self._yaw_interp = np.degrees(yaw_interp)
+
+        _x_local , _y_local = convert_gps_to_local_xy(self._flight['data']['GNSS_lat'], self._flight['data']['GNSS_lon'])
+        
+        print(_x_local[400:420])
+        print(_y_local[400:420])
+
+        self._x_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            _x_local
+        )
+
+        self._y_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            _y_local
+        )
+
+        self._z_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['GNSS_alt']
+        )
     
     def _populate_var_combobox(self):
 
@@ -336,11 +361,12 @@ class DynamicTab:
         pitch= self._pitch_interp[i]
         roll= self._roll_interp[i]
         yaw= self._yaw_interp[i]
-        # x = self._flight['data']['GNSS_lat'][self._index]
-        # y = self._flight['data']['GNSS_lon'][self._index]
-        # z = self._flight['data']['GNSS_alt'][self._index]
+        x = self._x_interp[i]
+        print(x)
+        y = self._y_interp[i]
+        z = self._z_interp[i]
         self.model_widget.set_attitude(pitch =pitch, roll = roll, yaw= yaw)
-        # self.model_widget.set_position(x,y,z)
+        self.model_widget.set_position(10,0,0)
 
     def next_frame(self):
         dt = 1 / fps    
