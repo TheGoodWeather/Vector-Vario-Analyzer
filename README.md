@@ -17,7 +17,7 @@ Please refer to the user manual for detailed usage instructions, or visit [Vecto
 
 Before running the application, make sure the following are installed on your system:
 
-- Python 3.12.7
+- Python >= 3.12.7
 - pip
 
 Python packages and dependencies are listed in:

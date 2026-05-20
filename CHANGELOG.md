@@ -13,7 +13,7 @@ All notable changes to Vector Vario Software will be documented in this file.
 ### Fixed
 
 
-## [0.02] - 11-05-2026
+## [0.02] - 20-05-2026
 
 ### Added
 
@@ -29,6 +29,7 @@ Confirmation of file modifications removed (alias or comment)
 
 GNSS coordinates -> supporting South and West coordinates 
 GNSS losses -> supports now when GNSS losses occurs while flying 
+Qsettings -> Default values for the first launch of the software, prevent crash
 
 ---
 

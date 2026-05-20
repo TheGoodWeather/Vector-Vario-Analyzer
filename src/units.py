@@ -16,6 +16,16 @@ units_coeff_dic = {
     "mbar" : 0.01, #Pa to mbar
     }
 
+default_unit = {
+    "heading": "degree",
+    "speed": "km/h",
+    "altitude": "meters",
+    "temperature": "°C",
+    "angle": "degree",
+    "pressure": "hPa",
+    "coordinates": "Decimal degrees"
+}
+
 var_to_unit_group_dic = {
     "heading" : ["compass_head", "GNSS_head" , "wind_origin"],
     "speed" : ["GNSS_speed", "vario" , "wind_vel", "IAS" , "VarioIAS" , "TAS" , "netto" ,"GNSS_velD"],
@@ -31,7 +41,8 @@ unit_group = {
     "altitude": ["meters", "feet"],
     "temperature": ["°C", "°K", "°F"],
     "angle": ["degree", "radian"],
-    "pressure": ["Pa", "hPa", "atm", "mbar"]}
+    "pressure": ["Pa", "hPa", "atm", "mbar"],
+    "coordinates": ["Decimal degrees", "Degrees decimal minutes", "Degrees minutes seconds"]}
 
 def get_unit(variable):
     
@@ -40,7 +51,9 @@ def get_unit(variable):
     unit = None
     for group, variables in var_to_unit_group_dic.items():
         if variable in variables:
-            unit = settings.value(group)    
+            default = default_unit[group]
+            unit = settings.value(group, defaultValue=default)
+        
     settings.endGroup()
     return unit
 
