@@ -1,3 +1,4 @@
+from PyQt6 import QtGui
 import numpy as np
 import pyqtgraph.opengl as gl
 from PyQt6.QtCore import QTimer
@@ -104,7 +105,19 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.set_attitude(0,0,0)
         self.set_position(0,0,0)
 
+    def _camera_follow(self):
 
+        offset = QtGui.QVector3D(0, 0, 0)  # derrière + au-dessus
+
+        center = QtGui.QVector3D(
+            self._x,
+            self._y,
+            self._z
+        )
+
+        self.setCameraPosition(
+            pos=center + offset
+        )
     # ------------------------------------------------------------------
     # Rotation du modèle
     # ------------------------------------------------------------------
@@ -124,9 +137,11 @@ class ParaGliderWidget(gl.GLViewWidget):
         )
 
         # rotations locales
-        item.rotate(self._yaw, 0, 0, 1, True)
+        item.rotate(-self._yaw + 90, 0, 0, 1, True)
         item.rotate(- self._pitch, 0, 1,0 , True)  
         item.rotate(self._roll - 90, 1, 0, 0, True)
+
+        self._camera_follow()
            
 
     # ------------------------------------------------------------------
