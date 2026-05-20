@@ -15,7 +15,7 @@ import pyqtgraph as pg
 
 # Modules internes
 from constants import SOFTWARE_VERSION
-from utils import get_label
+from utils import get_label, is_all_nan
 from units import get_unit, convert_array_to_unit
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
@@ -1241,7 +1241,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
         row = 0
         for variable in flight['data']:
-            if len(flight['data'][variable]) > 0:
+            data = flight['data'][variable]
+            if len(data) > 0 and not is_all_nan(data):
                 table_data.insertRow(row)
     
                 item_variable = QTableWidgetItem(get_label(variable))

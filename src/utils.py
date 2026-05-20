@@ -79,3 +79,15 @@ def get_label(variable: str) -> str:
     Return a more comprehensive label from the VARIABLE_LEVELS list
     """
     return VARIABLE_LABELS.get(variable, variable)
+
+
+
+def is_all_nan(data):
+
+    arr = np.asarray(data)
+
+    # types numériques seulement
+    if np.issubdtype(arr.dtype, np.number):
+        return np.all(np.isnan(arr))
+
+    return False
