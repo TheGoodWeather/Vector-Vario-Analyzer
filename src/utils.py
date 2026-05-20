@@ -91,3 +91,27 @@ def is_all_nan(data):
         return np.all(np.isnan(arr))
 
     return False
+
+
+def sort_combobox_alphabetically(combobox):
+    """
+    Trie un QComboBox par ordre alphabétique
+    tout en conservant les userData.
+    """
+
+    items = []
+
+    for i in range(combobox.count()):
+
+        text = combobox.itemText(i)
+        data = combobox.itemData(i)
+
+        items.append((text, data))
+
+    # tri alphabétique insensible à la casse
+    items.sort(key=lambda x: x[0].lower())
+
+    combobox.clear()
+
+    for text, data in items:
+        combobox.addItem(text, userData=data)

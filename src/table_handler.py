@@ -249,7 +249,9 @@ def populate_table_1D_variable(flight_dic, table1, table2, choice):
                             table2.setItem(row, 0, item2)
 
                             row += 1            
-    
+    table1.sortItems(0, Qt.AscendingOrder)
+    table2.sortItems(0, Qt.AscendingOrder)
+
     table1.blockSignals(False)
     table2.blockSignals(False)
     

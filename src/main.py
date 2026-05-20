@@ -994,11 +994,18 @@ class MainWindow(QtWidgets.QMainWindow):
     
         # Intersection : uniquement les variables présentes dans TOUS les vols
         common_vars = sets_of_vars[0].intersection(*sets_of_vars[1:])
-    
         combobox_var.addItem('None')
-        for variable in sorted(common_vars):
-            combobox_var.addItem(get_label(variable), userData=variable)
-      
+
+        for variable in sorted(
+            common_vars,
+            key=lambda v: get_label(v).lower()
+        ):
+
+            combobox_var.addItem(
+                get_label(variable),
+                userData=variable
+            )
+            
     
     
 
@@ -1265,7 +1272,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 table_data.setItem(row, 2, item_unit)
     
                 row += 1  
-        
+        table_data.sortItems( 0 ,Qt.AscendingOrder)
     def on_1D_point_clicked(self, event, flight_dic, plot_widget, combobox_flight, table_data):
         """
         This function displays crosshair to the closest point where the user clicked
