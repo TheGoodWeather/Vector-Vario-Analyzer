@@ -18,7 +18,8 @@ units_coeff_dic = {
 
 var_to_unit_group_dic = {
     "heading" : ["compass_head", "GNSS_head" , "wind_origin"],
-    "speed" : ["GNSS_speed", "vario" , "wind_vel", "IAS" , "VarioIAS" , "TAS" , "netto" ,"GNSS_velD"],
+    "speed" : ["GNSS_speed", "wind_vel", "IAS", "TAS","GNSS_velD"],
+    "vertical_speed" : ["vario", "VarioIAS", "netto"],
     "coordinates" : ["GNSS_lat","GNSS_lon" ],
     "altitude" : ["GNSS_alt", "QNS_alt" , "LCL"], 
     "temperature" : ["T_sensor", "air_T", "AirTheta" , "AirTd"],
@@ -28,6 +29,7 @@ var_to_unit_group_dic = {
 unit_group = {
     "heading" : ["degree", "radian"],
     "speed" : ["m/s", "knot", "km/h", "mph"],
+    "vertical_speed" : ["m/s", "knot", "km/h", "mph"],
     "altitude": ["meters", "feet"],
     "temperature": ["°C", "°K", "°F"],
     "angle": ["degree", "radian"],

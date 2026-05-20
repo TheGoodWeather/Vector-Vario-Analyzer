@@ -7,6 +7,7 @@ All notable changes to Vector Vario Software will be documented in this file.
 ### Added
 
 Some comboboxes and tables are now sorted for a better viewing
+Horizontal and vertical units dissociated
 
 ### Changed
 

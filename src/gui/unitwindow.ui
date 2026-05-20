@@ -69,14 +69,14 @@
         </item>
        </widget>
       </item>
-      <item row="2" column="0">
+      <item row="3" column="0">
        <widget class="QLabel" name="label_4">
         <property name="text">
          <string>Coordinates</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="1">
+      <item row="3" column="1">
        <widget class="QComboBox" name="comboBox_coordinates">
         <item>
          <property name="text">
@@ -95,14 +95,14 @@
         </item>
        </widget>
       </item>
-      <item row="3" column="0">
+      <item row="4" column="0">
        <widget class="QLabel" name="label_5">
         <property name="text">
          <string>Altitude</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
+      <item row="4" column="1">
        <widget class="QComboBox" name="comboBox_altitude">
         <item>
          <property name="text">
@@ -116,14 +116,14 @@
         </item>
        </widget>
       </item>
-      <item row="4" column="0">
+      <item row="5" column="0">
        <widget class="QLabel" name="label_6">
         <property name="text">
          <string>Temperature</string>
         </property>
        </widget>
       </item>
-      <item row="4" column="1">
+      <item row="5" column="1">
        <widget class="QComboBox" name="comboBox_temperature">
         <item>
          <property name="text">
@@ -142,14 +142,14 @@
         </item>
        </widget>
       </item>
-      <item row="5" column="0">
+      <item row="6" column="0">
        <widget class="QLabel" name="label_7">
         <property name="text">
          <string>Angle</string>
         </property>
        </widget>
       </item>
-      <item row="5" column="1">
+      <item row="6" column="1">
        <widget class="QComboBox" name="comboBox_angle">
         <item>
          <property name="text">
@@ -163,14 +163,14 @@
         </item>
        </widget>
       </item>
-      <item row="6" column="0">
+      <item row="7" column="0">
        <widget class="QLabel" name="label_8">
         <property name="text">
          <string>Pressure</string>
         </property>
        </widget>
       </item>
-      <item row="6" column="1">
+      <item row="7" column="1">
        <widget class="QComboBox" name="comboBox_pressure">
         <item>
          <property name="text">
@@ -190,6 +190,37 @@
         <item>
          <property name="text">
           <string>mbar</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Vertical speed</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QComboBox" name="comboBox_vertical_speed">
+        <item>
+         <property name="text">
+          <string>m/s</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>mph</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>knot</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>km/h</string>
          </property>
         </item>
        </widget>
