@@ -32,8 +32,20 @@ class DynamicTab:
                  pushButton_play,
                  pushButton_next,
                  pushButton_speed,
+                 radioButton_free_view,
+                 radioButton_front_view,
+                 radioButton_behind_view,
+                 radioButton_top_view,
+                 radioButton_left_view,
+                 radioButton_right_view,
                  obj_path: str = None):
         
+        self.radioButton_free_view = radioButton_free_view
+        self.radioButton_front_view = radioButton_front_view
+        self.radioButton_behind_view = radioButton_behind_view
+        self.radioButton_top_view = radioButton_top_view
+        self.radioButton_left_view= radioButton_left_view
+        self.radioButton_right_view = radioButton_right_view
         self.flight_data_set = flight_data_set
         self.comboBox_select_flight_dyntab = comboBox_select_flight_dyntab
         self.plotwidget_1_dyntab = plotwidget_1_dyntab
@@ -103,7 +115,14 @@ class DynamicTab:
         self.pushButton_previous.clicked.connect(self.previous_frame)
         self.pushButton_speed.clicked.connect(self.change_speed)
         
-        
+        self.radioButton_free_view.toggled.connect(self.model_widget.set_view_free)
+        self.radioButton_front_view.toggled.connect(self.model_widget.set_view_front)
+        self.radioButton_behind_view.toggled.connect(self.model_widget.set_view_behind)
+        self.radioButton_top_view.toggled.connect(self.model_widget.set_view_top) 
+        self.radioButton_left_view.toggled.connect(self.model_widget.set_view_left)
+        self.radioButton_right_view.toggled.connect(self.model_widget.set_view_right) 
+
+
         self._play_timer = QtCore.QTimer()
         self._play_timer.timeout.connect(self._play_step)
         

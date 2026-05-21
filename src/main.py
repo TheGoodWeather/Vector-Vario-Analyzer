@@ -546,6 +546,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.pushButton_play,
             self.pushButton_next,
             self.pushButton_speed,
+
+            self.radioButton_free_view,
+            self.radioButton_front_view,
+            self.radioButton_behind_view,
+            self.radioButton_top_view,
+            self.radioButton_left_view,
+            self.radioButton_right_view,
             str(resource_path("gui/models/para_v3.obj")))
         
         

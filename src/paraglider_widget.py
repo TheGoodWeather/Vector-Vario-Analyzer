@@ -3,7 +3,7 @@ import numpy as np
 import pyqtgraph.opengl as gl
 from PyQt6.QtCore import QTimer
 from pyqtgraph.Qt import QtCore
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QVector3D
 import trimesh
 
 
@@ -61,6 +61,9 @@ class ParaGliderWidget(gl.GLViewWidget):
 
         self.setBackgroundColor((200, 200, 200, 200))   # fond sombre
         self.setCameraPosition(distance=14, elevation=20, azimuth=45)
+        self._view = "free"
+        self._cam_azimuth = 45
+        self._cam_elevation = 20
 
         self._items = []
         # Grille de référence au sol
@@ -107,17 +110,69 @@ class ParaGliderWidget(gl.GLViewWidget):
 
     def _camera_follow(self):
 
-        offset = QtGui.QVector3D(0, 0, 0)  # derrière + au-dessus
+        # # offset = QtGui.QVector3D(0, 0, 0)  # derrière + au-dessus
+        target_elevation = None
+        target_azimuth = None
 
-        center = QtGui.QVector3D(
+        self.opts['center'] = QtGui.QVector3D(
             self._x,
             self._y,
             self._z
         )
 
+        match self._view:
+
+            case "top":
+                target_elevation = (
+                    -self._pitch + 90
+                )
+                target_azimuth = 0
+            case "side_left":
+                target_azimuth = (
+                    -self._yaw - 180
+                )
+                target_elevation = 0
+            case "side_right":
+                target_azimuth = (
+                    -self._yaw
+                )
+                target_elevation = 0
+            case "front":
+                target_azimuth = (
+                    -self._yaw + 90
+                )
+                target_elevation = 0
+            case "behind":
+                target_azimuth = (
+                    -self._yaw - 90
+                )
+                target_elevation = 0
+
+            case "free":
+                return
+        
+        self._smooth_camera(target_azimuth, target_elevation)
+        
+    def _smooth_camera(self, target_azimuth, target_elevation ):
+
+     
+        alpha = 0.1
+
+        self._cam_azimuth += (
+            target_azimuth - self.opts['azimuth']
+            ) * alpha
+
+        self._cam_elevation += (
+            target_elevation - self.opts['elevation']
+            ) * alpha
+
         self.setCameraPosition(
-            pos=center + offset
-        )
+            azimuth=self._cam_azimuth,
+            elevation=self._cam_elevation
+            )
+
+        
+
     # ------------------------------------------------------------------
     # Rotation du modèle
     # ------------------------------------------------------------------
@@ -147,6 +202,25 @@ class ParaGliderWidget(gl.GLViewWidget):
     # ------------------------------------------------------------------
     # API publique
     # ------------------------------------------------------------------
+
+    def set_view_front(self):
+        self._view = "front"
+    
+    def set_view_free(self):
+        self._view = "free"
+
+    def set_view_left(self):
+        self._view = "side_left"
+
+    def set_view_right(self):
+        self._view = "side_right" 
+
+    def set_view_behind(self):
+        self._view = "behind" 
+
+    def set_view_top(self):
+        self._view = "top" 
+
     def cleanup(self):
         
         self.clear()
