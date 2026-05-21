@@ -173,7 +173,7 @@ def create_polar_table(flight_dic, table_widget, combobox_flight):
             for row, roi_data in enumerate(flight['plot']['roi_polar']):
                 table_widget.insertRow(row)
                 
-                vx_value_avg = round(convert_array_to_unit(roi_data[2], 'IAS'),2)
+                vx_value_avg = round(roi_data[2],2)
                 vz_value_avg = roi_data[3] #Forcing Vz values to m/s 
 
                 vx_item = QTableWidgetItem(str(vx_value_avg))

@@ -801,7 +801,7 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
                             glide_ratio_avg = round(np.divide(vx_avg, vario_avg ), 2)
                             
                             roi_data[1] = ias_avg #m/s
-                            roi_data[2] = vx_avg #m/s
+                            roi_data[2] = convert_array_to_unit(vx_avg,"IAS") #m/s
                             roi_data[3] = vario_avg #m/s
                             roi_data[4] = glide_ratio_avg 
                             
@@ -845,7 +845,6 @@ def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
     
     #plot_widget.clear()
     legend_vxvz.clear()  
-    plot_widget.setAspectLocked(True)
     plot_widget.enableAutoRange(True)
     plot_widget.setLabel("top", f"Vx {get_unit('IAS')}")
     plot_widget.setLabel("left","Vz m/s")
