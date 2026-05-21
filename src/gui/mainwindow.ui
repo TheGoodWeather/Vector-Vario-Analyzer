@@ -1867,13 +1867,20 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="comboBox_var_1_dyntab"/>
+                  <widget class="QComboBox" name="comboBox_var_1_dyntab">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <widget class="QLCDNumber" name="lcdNumber_var_1"/>
                  </item>
                  <item>
-                  <widget class="QLabel" name="label_26">
+                  <widget class="QLabel" name="label_unit_var1_dyna">
                    <property name="text">
                     <string>unit</string>
                    </property>
@@ -1946,13 +1953,20 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="comboBox_var_2_dyntab"/>
+                  <widget class="QComboBox" name="comboBox_var_2_dyntab">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <widget class="QLCDNumber" name="lcdNumber_var_2"/>
                  </item>
                  <item>
-                  <widget class="QLabel" name="label_28">
+                  <widget class="QLabel" name="label_unit_var2_dyna">
                    <property name="text">
                     <string>unit</string>
                    </property>
@@ -2025,13 +2039,20 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QComboBox" name="comboBox_var_3_dyntab"/>
+                  <widget class="QComboBox" name="comboBox_var_3_dyntab">
+                   <property name="sizePolicy">
+                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                     <horstretch>0</horstretch>
+                     <verstretch>0</verstretch>
+                    </sizepolicy>
+                   </property>
+                  </widget>
                  </item>
                  <item>
                   <widget class="QLCDNumber" name="lcdNumber_var_3"/>
                  </item>
                  <item>
-                  <widget class="QLabel" name="label_30">
+                  <widget class="QLabel" name="label_unit_var3_dyna">
                    <property name="text">
                     <string>unit</string>
                    </property>
@@ -2152,6 +2173,19 @@
                  <string>Side Right</string>
                 </property>
                </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_7">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
               </item>
              </layout>
             </widget>

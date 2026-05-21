@@ -39,6 +39,7 @@ VARIABLE_LABELS = {
     
 }
 
+VARIABLE_KEYS = {v: k for k, v in VARIABLE_LABELS.items()}
 
 def mapping(value, fromLow, fromHigh, toLow, toHigh):
     return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow
@@ -79,3 +80,9 @@ def get_label(variable: str) -> str:
     Return a more comprehensive label from the VARIABLE_LEVELS list
     """
     return VARIABLE_LABELS.get(variable, variable)
+
+def get_variable(label: str) -> str:
+    """
+    Return the internal variable name from a user-friendly label.
+    """
+    return VARIABLE_KEYS.get(label, label)

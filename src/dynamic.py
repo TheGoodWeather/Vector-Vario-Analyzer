@@ -5,7 +5,7 @@ from utils import mapping
 from paraglider_widget import ParaGliderWidget
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QStackedLayout
 from units import convert_array_to_unit, get_unit, convert_gps_to_local_xy
-from utils import get_label
+from utils import get_label, get_variable
 from PyQt6.QtGui import QPainter, QColor, QPen, QFont
 from PyQt6.QtCore import Qt
 
@@ -38,6 +38,9 @@ class DynamicTab:
                  radioButton_top_view,
                  radioButton_left_view,
                  radioButton_right_view,
+                 label_unit_var1_dyna,
+                 label_unit_var2_dyna,
+                 label_unit_var3_dyna,
                  obj_path: str = None):
         
         self.radioButton_free_view = radioButton_free_view
@@ -63,7 +66,10 @@ class DynamicTab:
         self.pushButton_play = pushButton_play
         self.pushButton_next = pushButton_next
         self.pushButton_speed = pushButton_speed
-        
+        self.label_unit_var1_dyna = label_unit_var1_dyna
+        self.label_unit_var2_dyna = label_unit_var2_dyna
+        self.label_unit_var3_dyna = label_unit_var3_dyna
+    
         self._cursor_lines = []
         self._current_time = 0.0 #second
         self._interp_index = 0
@@ -78,7 +84,9 @@ class DynamicTab:
         self._x_interp = None
         self._y_interp = None
         self._z_interp = None
-  
+        self._speed_interp = None
+        self._netto_interp = None
+        self._alt_interp = None
         
         self.gl_container = QWidget()
         stack = QStackedLayout(self.gl_container)
@@ -105,9 +113,9 @@ class DynamicTab:
         self._setup_widget()
         
         self.comboBox_select_flight_dyntab.currentTextChanged.connect(lambda flight_text : self._fetch_flight(flight_text))
-        self.comboBox_var_1_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_1_dyntab, self._curve1 , self.comboBox_var_1_dyntab ))
-        self.comboBox_var_2_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab ))
-        self.comboBox_var_3_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_3_dyntab, self._curve3 , self.comboBox_var_3_dyntab ))
+        self.comboBox_var_1_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_1_dyntab, self._curve1 , self.comboBox_var_1_dyntab, self.label_unit_var1_dyna ))
+        self.comboBox_var_2_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab, self.label_unit_var2_dyna))
+        self.comboBox_var_3_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_3_dyntab, self._curve3 , self.comboBox_var_3_dyntab ,self.label_unit_var3_dyna))
         
         self.pushButton_play.clicked.connect(self.play)
         self.pushButton_pause.clicked.connect(self.pause)
@@ -125,6 +133,7 @@ class DynamicTab:
 
         self._play_timer = QtCore.QTimer()
         self._play_timer.timeout.connect(self._play_step)
+        self._elapsed_timer = QtCore.QElapsedTimer()
         
         self._playback_speed = 1.0   # 0.5 / 1 / 2
         self._play_elapsed = 0.0     # temps simulé écoulé
@@ -146,7 +155,12 @@ class DynamicTab:
         self.plotwidget_3_dyntab.setXLink(self.plotwidget_1_dyntab)
         self.plotwidget_1_dyntab.setXLink(self.plotwidget_2_dyntab)
        
-        
+
+        self.label_unit_var1_dyna.setText("")
+        self.label_unit_var2_dyna.setText("")
+        self.label_unit_var3_dyna.setText("")
+
+
         for plot in [
             self.plotwidget_1_dyntab,
             self.plotwidget_2_dyntab,
@@ -175,6 +189,13 @@ class DynamicTab:
         if self._flight:
             self._populate_var_combobox()
             self._interpolate_data()
+
+
+            self.comboBox_var_1_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("compass_head"))
+            self.comboBox_var_2_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("pitch"))
+            self.comboBox_var_3_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("roll"))
+
+
 
     def _interpolate_data(self):
 
@@ -247,20 +268,39 @@ class DynamicTab:
             self._y_interp / 10,
             self._z_interp / 10
         )
+
+        self._netto_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['netto']
+        )
+
+        self._alt_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['GNSS_alt']
+        )
+
+        self._speed_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['GNSS_speed']
+        )
     
     def _populate_var_combobox(self):
-
         for combobox in [self.comboBox_var_1_dyntab, self.comboBox_var_2_dyntab, self.comboBox_var_3_dyntab ]:
+            variable_to_sort = []
             combobox.clear()
             combobox.addItem("None", userData = None)
             for variable in self._flight['data']:
                 if variable == 'GNSS_time':  
                     continue
                 if len(self._flight['data'][variable]) > 0 and not np.all(np.isnan(self._flight['data'][variable])):
-                    combobox.addItem(get_label(variable), userData=variable)
-                    
-    
-    def _update_plot(self, plot_widget, curve, combobox_var):
+                    variable_to_sort.append(get_label(variable))
+            for variable in sorted(variable_to_sort):
+                combobox.addItem(variable, userData=get_variable(variable))
+
+    def _update_plot(self, plot_widget, curve, combobox_var, label_widget_unit):
         
         
         variable = combobox_var.currentData() 
@@ -293,6 +333,9 @@ class DynamicTab:
         curve.setData(x,y)
 
         plot_widget.autoRange()   
+
+        label_widget_unit.setText(str(get_unit(variable)))
+
     
     def _cursor_moved(self, line):
 
@@ -404,8 +447,9 @@ class DynamicTab:
         self._set_time(max(0, self._current_time - dt))
         
     def play(self):
-
-        self._play_timer.start(int(1000 / fps))
+        self._elapsed_timer.restart()
+        self._play_timer.start(16)   # vise 60 Hz, on régule nous-mêmes
+        # self._play_timer.start(int(1000 / fps))
         
     def pause(self):
 
@@ -423,11 +467,20 @@ class DynamicTab:
         
     def _play_step(self):
         dt = 1 / fps
+        dt_real = self._elapsed_timer.elapsed() / 1000.0
+        self._elapsed_timer.restart()
+
+        dt_sim = dt_real * self._playback_speed
+
         if self._current_time >= self._time_interp[-1]:
             self.pause()
             return
 
-        self._current_time += dt * self._playback_speed
+        # self._current_time += dt * self._playback_speed
+        self._current_time = min(
+            self._current_time + dt_sim,
+            self._time_interp[-1]
+        )
 
         self._set_time(self._current_time)
         
@@ -438,11 +491,12 @@ class DynamicTab:
     def _update_hud(self):
         
         i = self._raw_index
-        netto = self._flight['data']['netto'][i]
-        altitude = self._flight['data']['GNSS_alt'][i]
+        y = self._interp_index
+        netto = convert_array_to_unit(self._netto_interp[y], "netto")
+        altitude = convert_array_to_unit(self._alt_interp[y], "GNSS_alt")
         time = self._flight['data']['GNSS_time'][i]
         formatted_time = time.strftime("%H:%M")
-        ground_speed = self._flight['data']['GNSS_speed'][i]
+        ground_speed = convert_array_to_unit(self._speed_interp[y], "GNSS_speed")
         duration = self._flight['data']['GNSS_time'][i] - self._flight['data']['GNSS_time'][0]
         total_seconds = int(duration.total_seconds())
 
@@ -473,13 +527,20 @@ class DynamicTab:
         self.lcdNumber_var_2,
         self.lcdNumber_var_3,
         ]
+
+        label = [
+            self.label_unit_var1_dyna,
+            self.label_unit_var2_dyna,
+            self.label_unit_var3_dyna,
+        ]
         
-        for combo, lcd in zip(combos, lcds):
+        for combo, lcd, label in zip(combos, lcds, label):
         
             variable = combo.currentData()
             
             if not variable:
                 lcd.display("---")
+                label.setText("")
                 continue
             
             data = convert_array_to_unit(
@@ -504,7 +565,13 @@ class DynamicTab:
         """
         self.model_widget.cleanup()
         
-        
+    
+
+    def update_units(self):
+        self._update_plot(self.plotwidget_1_dyntab, self._curve1 , self.comboBox_var_1_dyntab, self.label_unit_var1_dyna )
+        self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab, self.label_unit_var2_dyna)
+        self._update_plot(self.plotwidget_3_dyntab, self._curve3 , self.comboBox_var_3_dyntab ,self.label_unit_var3_dyna)
+        self.hud_widget.update_units()
 
 
 
@@ -521,6 +588,10 @@ class HUDWidget(QWidget):
         self.time = 0
         self.duration = 0
         self.altitude = 0
+        
+        self._unit_netto = get_unit("netto")
+        self._unit_alt = get_unit("GNSS_alt")
+        self._unit_ground_speed = get_unit("GNSS_speed")
 
         # Transparent
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -532,11 +603,11 @@ class HUDWidget(QWidget):
    
     
     def set_netto(self, value):
-        self.netto = value
+        self.netto = round(value,1)
         self.update()
     
     def set_altitude(self, value):
-        self.altitude = value
+        self.altitude = round(value)
         self.update()
     
     def set_time(self, value):
@@ -548,8 +619,14 @@ class HUDWidget(QWidget):
         self.update()
         
     def set_ground_speed(self, value):
-        self.ground_speed = value
+        self.ground_speed = round(value,1)
         self.update()
+
+
+    def update_units(self):
+        self._unit_netto = get_unit("netto")
+        self._unit_alt = get_unit("GNSS_alt")
+        self._unit_ground_speed = get_unit("GNSS_speed")
 
     def paintEvent(self, event):
 
@@ -583,13 +660,13 @@ class HUDWidget(QWidget):
         painter.drawText(
             20,
             40,
-            f"Altitude (m) : {self.altitude} "
+            f"Altitude ({self._unit_alt}) : {self.altitude} "
         )
         
         painter.drawText(
             20,
             80,
-            f"Ground Speed (m/s) : {self.ground_speed} "
+            f"Ground Speed ({self._unit_ground_speed}) : {self.ground_speed} "
         )
         
     
@@ -598,13 +675,13 @@ class HUDWidget(QWidget):
             painter.drawText(
                 self.width() - 80 - 20,
                 40,
-                f"+{self.netto} m/s "
+                f"+{self.netto} {self._unit_netto} "
             )
         else:
             painter.drawText(
                 self.width() - 80 - 20,
                 40,
-                f"{self.netto} m/s "
+                f"{self.netto} {self._unit_netto} "
             )
         # -------------------------------------------------
         # JAUGE SIMPLE
@@ -620,7 +697,7 @@ class HUDWidget(QWidget):
         painter.drawRect(gauge_x, gauge_y, gauge_w, gauge_h)
 
         # valeur
-        value = max(-6, min(6, self.netto))
+        value = max(-6, min(6, convert_array_to_unit(self.netto, "netto")))
 
         #normalized = (value + 5) / 10.0
 

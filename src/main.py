@@ -553,9 +553,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.radioButton_top_view,
             self.radioButton_left_view,
             self.radioButton_right_view,
+
+            self.label_unit_var1_dyna,
+            self.label_unit_var2_dyna,
+            self.label_unit_var3_dyna,
             str(resource_path("gui/models/para_v3.obj")))
         
-        
+        self.unit_dialog.unitsChanged.connect(self.dynamic.update_units)
     
     def write_settings_main(self):
         """

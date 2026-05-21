@@ -8,24 +8,34 @@ import trimesh
 
 
 
+
 def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
+
     """
-    Charge un fichier .obj et retourne un GLMeshItem prêt à ajouter au GLViewWidget.
+    Charge un fichier .obj et retourne un GLMeshItem avec coloration par zone.
+    Structure détectée sur para_v3.obj (axe Y) :
+        Y > -1          → voile        (rouge vif)
+        -6 < Y < -1     → pilote/sellette (bleu-gris contrasté)
+        Y < -6          → suspentes    (gris clair)
     """
+
     from pathlib import Path
 
     mesh = trimesh.load(Path(obj_path), force='mesh')
-
     verts  = np.array(mesh.vertices, dtype=float)
     faces  = np.array(mesh.faces,    dtype=int)
-
-    # Couleurs par face (gris neutre par défaut, à adapter)
+    # Centre Y de chaque face → détermine la zone
+    y_centers = verts[faces, 1].mean(axis=1)
     colors = np.ones((len(faces), 4), dtype=float)
-    
-    colors[:, 0] = 1.0   # Rouge
-    colors[:, 1] = 0.0   # Vert
-    colors[:, 2] = 0.0   # Bleu
-    colors[:, 3] = 1.0   # Alpha (opaque)
+    # Voile : rouge vif
+    voile = y_centers >= -1
+    colors[voile] = [0.85, 0.12, 0.12, 1.0]
+    # Pilote / sellette : bleu-gris bien contrasté
+    pilote = (y_centers >= -6) & (y_centers < -1)
+    colors[pilote] = [0.25, 0.45, 0.80, 1.0]
+    # Suspentes : gris clair (fines cordes)
+    suspentes = y_centers < -6
+    colors[suspentes] = [0.82, 0.82, 0.82, 1.0]
 
     item = gl.GLMeshItem(
         vertexes=verts,
@@ -33,10 +43,14 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
         faceColors=colors,
         smooth=True,
         drawEdges=False,
-        shader = "shaded"
-        
+        shader='shaded'
     )
+
     return item
+
+
+
+
 
 
 
@@ -88,10 +102,10 @@ class ParaGliderWidget(gl.GLViewWidget):
             pos=np.zeros((1,3)),
             color=(1, 0, 0, 1),  # rouge RGBA
             width=2,
-            antialias=True,
+            antialias=False,
             mode='line_strip'
         )
-
+        self._trajectory.setGLOptions('opaque')  # ← respecte le depth buffer
         self.addItem(self._trajectory)
         
         # debug_points = self.debug_points()
@@ -157,20 +171,29 @@ class ParaGliderWidget(gl.GLViewWidget):
 
      
         alpha = 0.1
-
-        self._cam_azimuth += (
-            target_azimuth - self.opts['azimuth']
-            ) * alpha
-
-        self._cam_elevation += (
-            target_elevation - self.opts['elevation']
-            ) * alpha
+        
+        self._cam_azimuth = self._angle_lerp(
+            self.opts['azimuth'],
+            target_azimuth,
+            alpha
+        )
+      
+        self._cam_elevation = self._angle_lerp(
+            self.opts['elevation'],
+            target_elevation,
+            alpha
+            )
 
         self.setCameraPosition(
             azimuth=self._cam_azimuth,
             elevation=self._cam_elevation
             )
 
+    def _angle_lerp(self, current, target, alpha):
+
+        delta = (target - current + 180) % 360 - 180
+
+        return current + delta * alpha
         
 
     # ------------------------------------------------------------------
