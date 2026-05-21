@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QRadioButton, QTableWidgetItem, QMessageBox, QHeader
 from PyQt6.QtCore import Qt, QPoint, QSize, QThreadPool, QSettings  # ← fusionné
 from PyQt6.QtGui import QColor, QBrush, QIcon, QPixmap
 
-# Libs tierces lourdes
+# Libs tierces lougirdes
 import numpy as np
 import pyqtgraph as pg
 
