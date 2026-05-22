@@ -41,6 +41,10 @@ class DynamicTab:
                  label_unit_var1_dyna,
                  label_unit_var2_dyna,
                  label_unit_var3_dyna,
+                 checkbox_wind_vector_dyna,
+                 checkbox_north_vector_dyna,
+                 checkbox_heading_vector_dyna,
+                 checkbox_bearing_vector_dyna,
                  obj_path: str = None):
         
         self.radioButton_free_view = radioButton_free_view
@@ -69,6 +73,11 @@ class DynamicTab:
         self.label_unit_var1_dyna = label_unit_var1_dyna
         self.label_unit_var2_dyna = label_unit_var2_dyna
         self.label_unit_var3_dyna = label_unit_var3_dyna
+        self.checkbox_wind_vector_dyna = checkbox_wind_vector_dyna
+        self.checkbox_north_vector_dyna = checkbox_north_vector_dyna
+        self.checkbox_heading_vector_dyna =checkbox_heading_vector_dyna
+        self.checkbox_bearing_vector_dyna = checkbox_bearing_vector_dyna
+
     
         self._cursor_lines = []
         self._current_time = 0.0 #second
@@ -87,7 +96,11 @@ class DynamicTab:
         self._speed_interp = None
         self._netto_interp = None
         self._alt_interp = None
-        
+        self._wind_dir_interp = None
+        self._wind_tilt_interp = None
+        self._wind_tilt = None
+        self._wind_speed_interp = None
+
         self.gl_container = QWidget()
         stack = QStackedLayout(self.gl_container)
         stack.setStackingMode(
@@ -130,6 +143,8 @@ class DynamicTab:
         self.radioButton_left_view.toggled.connect(self.model_widget.set_view_left)
         self.radioButton_right_view.toggled.connect(self.model_widget.set_view_right) 
 
+        self.checkbox_wind_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_wind_vector(state))
+        self.checkbox_wind_vector_dyna.setChecked(True)
 
         self._play_timer = QtCore.QTimer()
         self._play_timer.timeout.connect(self._play_step)
@@ -159,7 +174,6 @@ class DynamicTab:
         self.label_unit_var1_dyna.setText("")
         self.label_unit_var2_dyna.setText("")
         self.label_unit_var3_dyna.setText("")
-
 
         for plot in [
             self.plotwidget_1_dyntab,
@@ -264,9 +278,9 @@ class DynamicTab:
         )
 
         self.model_widget.set_trajectory(
-            self._x_interp / 10,
-            self._y_interp / 10,
-            self._z_interp / 10
+            self._x_interp ,
+            self._y_interp ,
+            self._z_interp,
         )
 
         self._netto_interp = np.interp(
@@ -285,6 +299,44 @@ class DynamicTab:
             self._time_interp,
             t_seconds,
             self._flight['data']['GNSS_speed']
+        )
+
+        wind_vel = np.asarray(
+            self._flight['data']['wind_vel'],
+            dtype=float
+        )
+
+        netto = np.asarray(
+            self._flight['data']['netto'],
+            dtype=float
+        )
+
+        ratio = np.divide(
+            netto,
+            wind_vel,
+            out=np.zeros_like(netto),
+            where=np.abs(wind_vel) > 1e-6
+        )
+
+        self._wind_tilt = np.rad2deg(
+            np.arctan(ratio)
+        )
+
+        self._wind_dir_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['wind_origin']
+        )
+
+        self._wind_tilt_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._wind_tilt)
+        
+        self._wind_speed_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['wind_vel']
         )
     
     def _populate_var_combobox(self):
@@ -429,10 +481,14 @@ class DynamicTab:
         x = self._x_interp[i]
         y = self._y_interp[i]
         z = self._z_interp[i]
+        wind_azimut = self._wind_dir_interp[i]
+        wind_tilt = self._wind_tilt_interp[i]
+        wind_speed = self._wind_speed_interp[i]
 
 
         self.model_widget.set_attitude(pitch =pitch, roll = roll, yaw= yaw)
-        self.model_widget.set_position(x/10,y/10,z/10)
+        self.model_widget.set_position(x,y,z)
+        self.model_widget.set_wind_vector(wind_azimut,wind_tilt, wind_speed)
       
 
     def next_frame(self):

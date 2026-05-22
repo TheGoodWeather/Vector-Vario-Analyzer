@@ -4,6 +4,7 @@ import pyqtgraph.opengl as gl
 from PyQt6.QtCore import QTimer
 from pyqtgraph.Qt import QtCore
 from PyQt6.QtGui import QColor, QVector3D
+from utils import mapping
 import trimesh
 
 
@@ -48,6 +49,29 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
 
     return item
 
+
+def load_arrow_mesh(
+    obj_path: str,
+    color=(0.0, 0.0, 1.0, 1.0)
+) -> gl.GLMeshItem:
+
+    from pathlib import Path
+
+    mesh = trimesh.load(Path(obj_path), force='mesh')
+
+    verts = np.array(mesh.vertices, dtype=float)
+    faces = np.array(mesh.faces, dtype=int)
+
+    item = gl.GLMeshItem(
+        vertexes=verts,
+        faces=faces,
+        color=color,
+        smooth=True,
+        drawEdges=False,
+        shader='shaded'
+    )
+
+    return item
 
 
 
@@ -97,6 +121,24 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._model = load_obj_mesh(obj_path)
         self.addItem(self._model)
         self._items.append(self._model)
+        # Building arrow 
+        self._wind_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 0.6, 1.0, 0.8))
+        self.addItem(self._wind_arrow)
+        self._items.append(self._wind_arrow)
+
+        self._north_arrow = load_arrow_mesh("gui/models/arrow1.obj", (1.0, 0.2, 0.2, 0.8))
+        self.addItem(self._north_arrow)
+        self._items.append(self._north_arrow)
+
+        self._heading_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.2, 0.8, 1.0, 0.8))
+        self.addItem(self._heading_arrow)
+        self._items.append(self._heading_arrow)
+
+        self._bearing_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 1.0, 0.5, 0.8))
+        self.addItem(self._bearing_arrow)
+        self._items.append(self._bearing_arrow)
+
+
         # Trajectoire du parapente 
         self._trajectory = gl.GLLinePlotItem(
             pos=np.zeros((1,3)),
@@ -118,6 +160,9 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._x = 0.0
         self._y = 0.0
         self._z = 0.0
+        self._wind_azimut = 0.0
+        self._wind_speed = 0.0
+        self._wind_tilt = 0.0
         
         self.set_attitude(0,0,0)
         self.set_position(0,0,0)
@@ -202,22 +247,40 @@ class ParaGliderWidget(gl.GLViewWidget):
     
 
     def _update_transform(self):
+        
 
+        # Paraglider
         item = self._model
-
         item.resetTransform()
-
-        # translation monde
         item.translate(
             self._x,
             self._y,
             self._z
         )
-
-        # rotations locales
         item.rotate(-self._yaw + 90, 0, 0, 1, True)
         item.rotate(- self._pitch, 0, 1,0 , True)  
         item.rotate(self._roll - 90, 1, 0, 0, True)
+
+
+        # Wind vector 
+        self._wind_arrow.resetTransform()
+        self._wind_arrow.translate(
+            self._x,
+            self._y,
+            self._z
+        )
+        self._wind_arrow.rotate(- self._wind_azimut - 90, 0 , 0 , 1, True)
+        self._wind_arrow.rotate(- self._wind_tilt , 0 , 1 , 0, True)
+        self._wind_arrow.scale(mapping(self._wind_speed,0,30,0.1,3), 1, 1)
+
+         # North vector 
+        self._north_arrow.resetTransform()
+        self._north_arrow.translate(
+            self._x,
+            self._y,
+            self._z
+        )
+        self._north_arrow.rotate(90, 0 , 0 , 1, True)
 
         self._camera_follow()
            
@@ -304,5 +367,17 @@ class ParaGliderWidget(gl.GLViewWidget):
             pos=pts
         )
 
+    def set_wind_vector(self, azimut, tilt, velocity):
+        self._wind_azimut = azimut
+        self._wind_speed = velocity
+        self._wind_tilt = tilt
+
+    
+
+    def set_visibility_wind_vector(self, visible):
+        self._wind_arrow.setVisible(visible)
+
  
     
+
+

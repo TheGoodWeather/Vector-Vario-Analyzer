@@ -557,6 +557,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.label_unit_var1_dyna,
             self.label_unit_var2_dyna,
             self.label_unit_var3_dyna,
+
+            self.checkbox_wind_vector_dyna,
+            self.checkbox_north_vector_dyna,
+            self.checkbox_heading_vector_dyna,
+            self.checkbox_bearing_vector_dyna,
             str(resource_path("gui/models/para_v3.obj")))
         
         self.unit_dialog.unitsChanged.connect(self.dynamic.update_units)
