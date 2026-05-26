@@ -250,9 +250,13 @@ class DynamicTab(QtCore.QObject):
         t0 = times[0]
 
         t_seconds = np.array([
-            (t - t0).total_seconds()
+            (t - t0).total_seconds() 
             for t in times
         ], dtype=np.float64)
+
+        
+        # GPS offseting correction
+        t_seconds -= 0.5
 
         self._time_raw = t_seconds
 
@@ -421,7 +425,7 @@ class DynamicTab(QtCore.QObject):
 
     def _update_plot(self, plot_widget, curve, combobox_var, label_widget_unit):
         
-        
+
         variable = combobox_var.currentData() 
         if not variable:
             curve.clear()
@@ -454,6 +458,8 @@ class DynamicTab(QtCore.QObject):
         plot_widget.autoRange()   
 
         label_widget_unit.setText(str(get_unit(variable)))
+        
+        self._update_lcds()
 
     
     def _cursor_moved(self, line):
@@ -467,10 +473,10 @@ class DynamicTab(QtCore.QObject):
             len(self._time_raw) - 1
         )
 
-        # 1) convertir raw index → temps
+        # convertir raw index → temps
         self._current_time = self._time_raw[self._raw_index]
 
-        # 2) convertir temps → index interpolé
+        # convertir temps → index interpolé
         self._interp_index = int(self._current_time * fps)
 
         self._interp_index = np.clip(
@@ -478,8 +484,8 @@ class DynamicTab(QtCore.QObject):
             0,
             len(self._time_interp) - 1
         )
-
-        # 3) sync UI
+        # sync UI
+        self._update_cursor()
         self._update_model()
         self._update_lcds()
         self._update_hud()
@@ -730,7 +736,10 @@ class DynamicTab(QtCore.QObject):
             if np.isnan(value):
                 lcd.display("---")
             else:
-                lcd.display(round(float(value), 2))
+                if variable == 'G_force':
+                    lcd.display(round(float(value), 3))
+                else:
+                    lcd.display(round(float(value), 2))
                         
     
     def cleanup(self):
@@ -746,6 +755,7 @@ class DynamicTab(QtCore.QObject):
         self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab, self.label_unit_var2_dyna)
         self._update_plot(self.plotwidget_3_dyntab, self._curve3 , self.comboBox_var_3_dyntab ,self.label_unit_var3_dyna)
         self.hud_widget.update_units()
+        
 
 
     def change_interpolation(self, state):

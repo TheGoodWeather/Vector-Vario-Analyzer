@@ -270,9 +270,6 @@ class ParaGliderWidget(gl.GLViewWidget):
     
 
     def _update_transform(self):
-        
-
-
 
         #TRANSLATION
         # Paraglider
@@ -288,10 +285,6 @@ class ParaGliderWidget(gl.GLViewWidget):
         item.rotate(- self._pitch, 0, 1,0 , True)  
         item.rotate(self._roll - 90, 1, 0, 0, True)
    
-
-
-
-
         # Wind vector 
         self._wind_arrow.resetTransform()
         self._wind_arrow.rotate(- self._wind_azimut - 90, 0 , 0 , 1, True)
@@ -311,7 +304,6 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-
           # TAS vector 
         self._tas_arrow.resetTransform()
         self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
@@ -320,7 +312,6 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-
          # Bearing vector 
         self._bearing_arrow.resetTransform()
         self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
@@ -329,8 +320,6 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-        
-
          # Vertical vector 
         self._vertical_arrow.resetTransform()
         self._vertical_arrow.rotate(-90, 0 , 1 , 0, True)
@@ -339,9 +328,7 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-        
-   
-
+    
         #SCALING
         self._wind_arrow.scale(mapping(self._wind_speed,0,30,0.1,3), 1, 1)
         self._tas_arrow.scale(mapping(self._tas,0,30,0.1,3), 1, 1)
