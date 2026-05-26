@@ -193,7 +193,11 @@ class DynamicTab(QtCore.QObject):
         self.plotwidget_3_dyntab.setXLink(self.plotwidget_1_dyntab)
         self.plotwidget_1_dyntab.setXLink(self.plotwidget_2_dyntab)
        
-
+        self.plotwidget_1_dyntab.scene().sigMouseClicked.connect(lambda event: self._on_graph_clicked(event,self.plotwidget_1_dyntab))
+        self.plotwidget_2_dyntab.scene().sigMouseClicked.connect(lambda event: self._on_graph_clicked(event,self.plotwidget_2_dyntab))
+        self.plotwidget_3_dyntab.scene().sigMouseClicked.connect(lambda event: self._on_graph_clicked(event,self.plotwidget_3_dyntab ))
+                                                         
+                                                                 
         self.label_unit_var1_dyna.setText("")
         self.label_unit_var2_dyna.setText("")
         self.label_unit_var3_dyna.setText("")
@@ -740,7 +744,42 @@ class DynamicTab(QtCore.QObject):
                     lcd.display(round(float(value), 3))
                 else:
                     lcd.display(round(float(value), 2))
-                        
+
+    def _on_graph_clicked(self, event, plot_widget):
+
+        pos = event.scenePos()
+        vb = plot_widget.getViewBox()
+        
+        mouse_point = vb.mapSceneToView(pos)
+        self._raw_index = int(mouse_point.x())
+        # sécurité
+
+        self._raw_index = np.clip(
+            self._raw_index,
+            0,
+            len(self._time_raw) - 1
+        )
+
+        # convertir raw index → temps
+        self._current_time = self._time_raw[self._raw_index]
+
+        # convertir temps → index interpolé
+        self._interp_index = int(self._current_time * fps)
+
+        self._interp_index = np.clip(
+            self._interp_index,
+            0,
+            len(self._time_interp) - 1
+        )
+        # sync UI
+        self._update_cursor()
+        self._update_model()
+        self._update_lcds()
+        self._update_hud()
+        
+        
+        
+        
     
     def cleanup(self):
         """
