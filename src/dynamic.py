@@ -5,7 +5,7 @@ from utils import mapping
 from paraglider_widget import ParaGliderWidget
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QStackedLayout
 from units import convert_array_to_unit, get_unit, convert_gps_to_local_xy
-from utils import get_label, get_variable
+from utils import get_label, get_variable, interp_spline, interp_nearest
 from PyQt6.QtGui import QPainter, QColor, QPen, QFont
 from PyQt6.QtCore import Qt
 
@@ -45,6 +45,9 @@ class DynamicTab(QtCore.QObject):
                  checkbox_north_vector_dyna,
                  checkbox_tas_vector_dyna,
                  checkbox_bearing_vector_dyna,
+                 checkbox_vertical_vector_dyna,
+                 radioButton_interpolated_dyna,
+                 radioButton_raw_dyna,
                  obj_path: str = None):
         
         super().__init__()
@@ -79,7 +82,9 @@ class DynamicTab(QtCore.QObject):
         self.checkbox_north_vector_dyna = checkbox_north_vector_dyna
         self.checkbox_tas_vector_dyna =checkbox_tas_vector_dyna
         self.checkbox_bearing_vector_dyna = checkbox_bearing_vector_dyna
-
+        self.checkbox_vertical_vector_dyna = checkbox_vertical_vector_dyna
+        self.radioButton_interpolated_dyna = radioButton_interpolated_dyna
+        self.radioButton_raw_dyna = radioButton_raw_dyna
     
         self._cursor_lines = []
         self._current_time = 0.0 #second
@@ -153,6 +158,11 @@ class DynamicTab(QtCore.QObject):
         self.checkbox_tas_vector_dyna.setChecked(False)
         self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_bearing_vector(state))
         self.checkbox_bearing_vector_dyna.setChecked(False)
+        self.checkbox_vertical_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_vertical_vector(state))
+        self.checkbox_vertical_vector_dyna.setChecked(False)
+
+        self.radioButton_interpolated_dyna.toggled.connect(lambda state : self.change_interpolation(state))
+        #self.radioButton_interpolated_dyna.setChecked(True)
 
         self._play_timer = QtCore.QTimer()
         self._play_timer.timeout.connect(self._play_step)
@@ -225,7 +235,15 @@ class DynamicTab(QtCore.QObject):
 
 
 
-    def _interpolate_data(self):
+    def _interpolate_data(self, method = 'spline'):
+
+        if method == 'spline':
+            def interp(time_origine, time_interp, variable_to_interp):
+                return interp_spline(time_origine, time_interp, variable_to_interp)
+        else :
+            def interp(time_origine, time_interp, variable_to_interp):
+                return interp_nearest(time_origine, time_interp, variable_to_interp)
+
 
         times = self._flight['data']['GNSS_time']
 
@@ -245,13 +263,13 @@ class DynamicTab(QtCore.QObject):
         )
 
 
-        self._pitch_interp = np.interp(
+        self._pitch_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['pitch']
         )
 
-        self._roll_interp = np.interp(
+        self._roll_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['roll']
@@ -262,7 +280,7 @@ class DynamicTab(QtCore.QObject):
                 self._flight['data']['compass_head']
             )
         )
-        yaw_interp = np.interp(
+        yaw_interp =  interp(
             self._time_interp,
             t_seconds,
             yaw
@@ -271,19 +289,19 @@ class DynamicTab(QtCore.QObject):
 
         _x_local, _y_local = convert_gps_to_local_xy(self._flight['data']['GNSS_lon'], self._flight['data']['GNSS_lat'])
 
-        self._x_interp = np.interp(
+        self._x_interp =  interp(
             self._time_interp,
             t_seconds,
             _x_local
         )
 
-        self._y_interp = np.interp(
+        self._y_interp =  interp(
             self._time_interp,
             t_seconds,
             _y_local
         )
 
-        self._z_interp = np.interp(
+        self._z_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['GNSS_alt']
@@ -295,19 +313,19 @@ class DynamicTab(QtCore.QObject):
             self._z_interp,
         )
 
-        self._netto_interp = np.interp(
+        self._netto_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['netto']
         )
 
-        self._alt_interp = np.interp(
+        self._alt_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['GNSS_alt']
         )
 
-        self._speed_interp = np.interp(
+        self._speed_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['GNSS_speed']
@@ -340,7 +358,7 @@ class DynamicTab(QtCore.QObject):
                 self._flight['data']['wind_origin']
             )
         )
-        wind_dir_interp = np.interp(
+        wind_dir_interp =  interp(
             self._time_interp,
             t_seconds,
             wind_dir
@@ -348,24 +366,24 @@ class DynamicTab(QtCore.QObject):
         self._wind_dir_interp = np.degrees(wind_dir_interp)
 
 
-        self._wind_tilt_interp = np.interp(
+        self._wind_tilt_interp =  interp(
             self._time_interp,
             t_seconds,
             self._wind_tilt)
         
-        self._wind_speed_interp = np.interp(
+        self._wind_speed_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['wind_vel']
         )
 
-        self._tas_interp = np.interp(
+        self._tas_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['TAS']
         )
 
-        self._vario_interp = np.interp(
+        self._vario_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['vario']
@@ -376,7 +394,7 @@ class DynamicTab(QtCore.QObject):
                 self._flight['data']['GNSS_head']
             )
         )
-        gnss_heading_interp = np.interp(
+        gnss_heading_interp =  interp(
             self._time_interp,
             t_seconds,
             gnss_heading
@@ -730,6 +748,11 @@ class DynamicTab(QtCore.QObject):
         self.hud_widget.update_units()
 
 
+    def change_interpolation(self, state):
+        if state: #by default we set the interpolation to spline
+            self._interpolate_data('spline')
+        else:
+            self._interpolate_data('nearest')
 
 
 

@@ -138,6 +138,10 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.addItem(self._bearing_arrow)
         self._items.append(self._bearing_arrow)
 
+        self._vertical_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3,0.4, 0.5, 0.8))
+        self.addItem(self._vertical_arrow)
+        self._items.append(self._vertical_arrow)
+
 
         # Trajectoire du parapente 
         self._trajectory = gl.GLLinePlotItem(
@@ -251,7 +255,7 @@ class ParaGliderWidget(gl.GLViewWidget):
 
     def _update_transform(self):
         
-
+        #TRANSLATION
         # Paraglider
         item = self._model
         item.resetTransform()
@@ -260,10 +264,6 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-        item.rotate(-self._yaw + 90, 0, 0, 1, True)
-        item.rotate(- self._pitch, 0, 1,0 , True)  
-        item.rotate(self._roll - 90, 1, 0, 0, True)
-
 
         # Wind vector 
         self._wind_arrow.resetTransform()
@@ -272,9 +272,7 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-        self._wind_arrow.rotate(- self._wind_azimut - 90, 0 , 0 , 1, True)
-        self._wind_arrow.rotate(- self._wind_tilt , 0 , 1 , 0, True)
-        self._wind_arrow.scale(mapping(self._wind_speed,0,30,0.1,3), 1, 1)
+
 
          # North vector 
         self._north_arrow.resetTransform()
@@ -283,7 +281,6 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-        self._north_arrow.rotate(90, 0 , 0 , 1, True)
 
           # TAS vector 
         self._tas_arrow.resetTransform()
@@ -292,8 +289,6 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-        self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
-        self._tas_arrow.scale(mapping(self._tas,0,30,0.1,3), 1, 1)
 
          # Bearing vector 
         self._bearing_arrow.resetTransform()
@@ -302,9 +297,32 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-        self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
-        self._bearing_arrow.scale(mapping(self._gnss_speed,0,30,0.1,3), 1, 1)
+        
 
+         # Vertical vector 
+        self._vertical_arrow.resetTransform()
+        self._vertical_arrow.translate(
+            self._x,
+            self._y,
+            self._z
+        )
+        
+        # ROTATION
+
+        item.rotate(-self._yaw + 90, 0, 0, 1, True)
+        item.rotate(- self._pitch, 0, 1,0 , True)  
+        item.rotate(self._roll - 90, 1, 0, 0, True)
+        self._wind_arrow.rotate(- self._wind_azimut - 90, 0 , 0 , 1, True)
+        self._wind_arrow.rotate(- self._wind_tilt , 0 , 1 , 0, True)
+        self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
+        self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
+        self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
+        self._vertical_arrow.rotate(90, 0 , 1 , 0, True)
+
+        #SCALING
+        self._wind_arrow.scale(mapping(self._wind_speed,0,30,0.1,3), 1, 1)
+        self._tas_arrow.scale(mapping(self._tas,0,30,0.1,3), 1, 1)
+        self._bearing_arrow.scale(mapping(self._gnss_speed,0,30,0.1,3), 1, 1)
 
         self._camera_follow()
            
@@ -419,6 +437,8 @@ class ParaGliderWidget(gl.GLViewWidget):
     def set_visibility_bearing_vector(self, visible):
         self._bearing_arrow.setVisible(visible)
 
+    def set_visibility_vertical_vector(self, visible):
+        self._vertical_arrow.setVisible(visible)
  
     
 

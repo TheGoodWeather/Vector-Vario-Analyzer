@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.interpolate import CubicSpline , interp1d
 
 
 
@@ -116,8 +117,56 @@ def sort_combobox_alphabetically(combobox):
 
     for text, data in items:
         combobox.addItem(text, userData=data)
+
 def get_variable(label: str) -> str:
     """
     Return the internal variable name from a user-friendly label.
     """
     return VARIABLE_KEYS.get(label, label)
+
+def interp_spline(t_new, t, values):
+    
+    values = np.asarray(values, dtype=float)
+
+    # supprime NaN
+    mask = ~np.isnan(values)
+
+    t_clean = t[mask]
+    v_clean = values[mask]
+
+    # fallback sécurité
+    if len(v_clean) < 2:
+        return np.full_like(t_new, np.nan)
+
+    spline = CubicSpline(
+        t_clean,
+        v_clean,
+        bc_type='natural'
+    )
+
+    return spline(t_new)
+
+
+def interp_nearest(t_new, t, values):
+
+    values = np.asarray(values, dtype=float)
+
+    # suppression NaN
+    mask = ~np.isnan(values)
+
+    t_clean = t[mask]
+    v_clean = values[mask]
+
+    # sécurité
+    if len(v_clean) < 2:
+        return np.full_like(t_new, np.nan)
+
+    f = interp1d(
+        t_clean,
+        v_clean,
+        kind='nearest',
+        bounds_error=False,
+        fill_value=np.nan
+    )
+
+    return f(t_new)
