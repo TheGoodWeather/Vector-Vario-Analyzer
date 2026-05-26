@@ -73,7 +73,23 @@ def load_arrow_mesh(
 
     return item
 
-
+def load_stl_mesh(
+    stl_path: str,
+    color=(0.0, 0.0, 1.0, 1.0)
+) -> gl.GLMeshItem:
+    from pathlib import Path
+    mesh = trimesh.load(Path(stl_path), force='mesh')
+    verts = np.array(mesh.vertices, dtype=float)
+    faces = np.array(mesh.faces,    dtype=int)
+    item = gl.GLMeshItem(
+        vertexes=verts,
+        faces=faces,
+        color=color,
+        smooth=True,
+        drawEdges=False,
+        shader='balloon'
+    )
+    return item
 
 
 
@@ -122,23 +138,23 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.addItem(self._model)
         self._items.append(self._model)
         # Building arrow 
-        self._wind_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 0.6, 1.0, 0.8))
+        self._wind_arrow = load_stl_mesh("gui/models/arrow1.obj", (0.3, 0.6, 1.0, 0.8))
         self.addItem(self._wind_arrow)
         self._items.append(self._wind_arrow)
 
-        self._north_arrow = load_arrow_mesh("gui/models/arrow1.obj", (1.0, 0.2, 0.2, 0.8))
+        self._north_arrow = load_stl_mesh("gui/models/arrow1.obj", (1.0, 0.2, 0.2, 0.8))
         self.addItem(self._north_arrow)
         self._items.append(self._north_arrow)
 
-        self._tas_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.2, 0.8, 1.0, 0.8))
+        self._tas_arrow = load_stl_mesh("gui/models/arrow1.obj", (0.2, 0.8, 1.0, 0.8))
         self.addItem(self._tas_arrow)
         self._items.append(self._tas_arrow)
 
-        self._bearing_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 1.0, 0.5, 0.8))
+        self._bearing_arrow = load_stl_mesh("gui/models/arrow1.obj", (0.3, 1.0, 0.5, 0.8))
         self.addItem(self._bearing_arrow)
         self._items.append(self._bearing_arrow)
 
-        self._vertical_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3,0.4, 0.5, 0.8))
+        self._vertical_arrow = load_stl_mesh("gui/models/arrow1.obj", (0.3,0.4, 0.5, 0.8))
         self.addItem(self._vertical_arrow)
         self._items.append(self._vertical_arrow)
 
@@ -255,6 +271,9 @@ class ParaGliderWidget(gl.GLViewWidget):
 
     def _update_transform(self):
         
+
+
+
         #TRANSLATION
         # Paraglider
         item = self._model
@@ -264,9 +283,19 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
+        # ROTATION
+        item.rotate(-self._yaw + 90, 0, 0, 1, True)
+        item.rotate(- self._pitch, 0, 1,0 , True)  
+        item.rotate(self._roll - 90, 1, 0, 0, True)
+   
+
+
+
 
         # Wind vector 
         self._wind_arrow.resetTransform()
+        self._wind_arrow.rotate(- self._wind_azimut - 90, 0 , 0 , 1, True)
+        self._wind_arrow.rotate(- self._wind_tilt , 0 , 1 , 0, True)
         self._wind_arrow.translate(
             self._x,
             self._y,
@@ -275,6 +304,7 @@ class ParaGliderWidget(gl.GLViewWidget):
 
 
          # North vector 
+
         self._north_arrow.resetTransform()
         self._north_arrow.translate(
             self._x,
@@ -284,6 +314,7 @@ class ParaGliderWidget(gl.GLViewWidget):
 
           # TAS vector 
         self._tas_arrow.resetTransform()
+        self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
         self._tas_arrow.translate(
             self._x,
             self._y,
@@ -292,6 +323,7 @@ class ParaGliderWidget(gl.GLViewWidget):
 
          # Bearing vector 
         self._bearing_arrow.resetTransform()
+        self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
         self._bearing_arrow.translate(
             self._x,
             self._y,
@@ -301,23 +333,14 @@ class ParaGliderWidget(gl.GLViewWidget):
 
          # Vertical vector 
         self._vertical_arrow.resetTransform()
+        self._vertical_arrow.rotate(-90, 0 , 1 , 0, True)
         self._vertical_arrow.translate(
             self._x,
             self._y,
             self._z
         )
         
-        # ROTATION
-
-        item.rotate(-self._yaw + 90, 0, 0, 1, True)
-        item.rotate(- self._pitch, 0, 1,0 , True)  
-        item.rotate(self._roll - 90, 1, 0, 0, True)
-        self._wind_arrow.rotate(- self._wind_azimut - 90, 0 , 0 , 1, True)
-        self._wind_arrow.rotate(- self._wind_tilt , 0 , 1 , 0, True)
-        self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
-        self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
-        self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
-        self._vertical_arrow.rotate(90, 0 , 1 , 0, True)
+   
 
         #SCALING
         self._wind_arrow.scale(mapping(self._wind_speed,0,30,0.1,3), 1, 1)
