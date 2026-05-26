@@ -39,6 +39,7 @@ VARIABLE_LABELS = {
     
 }
 
+VARIABLE_KEYS = {v: k for k, v in VARIABLE_LABELS.items()}
 
 def mapping(value, fromLow, fromHigh, toLow, toHigh):
     return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow
@@ -115,3 +116,8 @@ def sort_combobox_alphabetically(combobox):
 
     for text, data in items:
         combobox.addItem(text, userData=data)
+def get_variable(label: str) -> str:
+    """
+    Return the internal variable name from a user-friendly label.
+    """
+    return VARIABLE_KEYS.get(label, label)

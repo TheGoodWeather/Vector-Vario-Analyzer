@@ -6,7 +6,7 @@ from PyQt6.QtGui import QColor, QBrush
 from logging_handler import  logger
 from file_handler import save_alias_comment_to_vva
 import numpy as np
-from units import get_unit
+from units import get_unit, convert_array_to_unit
 from utils import get_label
 import datetime
 
@@ -167,17 +167,20 @@ def create_polar_table(flight_dic, table_widget, combobox_flight):
     The rows display Vx, Vz , Glide and IAS 
     """
     table_widget.setRowCount(0)  # Clear the table
-    table_widget.setHorizontalHeaderLabels([f"Vx {get_unit('IAS')}", f"Vz {get_unit('IAS')}", "Glide", f"IAS {get_unit('IAS')}"])
+    table_widget.setHorizontalHeaderLabels([f"Vx {get_unit('IAS')}", f"Vz m/s", "Glide"])
     for i, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText() :
             for row, roi_data in enumerate(flight['plot']['roi_polar']):
                 table_widget.insertRow(row)
                 
-                vx_item = QTableWidgetItem(str(roi_data[2]))
+                vx_value_avg = round(roi_data[2],2)
+                vz_value_avg = roi_data[3] #Forcing Vz values to m/s 
+
+                vx_item = QTableWidgetItem(str(vx_value_avg))
                 vx_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
                 table_widget.setItem(row, 0, vx_item)
                 
-                vz_item = QTableWidgetItem(str(roi_data[3]))
+                vz_item = QTableWidgetItem(str(vz_value_avg))
                 vz_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
                 table_widget.setItem(row, 1, vz_item)
                 

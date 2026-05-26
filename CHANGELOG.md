@@ -8,6 +8,7 @@ All notable changes to Vector Vario Software will be documented in this file.
 
 Some comboboxes and tables are now sorted for a better viewing
 Horizontal and vertical units dissociated
+Feature : Dynamic tab - linear interpolation 
 
 ### Changed
 
@@ -18,6 +19,16 @@ AspectRatio disable on polar graph
 
 Bug while creating polar region -> None value returned when region is close to end
 Bug while updating preferences ->  Linear Regions vanished
+=======
+
+
+### Fixed
+
+Bug while creating polar region -> None value returned when region is close to end
+Corecting calculus errors in Glide Ratio 
+New linear region width corrected in Polar Tab 
+
+>>>>>>> feature/dynamic_tab
 ## [0.02] - 11-05-2026
 
 ### Added

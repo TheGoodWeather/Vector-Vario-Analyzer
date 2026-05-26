@@ -14,6 +14,7 @@ import numpy as np
 import pyqtgraph as pg
 
 # Modules internes
+from dynamic import DynamicTab
 from constants import SOFTWARE_VERSION
 from utils import get_label, is_all_nan
 from units import get_unit, convert_array_to_unit
@@ -135,6 +136,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_database.itemChanged.connect(lambda : self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D))
         self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab))
         self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab))
+        self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab))
         self.tableWidget_database.itemChanged.connect(lambda : self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D ))
         
         
@@ -502,29 +504,69 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkBox_windbarbs_atm.setCheckState(Qt.CheckState.Unchecked)
 
 
-
+        """
+        Widgets tab DYNAMIC
+        """
         
-    # def resource_path(self, relative_path):
-    #     """
-    #     Get absolute path to resource (for PyInstaller and development) 
-    #     """
-    #     if hasattr(sys, '_MEIPASS'):
-    #         return Path(sys._MEIPASS) / relative_path
-    #     return Path(__file__).parent / relative_path
-    
-    # def external_path(self, relative_path):
-    #     """
-    #     Get the absolute path to an external file or folder (like config/) that is located
-    #     next to the executable or script, but NOT bundled inside the .exe.
-    #     """
-    #     if getattr(sys, 'frozen', False):
-    #         # Running from a PyInstaller bundle (.exe)
-    #         base_path = Path(sys.executable).parent
-    #     else:
-    #         # Running from source (.py)
-    #         base_path = Path(__file__).parent
-    
-    #     return base_path / relative_path
+        self.pushButton_previous = QtWidgets.QPushButton(qta.icon('mdi6.skip-previous'), '')
+        self.pushButton_previous.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_previous)
+        
+        self.pushButton_pause = QtWidgets.QPushButton(qta.icon('mdi6.pause'), '')
+        self.pushButton_pause.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_pause)
+        
+        self.pushButton_play = QtWidgets.QPushButton(qta.icon('mdi6.play'), '')
+        self.pushButton_play.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_play)
+        
+        
+        self.pushButton_next = QtWidgets.QPushButton(qta.icon('mdi6.skip-next'), '')
+        self.pushButton_next.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_next)
+        
+        self.pushButton_speed = QtWidgets.QPushButton(qta.icon('mdi6.speedometer'), '')
+        self.pushButton_speed.setFixedSize(40, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_speed)
+        
+        self.dynamic = DynamicTab(
+            self.flight,
+            self.comboBox_select_flight_dyntab,
+            self.plotwidget_1_dyntab, 
+            self.plotwidget_2_dyntab, 
+            self.plotwidget_3_dyntab,
+            self.comboBox_var_1_dyntab,
+            self.comboBox_var_2_dyntab,
+            self.comboBox_var_3_dyntab,
+            self.lcdNumber_var_1,
+            self.lcdNumber_var_2,
+            self.lcdNumber_var_3,
+            self.model_window, 
+            
+            self.pushButton_previous,
+            self.pushButton_pause ,
+            self.pushButton_play,
+            self.pushButton_next,
+            self.pushButton_speed,
+
+            self.radioButton_free_view,
+            self.radioButton_front_view,
+            self.radioButton_behind_view,
+            self.radioButton_top_view,
+            self.radioButton_left_view,
+            self.radioButton_right_view,
+
+            self.label_unit_var1_dyna,
+            self.label_unit_var2_dyna,
+            self.label_unit_var3_dyna,
+
+            self.checkbox_wind_vector_dyna,
+            self.checkbox_north_vector_dyna,
+            self.checkbox_tas_vector_dyna,
+            self.checkbox_bearing_vector_dyna,
+            str(resource_path("gui/models/para_v3.obj")))
+        
+        self.unit_dialog.unitsChanged.connect(self.dynamic.update_units)
     
     def write_settings_main(self):
         """
@@ -574,6 +616,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.write_settings_main()
+        self.dynamic.cleanup() 
         super().closeEvent(event)
         event.accept()
         
@@ -736,6 +779,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+        self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D)
         
         return
@@ -764,6 +808,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+            self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
             self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D )
             return
         
@@ -808,7 +853,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
     def populate_combobox_flight(self, data, combo_box_flight):
         """
-        Set the flights that has been analyzed into the specified combobox. Used in 1D plot, polar and emagram
+        Set the flights that has been analyzed into the specified combobox. Used in 1D plot, polar, emagram and dynamics
 
         """
         #first we remove all the items in the combobox 
@@ -1456,25 +1501,31 @@ def flight_data_path() -> Path:
     return path
 
 if __name__ == "__main__":
-    try:
+    # try:
+    
         
-        if not QtWidgets.QApplication.instance():
-            app = QtWidgets.QApplication(sys.argv)
-        else : 
-            app = QtWidgets.QApplication.instance() 
+    app = QtWidgets.QApplication.instance()
+
+    if app is None:
+        app = QtWidgets.QApplication(sys.argv)
         
-        #splash screen
-        pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
-        splash = QSplashScreen(pixmap)
-        splash.show()
         
-        app.processEvents()
-        app.setStyle("Fusion")
-        app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
-        window = MainWindow()
+    #splash screen
+    pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
+    splash = QSplashScreen(pixmap)
+    splash.show()
+    
+    app.processEvents()
+    app.setStyle("Fusion")
+    app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
+    window = MainWindow()
+    
+    window.show()
+    splash.finish(window)
+    # sys.exit(app.exec())
+    app.exec()
+    window.close()
         
-        window.show()
-        splash.finish(window)
-        sys.exit(app.exec())
-    except Exception as e:
-        logger.exception(f"Fatal error occurred during startup {e}")
+    # except Exception as e:
+    #     logger.exception(f"Fatal error occurred during startup {e}")
+        

@@ -91,3 +91,29 @@ def convert_gps_coords_DDM_to_DD(lat_DDM, lon_DDM):
 
     
     return lat_DD, lon_DD
+
+
+def convert_gps_to_local_xy(lon, lat):
+
+    lat_dd = np.asarray(lat, dtype=np.float64)
+    lon_dd = np.asarray(lon, dtype=np.float64)
+
+    lat0 = lat_dd[0]
+    lon0 = lon_dd[0]
+
+    R = 6371000
+
+    x = (lon_dd - lon0) * np.cos(np.radians(lat0)) * R * np.pi / 180
+    y = (lat_dd - lat0) * R * np.pi / 180
+
+    # print(f"lat 0 : {lat_dd[0]}")
+    # print(f"lat 100 : {lat_dd[100]}")
+    # print(f"delta lat = {(lat_dd[100] - lat_dd[0])}")
+    # print(f"y : {y[100]}")
+
+    # print(f"lon 0 : {lon_dd[0]}")
+    # print(f"lon 100 : {lon_dd[100]}")
+    # print(f"delta lon = {(lon_dd[100] - lon_dd[0])}")
+    # print(f"x : {x[100]}")
+
+    return x, y
