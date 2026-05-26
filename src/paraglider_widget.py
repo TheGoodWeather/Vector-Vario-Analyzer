@@ -44,7 +44,7 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
         faceColors=colors,
         smooth=True,
         drawEdges=False,
-        shader='shaded'
+        shader='balloon'
     )
 
     return item
@@ -68,7 +68,7 @@ def load_arrow_mesh(
         color=color,
         smooth=True,
         drawEdges=False,
-        shader='shaded'
+        shader='balloon'
     )
 
     return item
@@ -130,9 +130,9 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.addItem(self._north_arrow)
         self._items.append(self._north_arrow)
 
-        self._heading_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.2, 0.8, 1.0, 0.8))
-        self.addItem(self._heading_arrow)
-        self._items.append(self._heading_arrow)
+        self._tas_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.2, 0.8, 1.0, 0.8))
+        self.addItem(self._tas_arrow)
+        self._items.append(self._tas_arrow)
 
         self._bearing_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 1.0, 0.5, 0.8))
         self.addItem(self._bearing_arrow)
@@ -163,6 +163,9 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._wind_azimut = 0.0
         self._wind_speed = 0.0
         self._wind_tilt = 0.0
+        self._tas = 0.0
+        self._gnss_speed = 0.0
+        self._bearing = 0.0
         
         self.set_attitude(0,0,0)
         self.set_position(0,0,0)
@@ -282,6 +285,27 @@ class ParaGliderWidget(gl.GLViewWidget):
         )
         self._north_arrow.rotate(90, 0 , 0 , 1, True)
 
+          # TAS vector 
+        self._tas_arrow.resetTransform()
+        self._tas_arrow.translate(
+            self._x,
+            self._y,
+            self._z
+        )
+        self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
+        self._tas_arrow.scale(mapping(self._tas,0,30,0.1,3), 1, 1)
+
+         # Bearing vector 
+        self._bearing_arrow.resetTransform()
+        self._bearing_arrow.translate(
+            self._x,
+            self._y,
+            self._z
+        )
+        self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
+        self._bearing_arrow.scale(mapping(self._gnss_speed,0,30,0.1,3), 1, 1)
+
+
         self._camera_follow()
            
 
@@ -371,11 +395,29 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._wind_azimut = azimut
         self._wind_speed = velocity
         self._wind_tilt = tilt
+    
+
+    def set_tas_vector(self, yaw, tas):
+        self._tas = tas
+        self._yaw = yaw
+    
+    def set_bearing_vector(self, bearing, speed):
+        self._gnss_speed = speed
+        self._bearing = bearing
 
     
 
     def set_visibility_wind_vector(self, visible):
         self._wind_arrow.setVisible(visible)
+
+    def set_visibility_north_vector(self, visible):
+        self._north_arrow.setVisible(visible)
+    
+    def set_visibility_tas_vector(self, visible):
+        self._tas_arrow.setVisible(visible)
+    
+    def set_visibility_bearing_vector(self, visible):
+        self._bearing_arrow.setVisible(visible)
 
  
     

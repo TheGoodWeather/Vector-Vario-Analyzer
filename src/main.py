@@ -560,7 +560,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.checkbox_wind_vector_dyna,
             self.checkbox_north_vector_dyna,
-            self.checkbox_heading_vector_dyna,
+            self.checkbox_tas_vector_dyna,
             self.checkbox_bearing_vector_dyna,
             str(resource_path("gui/models/para_v3.obj")))
         

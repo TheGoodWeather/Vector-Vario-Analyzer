@@ -6,6 +6,7 @@ All notable changes to Vector Vario Software will be documented in this file.
 
 ### Added
 
+Feature : Dynamic tab - linear interpolation 
 
 ### Changed
 

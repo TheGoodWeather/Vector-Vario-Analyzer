@@ -1886,7 +1886,7 @@
               <item>
                <widget class="QLabel" name="label_24">
                 <property name="text">
-                 <string>Vector:</string>
+                 <string>Vector :</string>
                 </property>
                </widget>
               </item>
@@ -1902,12 +1902,18 @@
                 <property name="text">
                  <string>North</string>
                 </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="checkbox_heading_vector_dyna">
+               <widget class="QCheckBox" name="checkbox_tas_vector_dyna">
                 <property name="text">
-                 <string>Heading</string>
+                 <string>True Airspeed</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -1915,6 +1921,9 @@
                <widget class="QCheckBox" name="checkbox_bearing_vector_dyna">
                 <property name="text">
                  <string>Bearing</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
@@ -2265,7 +2274,7 @@
      <x>0</x>
      <y>0</y>
      <width>997</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt
 
 fps = 30
 
-class DynamicTab:
+class DynamicTab(QtCore.QObject):
 
 
     def __init__(self, 
@@ -43,10 +43,12 @@ class DynamicTab:
                  label_unit_var3_dyna,
                  checkbox_wind_vector_dyna,
                  checkbox_north_vector_dyna,
-                 checkbox_heading_vector_dyna,
+                 checkbox_tas_vector_dyna,
                  checkbox_bearing_vector_dyna,
                  obj_path: str = None):
         
+        super().__init__()
+
         self.radioButton_free_view = radioButton_free_view
         self.radioButton_front_view = radioButton_front_view
         self.radioButton_behind_view = radioButton_behind_view
@@ -75,7 +77,7 @@ class DynamicTab:
         self.label_unit_var3_dyna = label_unit_var3_dyna
         self.checkbox_wind_vector_dyna = checkbox_wind_vector_dyna
         self.checkbox_north_vector_dyna = checkbox_north_vector_dyna
-        self.checkbox_heading_vector_dyna =checkbox_heading_vector_dyna
+        self.checkbox_tas_vector_dyna =checkbox_tas_vector_dyna
         self.checkbox_bearing_vector_dyna = checkbox_bearing_vector_dyna
 
     
@@ -145,6 +147,12 @@ class DynamicTab:
 
         self.checkbox_wind_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_wind_vector(state))
         self.checkbox_wind_vector_dyna.setChecked(True)
+        self.checkbox_north_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_north_vector(state))
+        self.checkbox_north_vector_dyna.setChecked(False)
+        self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_tas_vector(state))
+        self.checkbox_tas_vector_dyna.setChecked(False)
+        self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_bearing_vector(state))
+        self.checkbox_bearing_vector_dyna.setChecked(False)
 
         self._play_timer = QtCore.QTimer()
         self._play_timer.timeout.connect(self._play_step)
@@ -152,6 +160,11 @@ class DynamicTab:
         
         self._playback_speed = 1.0   # 0.5 / 1 / 2
         self._play_elapsed = 0.0     # temps simulé écoulé
+
+        # Keyboard events management
+        self.gl_container.installEventFilter(self)
+        self.gl_container.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.gl_container.setFocus()
 
     def _setup_widget(self):
         
@@ -203,6 +216,7 @@ class DynamicTab:
         if self._flight:
             self._populate_var_combobox()
             self._interpolate_data()
+            self._set_time(0.0)
 
 
             self.comboBox_var_1_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("compass_head"))
@@ -248,13 +262,11 @@ class DynamicTab:
                 self._flight['data']['compass_head']
             )
         )
-
         yaw_interp = np.interp(
             self._time_interp,
             t_seconds,
             yaw
         )
-
         self._yaw_interp = np.degrees(yaw_interp)
 
         _x_local, _y_local = convert_gps_to_local_xy(self._flight['data']['GNSS_lon'], self._flight['data']['GNSS_lat'])
@@ -322,11 +334,19 @@ class DynamicTab:
             np.arctan(ratio)
         )
 
-        self._wind_dir_interp = np.interp(
+
+        wind_dir = np.unwrap(
+            np.radians(
+                self._flight['data']['wind_origin']
+            )
+        )
+        wind_dir_interp = np.interp(
             self._time_interp,
             t_seconds,
-            self._flight['data']['wind_origin']
+            wind_dir
         )
+        self._wind_dir_interp = np.degrees(wind_dir_interp)
+
 
         self._wind_tilt_interp = np.interp(
             self._time_interp,
@@ -338,6 +358,35 @@ class DynamicTab:
             t_seconds,
             self._flight['data']['wind_vel']
         )
+
+        self._tas_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['TAS']
+        )
+
+        self._vario_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['vario']
+        )
+
+        gnss_heading = np.unwrap(
+            np.radians(
+                self._flight['data']['GNSS_head']
+            )
+        )
+        gnss_heading_interp = np.interp(
+            self._time_interp,
+            t_seconds,
+            gnss_heading
+        )
+        self._gnss_heading_interp = np.degrees(gnss_heading_interp)
+
+
+    
+
+
     
     def _populate_var_combobox(self):
         for combobox in [self.comboBox_var_1_dyntab, self.comboBox_var_2_dyntab, self.comboBox_var_3_dyntab ]:
@@ -484,12 +533,63 @@ class DynamicTab:
         wind_azimut = self._wind_dir_interp[i]
         wind_tilt = self._wind_tilt_interp[i]
         wind_speed = self._wind_speed_interp[i]
+        tas = self._tas_interp[i]
+        gnss_speed = self._speed_interp[i]
+        bearing = self._gnss_heading_interp[i]
+        
 
 
         self.model_widget.set_attitude(pitch =pitch, roll = roll, yaw= yaw)
         self.model_widget.set_position(x,y,z)
         self.model_widget.set_wind_vector(wind_azimut,wind_tilt, wind_speed)
-      
+        self.model_widget.set_tas_vector(yaw, tas)
+        self.model_widget.set_bearing_vector(bearing,gnss_speed)
+
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Type.KeyPress:
+            key = event.key()
+            # SPACE -> play/pause
+            if key == Qt.Key.Key_Space:
+                if self._play_timer.isActive():
+                    self.pause()
+                else:
+                    self.play()
+                event.accept()
+                return True
+            # RIGHT -> frame suivante
+            elif key == Qt.Key.Key_Right:
+                self.next_frame()
+                event.accept()
+                return True
+            # LEFT -> frame précédente
+            elif key == Qt.Key.Key_Left:
+                self.previous_frame()
+                event.accept()                
+                return True
+            # UP -> vitesse +
+            elif key == Qt.Key.Key_Up:
+                self._playback_speed *= 2
+                return True
+            # DOWN -> vitesse -
+            elif key == Qt.Key.Key_Down:
+                self._playback_speed /= 2
+                return True
+            # vues caméra
+            elif key == Qt.Key.Key_F:
+                self.model_widget.set_view_front()
+                return True
+            elif key == Qt.Key.Key_B:
+                self.model_widget.set_view_behind()
+                return True
+            elif key == Qt.Key.Key_T:
+                self.model_widget.set_view_top()
+                return True
+            elif key == Qt.Key.Key_G:
+                self.model_widget.set_view_free()
+                return True
+        return super().eventFilter(obj, event)
+        
 
     def next_frame(self):
         dt = 1 / fps    
@@ -548,7 +648,7 @@ class DynamicTab:
         
         i = self._raw_index
         y = self._interp_index
-        netto = convert_array_to_unit(self._netto_interp[y], "netto")
+        vario = convert_array_to_unit(self._vario_interp[y], "vario")
         altitude = convert_array_to_unit(self._alt_interp[y], "GNSS_alt")
         time = self._flight['data']['GNSS_time'][i]
         formatted_time = time.strftime("%H:%M")
@@ -564,7 +664,7 @@ class DynamicTab:
             f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         )
         
-        self.hud_widget.set_netto(round(netto,2))
+        self.hud_widget.set_netto(round(vario,2))
         self.hud_widget.set_altitude(round(altitude,2))
         self.hud_widget.set_ground_speed(round(ground_speed,2))
         self.hud_widget.set_time(formatted_time)
