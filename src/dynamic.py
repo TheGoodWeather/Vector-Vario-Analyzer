@@ -312,7 +312,7 @@ class DynamicTab(QtCore.QObject):
         self._z_interp =  interp(
             self._time_interp,
             t_seconds,
-            self._flight['data']['GNSS_alt']
+            self._flight['data']['QNS_alt']
         )
 
         self.model_widget.set_trajectory(

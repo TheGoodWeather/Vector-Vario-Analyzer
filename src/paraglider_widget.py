@@ -8,7 +8,41 @@ from utils import mapping
 import trimesh
 
 
+def create_ground(
+    size=500000,
+    color=(0.13, 0.72, 0.2, 0.42)
+):
 
+    import numpy as np
+    import pyqtgraph.opengl as gl
+
+    verts = np.array([
+        [-size, -size, 0],
+        [ size, -size, 0],
+        [ size,  size, 0],
+        [-size,  size, 0],
+    ], dtype=np.float32)
+
+    faces = np.array([
+        [0, 1, 2],
+        [0, 2, 3]
+    ], dtype=np.uint32)
+
+    colors = np.array([
+        color,
+        color
+    ], dtype=np.float32)
+
+    ground = gl.GLMeshItem(
+        vertexes=verts,
+        faces=faces,
+        faceColors=colors,
+        smooth=False,
+        drawEdges=False,
+        shader="shaded"
+    )
+
+    return ground
 
 def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
 
@@ -92,7 +126,52 @@ def load_stl_mesh(
     return item
 
 
+def load_glb_mesh(
+    glb_path: str,
+    color=(0.0, 0.0, 1.0, 1.0)
+) -> gl.GLMeshItem:
 
+    from pathlib import Path
+
+    # Chargement de la scène GLB
+    scene = trimesh.load(
+        Path(glb_path),
+        force='scene'
+    )
+
+    # Fusion de tous les meshes
+    meshes = []
+
+    for geom in scene.geometry.values():
+
+        if isinstance(geom, trimesh.Trimesh):
+            meshes.append(geom)
+
+    if len(meshes) == 0:
+        raise ValueError("No mesh found in GLB file")
+
+    mesh = trimesh.util.concatenate(meshes)
+
+    verts = np.array(
+        mesh.vertices,
+        dtype=np.float32
+    )
+
+    faces = np.array(
+        mesh.faces,
+        dtype=np.uint32
+    )
+
+    item = gl.GLMeshItem(
+        vertexes=verts,
+        faces=faces,
+        color=color,
+        smooth=True,
+        drawEdges=False,
+        shader='balloon'
+    )
+
+    return item
 
 class ParaGliderWidget(gl.GLViewWidget):
     """
@@ -113,48 +192,46 @@ class ParaGliderWidget(gl.GLViewWidget):
     def __init__(self, parent=None, obj_path: str = None):
         super().__init__(parent)
 
-        self.setBackgroundColor((200, 200, 200, 200))   # fond sombre
+        self.setBackgroundColor(QColor(135, 206, 235))   # fond sombre
         self.setCameraPosition(distance=14, elevation=20, azimuth=45)
         self._view = "free"
         self._cam_azimuth = 45
         self._cam_elevation = 20
 
         self._items = []
-        # Grille de référence au sol
-        self._grid = gl.GLGridItem()
-        self._grid.setSize(200, 200)
-        self._grid.setSpacing(20, 20)
-        self._grid.setColor(QColor(13, 143, 9))
-        self._grid.translate(0, 0, -4)
-        self.addItem(self._grid)
-        self._items.append(self._grid)
+        # Ground
+        self._ground = create_ground()
+        self.addItem(self._ground)
+        self._items.append(self._ground)
+        self._ground.translate(0, 0, -10)
         # Axe de référence (debug, optionnel)
         self._axis = gl.GLAxisItem()
         self._axis.setSize(3, 3, 3)
         self.addItem(self._axis)
         self._items.append(self._axis)
         # Construction du modèle
-        self._model = load_obj_mesh(obj_path)
+        # self._model = load_glb_mesh("gui/models/para2.glb")
+        self._model = load_obj_mesh("gui/models/para_v4.obj")
         self.addItem(self._model)
         self._items.append(self._model)
         # Building arrow 
-        self._wind_arrow = load_stl_mesh("gui/models/arrow1.obj", (0.3, 0.6, 1.0, 0.8))
+        self._wind_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 0.6, 1.0, 0.8))
         self.addItem(self._wind_arrow)
         self._items.append(self._wind_arrow)
 
-        self._north_arrow = load_stl_mesh("gui/models/arrow1.obj", (1.0, 0.2, 0.2, 0.8))
+        self._north_arrow = load_arrow_mesh("gui/models/arrow1.obj", (1.0, 0.2, 0.2, 0.8))
         self.addItem(self._north_arrow)
         self._items.append(self._north_arrow)
 
-        self._tas_arrow = load_stl_mesh("gui/models/arrow1.obj", (0.2, 0.8, 1.0, 0.8))
+        self._tas_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.2, 0.8, 1.0, 0.8))
         self.addItem(self._tas_arrow)
         self._items.append(self._tas_arrow)
 
-        self._bearing_arrow = load_stl_mesh("gui/models/arrow1.obj", (0.3, 1.0, 0.5, 0.8))
+        self._bearing_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 1.0, 0.5, 0.8))
         self.addItem(self._bearing_arrow)
         self._items.append(self._bearing_arrow)
 
-        self._vertical_arrow = load_stl_mesh("gui/models/arrow1.obj", (0.3,0.4, 0.5, 0.8))
+        self._vertical_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3,0.4, 0.5, 0.8))
         self.addItem(self._vertical_arrow)
         self._items.append(self._vertical_arrow)
 
