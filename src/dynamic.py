@@ -1,13 +1,13 @@
 import pyqtgraph as pg
 import numpy as np
 from PyQt6 import QtCore , QtGui
-from utils import mapping
+from utils import mapping, rgba_to_hex, hex_to_rgba
 from paraglider_widget import ParaGliderWidget
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QStackedLayout
 from units import convert_array_to_unit, get_unit, convert_gps_to_local_xy
 from utils import get_label, get_variable, interp_spline, interp_nearest
-from PyQt6.QtGui import QPainter, QColor, QPen, QFont
-from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFontMetrics, QPainter, QColor, QPen, QFont
+from PyQt6.QtCore import QSettings, Qt
 
 fps = 30
 
@@ -85,7 +85,9 @@ class DynamicTab(QtCore.QObject):
         self.checkbox_vertical_vector_dyna = checkbox_vertical_vector_dyna
         self.radioButton_interpolated_dyna = radioButton_interpolated_dyna
         self.radioButton_raw_dyna = radioButton_raw_dyna
-    
+
+        self.settings = QSettings("Vector Vario", "VVA")
+
         self._cursor_lines = []
         self._current_time = 0.0 #second
         self._interp_index = 0
@@ -151,14 +153,19 @@ class DynamicTab(QtCore.QObject):
         self.radioButton_right_view.toggled.connect(self.model_widget.set_view_right) 
 
         self.checkbox_wind_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_wind_vector(state))
+        self.checkbox_wind_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_wind_vector_dyna, rgba_to_hex(0.3, 0.6, 1.0, 0.8)))
         self.checkbox_wind_vector_dyna.setChecked(True)
         self.checkbox_north_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_north_vector(state))
+        self.checkbox_north_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_north_vector_dyna, rgba_to_hex(1.0, 0.2, 0.2, 0.8)))
         self.checkbox_north_vector_dyna.setChecked(False)
         self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_tas_vector(state))
+        self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_tas_vector_dyna, rgba_to_hex(0.2, 0.8, 1.0, 0.8)))
         self.checkbox_tas_vector_dyna.setChecked(False)
         self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_bearing_vector(state))
+        self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_bearing_vector_dyna, rgba_to_hex(0.3, 1.0, 0.5, 0.8)))
         self.checkbox_bearing_vector_dyna.setChecked(False)
         self.checkbox_vertical_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_vertical_vector(state))
+        self.checkbox_vertical_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_vertical_vector_dyna, rgba_to_hex(0.3,0.4, 0.5, 0.8)))
         self.checkbox_vertical_vector_dyna.setChecked(False)
 
         self.radioButton_interpolated_dyna.toggled.connect(lambda state : self.change_interpolation(state))
@@ -302,19 +309,19 @@ class DynamicTab(QtCore.QObject):
             self._time_interp,
             t_seconds,
             _x_local
-        ) / 10
+        ) 
 
         self._y_interp =  interp(
             self._time_interp,
             t_seconds,
             _y_local
-        ) / 10
+        ) 
 
         self._z_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['QNS_alt']
-        ) / 10
+        ) 
 
         self.model_widget.set_trajectory(
             self._x_interp ,
@@ -412,7 +419,6 @@ class DynamicTab(QtCore.QObject):
 
 
     
-
 
     
     def _populate_var_combobox(self):
@@ -789,6 +795,22 @@ class DynamicTab(QtCore.QObject):
         self.model_widget.set_min_radius(2* max([rad_x, rad_y, rad_z]))
         self.model_widget.set_len_grid(rad_x, rad_y)
 
+    def _change_checkbox_color(self, state, checkbox, color: str):
+        if state :
+            r, g, b, _ = hex_to_rgba(color)
+            bg = f'rgba({int(r*255)}, {int(g*255)}, {int(b*255)}, 0.35)'
+        else :
+            bg = 'white'
+
+        checkbox.setStyleSheet(f"""
+        QCheckBox {{
+            background-color: {bg};
+            border-radius: 4px;
+            padding: 2px 6px;
+        }}
+        """)
+
+
         
     def cleanup(self):
         """
@@ -880,137 +902,239 @@ class HUDWidget(QWidget):
         self._unit_ground_speed = get_unit("GNSS_speed")
         self._unit_angle = get_unit("roll")
 
+    # def paintEvent(self, event):
+
+    #     painter = QPainter(self)
+    #     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    
+    #     # -------------------------------------------------
+    #     # TEXTE
+    #     # -------------------------------------------------
+
+    #     painter.setPen(QPen(QColor(0, 0, 0, 180)))
+    #     font = QFont()
+    #     font.setPointSize(10)
+    #     font.setBold(True)
+    #     painter.setFont(font)
+
+
+
+    #     painter.drawText(
+    #         421,
+    #         41,
+    #         f"Time : {self.time}"
+    #     )
+        
+    #     painter.drawText(
+    #         421,
+    #         81,
+    #         f"Duration : {self.duration}"
+    #     )
+        
+    #     painter.drawText(
+    #         21,
+    #         41,
+    #         f"Altitude : {self.altitude} {self._unit_alt}"
+    #     )
+        
+    #     painter.drawText(
+    #         21,
+    #         81,
+    #         f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
+    #     )
+
+    #     painter.drawText(
+    #         221,
+    #         41,
+    #         f"Roll : {self.roll} {self._unit_angle}"
+    #     )
+
+    #     painter.drawText(
+    #         221,
+    #         81,
+    #         f"Pitch : {self.pitch} {self._unit_angle}"
+    #     )
+
+    #     if self.netto > 0 :
+    #         painter.drawText(
+    #             self.width() - 80 - 19,
+    #             41,
+    #             f"+{self.netto} {self._unit_netto} "
+    #         )
+    #     else:
+    #         painter.drawText(
+    #             self.width() - 80 - 19,
+    #             41,
+    #             f"{self.netto} {self._unit_netto} "
+    #         )
+    #     painter.drawText(
+    #         self.width() - 80 - 9,
+    #         26,
+    #         f"Vario"
+    #     )
+        
+    #     painter.setPen(QPen(QColor(255, 255, 255)))
+
+
+    #     painter.drawText(
+    #         420,
+    #         40,
+    #         f"Time : {self.time}"
+    #     )
+        
+    #     painter.drawText(
+    #         420,
+    #         80,
+    #         f"Duration : {self.duration}"
+    #     )
+        
+    #     painter.drawText(
+    #         20,
+    #         40,
+    #         f"Altitude : {self.altitude} {self._unit_alt}"
+    #     )
+        
+    #     painter.drawText(
+    #         20,
+    #         80,
+    #         f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
+    #     )
+
+    #     painter.drawText(
+    #         220,
+    #         40,
+    #         f"Roll : {self.roll} {self._unit_angle}"
+    #     )
+
+    #     painter.drawText(
+    #         220,
+    #         80,
+    #         f"Pitch : {self.pitch} {self._unit_angle}"
+    #     )
+        
+    #     painter.drawText(
+    #         self.width() - 80 - 10,
+    #         25,
+    #         f"Vario"
+    #     )
+        
+    #     if self.netto > 0 :
+    #         painter.drawText(
+    #             self.width() - 80 - 20,
+    #             40,
+    #             f"+{self.netto} {self._unit_netto} "
+    #         )
+    #     else:
+    #         painter.drawText(
+    #             self.width() - 80 - 20,
+    #             40,
+    #             f"{self.netto} {self._unit_netto} "
+    #         )
+    #     # -------------------------------------------------
+    #     # JAUGE SIMPLE
+    #     # -------------------------------------------------
+
+    #     gauge_x = self.width() - 80
+    #     gauge_y = 50
+    #     gauge_h = 200
+    #     gauge_w = 20
+
+    #     # fond
+    #     painter.setBrush(QColor(40, 40, 40, 180))
+    #     painter.drawRect(gauge_x, gauge_y, gauge_w, gauge_h)
+
+    #     # valeur
+    #     value = max(-6, min(6, convert_array_to_unit(self.netto, "netto")))
+
+    #     #normalized = (value + 5) / 10.0
+
+    #     fill_h = int(mapping(value, -6, 6,0, gauge_h))
+        
+    #     x = gauge_x
+    #     y = int(gauge_y + gauge_h - fill_h)
+    #     w = gauge_w
+    #     h = fill_h
+    #     painter.setBrush(QColor(0, 255, 0, 200))
+    #     painter.drawRect(x, y, w, h)
+
+    #     painter.end()
+
     def paintEvent(self, event):
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-    
-        # -------------------------------------------------
-        # TEXTE
-        # -------------------------------------------------
-
-        painter.setPen(QPen(QColor(0, 0, 0, 180)))
         font = QFont()
         font.setPointSize(10)
         font.setBold(True)
         painter.setFont(font)
-
-
-
-        painter.drawText(
-            421,
-            41,
-            f"Time : {self.time}"
-        )
         
-        painter.drawText(
-            421,
-            81,
-            f"Duration : {self.duration}"
-        )
-        
-        painter.drawText(
-            21,
-            41,
-            f"Altitude : {self.altitude} {self._unit_alt}"
-        )
-        
-        painter.drawText(
-            21,
-            81,
-            f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
-        )
+        fm = QFontMetrics(font)
 
-        painter.drawText(
-            221,
-            41,
-            f"Roll : {self.roll} {self._unit_angle}"
-        )
-
-        painter.drawText(
-            221,
-            81,
-            f"Pitch : {self.pitch} {self._unit_angle}"
-        )
-
-        if self.netto > 0 :
-            painter.drawText(
-                self.width() - 80 - 19,
-                41,
-                f"+{self.netto} {self._unit_netto} "
-            )
-        else:
-            painter.drawText(
-                self.width() - 80 - 19,
-                41,
-                f"{self.netto} {self._unit_netto} "
-            )
-        painter.drawText(
-            self.width() - 80 - 9,
-            26,
-            f"Vario"
-        )
-        
-        painter.setPen(QPen(QColor(255, 255, 255)))
-
-
-        painter.drawText(
-            420,
-            40,
-            f"Time : {self.time}"
-        )
-        
-        painter.drawText(
-            420,
-            80,
-            f"Duration : {self.duration}"
-        )
-        
-        painter.drawText(
-            20,
-            40,
-            f"Altitude : {self.altitude} {self._unit_alt}"
-        )
-        
-        painter.drawText(
-            20,
-            80,
-            f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
-        )
-
-        painter.drawText(
-            220,
-            40,
-            f"Roll : {self.roll} {self._unit_angle}"
-        )
-
-        painter.drawText(
-            220,
-            80,
-            f"Pitch : {self.pitch} {self._unit_angle}"
-        )
-        
-        painter.drawText(
-            self.width() - 80 - 10,
-            25,
-            f"Vario"
-        )
-        
-        if self.netto > 0 :
-            painter.drawText(
-                self.width() - 80 - 20,
-                40,
-                f"+{self.netto} {self._unit_netto} "
-            )
-        else:
-            painter.drawText(
-                self.width() - 80 - 20,
-                40,
-                f"{self.netto} {self._unit_netto} "
-            )
         # -------------------------------------------------
-        # JAUGE SIMPLE
+        # DONNÉES
+        # -------------------------------------------------
+
+        sign = "+" if self.netto > 0 else ""
+        fields = [
+            ("Altitude",     f"{self.altitude} {self._unit_alt}"),
+            ("Ground Speed", f"{self.ground_speed} {self._unit_ground_speed}"),
+            ("Roll",         f"{self.roll} {self._unit_angle}"),
+            ("Pitch",        f"{self.pitch} {self._unit_angle}"),
+            ("Time",         f"{self.time}"),
+            ("Duration",     f"{self.duration}"),
+        ]
+        texts = [f"{label} : {value}" for label, value in fields]
+
+        # -------------------------------------------------
+        # SEUIL : largeur minimale pour tenir en 3 colonnes
+        # -------------------------------------------------
+
+        col_width   = max(fm.horizontalAdvance(t) for t in texts) + 20
+        gauge_space = 100   # réservé pour la jauge à droite
+        needed_3col = col_width * 3 + gauge_space
+
+        w = self.width()
+        margin_x = 20
+        margin_y = 30
+        line_h   = fm.height() + 10
+
+        # -------------------------------------------------
+        # LAYOUT : 3 colonnes × 2 lignes  ou  1 colonne × N lignes
+        # -------------------------------------------------
+
+        if w >= needed_3col:
+            # 3 colonnes, 2 lignes — disposition originale
+            positions = [
+                (margin_x,           margin_y),           # Altitude
+                (margin_x,           margin_y + line_h),  # Ground Speed
+                (margin_x + col_width,     margin_y),     # Roll
+                (margin_x + col_width,     margin_y + line_h),  # Pitch
+                (margin_x + col_width * 2, margin_y),     # Time
+                (margin_x + col_width * 2, margin_y + line_h),  # Duration
+            ]
+        else:
+            # 1 colonne, N lignes
+            positions = [
+                (margin_x, margin_y + i * line_h)
+                for i in range(len(texts))
+            ]
+
+        # -------------------------------------------------
+        # TEXT
+        # -------------------------------------------------
+
+        for text, (x, y) in zip(texts, positions):
+            # ombre
+            painter.setPen(QPen(QColor(0, 0, 0, 180)))
+            painter.drawText(x + 1, y , text)
+            # texte blanc par-dessus
+            painter.setPen(QPen(QColor(255, 255, 255)))
+            painter.drawText(x, y, text)
+
+        # -------------------------------------------------
+        # VARIO GAUGE
         # -------------------------------------------------
 
         gauge_x = self.width() - 80
@@ -1036,5 +1160,15 @@ class HUDWidget(QWidget):
         painter.setBrush(QColor(0, 255, 0, 200))
         painter.drawRect(x, y, w, h)
 
+        # Label Vario — ombre + blanc
+        sign = "+" if self.netto > 0 else ""
+        vario_text = f"{sign}{self.netto} {self._unit_netto}"
+
+        for label, tx, ty in [("Vario", gauge_x - 7, gauge_y - 25),
+                            (vario_text, gauge_x - 9, gauge_y - 10)]:
+            painter.setPen(QPen(QColor(0, 0, 0, 180)))
+            painter.drawText(tx + 1, ty + 1, label)
+            painter.setPen(QPen(QColor(255, 255, 255)))
+            painter.drawText(tx, ty, label)
+
         painter.end()
-     
