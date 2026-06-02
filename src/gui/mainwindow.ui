@@ -2186,7 +2186,7 @@
                  <item>
                   <widget class="QLabel" name="label_27">
                    <property name="text">
-                    <string>Variable plot 1</string>
+                    <string>Variable plot 2</string>
                    </property>
                   </widget>
                  </item>
@@ -2272,7 +2272,7 @@
                  <item>
                   <widget class="QLabel" name="label_29">
                    <property name="text">
-                    <string>Variable plot 1</string>
+                    <string>Variable plot 3</string>
                    </property>
                   </widget>
                  </item>

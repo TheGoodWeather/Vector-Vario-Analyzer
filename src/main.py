@@ -61,7 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.color_dialog = ColorDialog(parent = self)  
         self.color_dialog.colorWindBarbsChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap ))
-
+        
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
@@ -570,6 +570,8 @@ class MainWindow(QtWidgets.QMainWindow):
             str(resource_path("gui/models/para_v3.obj")))
         
         self.unit_dialog.unitsChanged.connect(self.dynamic.update_units)
+        self.color_dialog.colorDynaChanged.connect(self.dynamic.apply_color_change)
+
     
     def write_settings_main(self):
         """

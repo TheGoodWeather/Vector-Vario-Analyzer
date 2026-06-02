@@ -230,6 +230,7 @@ class DynamicTab(QtCore.QObject):
         if self._flight:
             self._populate_var_combobox()
             self._interpolate_data()
+            self._return_min_radius()
             self._set_time(0.0)
 
 
@@ -301,19 +302,19 @@ class DynamicTab(QtCore.QObject):
             self._time_interp,
             t_seconds,
             _x_local
-        )
+        ) / 10
 
         self._y_interp =  interp(
             self._time_interp,
             t_seconds,
             _y_local
-        )
+        ) / 10
 
         self._z_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['QNS_alt']
-        )
+        ) / 10
 
         self.model_widget.set_trajectory(
             self._x_interp ,
@@ -429,7 +430,6 @@ class DynamicTab(QtCore.QObject):
 
     def _update_plot(self, plot_widget, curve, combobox_var, label_widget_unit):
         
-
         variable = combobox_var.currentData() 
         if not variable:
             curve.clear()
@@ -456,11 +456,8 @@ class DynamicTab(QtCore.QObject):
         pen = pg.mkPen(self._flight['plot']['plot_color'], width=1)
         
         curve.setPen(pen)
-
         curve.setData(x,y)
-
         plot_widget.autoRange()   
-
         label_widget_unit.setText(str(get_unit(variable)))
         
         self._update_lcds()
@@ -555,9 +552,9 @@ class DynamicTab(QtCore.QObject):
         pitch= self._pitch_interp[i]
         roll= self._roll_interp[i]
         yaw= self._yaw_interp[i]
-        x = self._x_interp[i]
+        x = self._x_interp[i] 
         y = self._y_interp[i]
-        z = self._z_interp[i]
+        z = self._z_interp[i] 
         wind_azimut = self._wind_dir_interp[i]
         wind_tilt = self._wind_tilt_interp[i]
         wind_speed = self._wind_speed_interp[i]
@@ -678,8 +675,10 @@ class DynamicTab(QtCore.QObject):
         y = self._interp_index
         vario = convert_array_to_unit(self._vario_interp[y], "vario")
         altitude = convert_array_to_unit(self._alt_interp[y], "GNSS_alt")
+        roll = convert_array_to_unit(self._roll_interp[y], "roll")
+        pitch = convert_array_to_unit(self._pitch_interp[y], "pitch")
         time = self._flight['data']['GNSS_time'][i]
-        formatted_time = time.strftime("%H:%M")
+        formatted_time = time.strftime("%d-%m-%Y %H:%M")
         ground_speed = convert_array_to_unit(self._speed_interp[y], "GNSS_speed")
         duration = self._flight['data']['GNSS_time'][i] - self._flight['data']['GNSS_time'][0]
         total_seconds = int(duration.total_seconds())
@@ -697,6 +696,8 @@ class DynamicTab(QtCore.QObject):
         self.hud_widget.set_ground_speed(round(ground_speed,2))
         self.hud_widget.set_time(formatted_time)
         self.hud_widget.set_duration(formatted_duration)
+        self.hud_widget.set_pitch(pitch)
+        self.hud_widget.set_roll(roll)
         
     def _update_lcds(self):
         i = self._raw_index
@@ -777,10 +778,18 @@ class DynamicTab(QtCore.QObject):
         self._update_lcds()
         self._update_hud()
         
-        
-        
-        
     
+
+    def _return_min_radius(self, step: int = 10) -> float:
+
+        rad_x = abs(np.max(self._x_interp) - np.min(self._x_interp))
+        rad_y = abs(np.max(self._y_interp) - np.min(self._y_interp))
+        rad_z = abs(np.max(self._z_interp) - np.min(self._z_interp))
+
+        self.model_widget.set_min_radius(2* max([rad_x, rad_y, rad_z]))
+        self.model_widget.set_len_grid(rad_x, rad_y)
+
+        
     def cleanup(self):
         """
         Close correctly the GL widget
@@ -803,6 +812,9 @@ class DynamicTab(QtCore.QObject):
         else:
             self._interpolate_data('nearest')
 
+    def apply_color_change(self):
+        self.model_widget.apply_color_changes()
+
 
 
 
@@ -816,10 +828,13 @@ class HUDWidget(QWidget):
         self.time = 0
         self.duration = 0
         self.altitude = 0
+        self.roll = 0.0
+        self.pitch = 0.0 
         
         self._unit_netto = get_unit("netto")
         self._unit_alt = get_unit("GNSS_alt")
         self._unit_ground_speed = get_unit("GNSS_speed")
+        self._unit_angle = get_unit("roll")
 
         # Transparent
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -850,37 +865,104 @@ class HUDWidget(QWidget):
         self.ground_speed = round(value,1)
         self.update()
 
+    def set_roll(self, value):
+        self.roll = round(value,1)
+        self.update()
+
+    def set_pitch(self, value):
+        self.pitch = round(value,1)
+        self.update()
+
 
     def update_units(self):
         self._unit_netto = get_unit("netto")
         self._unit_alt = get_unit("GNSS_alt")
         self._unit_ground_speed = get_unit("GNSS_speed")
+        self._unit_angle = get_unit("roll")
 
     def paintEvent(self, event):
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
     
         # -------------------------------------------------
         # TEXTE
         # -------------------------------------------------
 
-        painter.setPen(QPen(QColor(255, 255, 255)))
-
+        painter.setPen(QPen(QColor(0, 0, 0, 180)))
         font = QFont()
         font.setPointSize(10)
         font.setBold(True)
-
         painter.setFont(font)
 
+
+
         painter.drawText(
-            300,
+            421,
+            41,
+            f"Time : {self.time}"
+        )
+        
+        painter.drawText(
+            421,
+            81,
+            f"Duration : {self.duration}"
+        )
+        
+        painter.drawText(
+            21,
+            41,
+            f"Altitude : {self.altitude} {self._unit_alt}"
+        )
+        
+        painter.drawText(
+            21,
+            81,
+            f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
+        )
+
+        painter.drawText(
+            221,
+            41,
+            f"Roll : {self.roll} {self._unit_angle}"
+        )
+
+        painter.drawText(
+            221,
+            81,
+            f"Pitch : {self.pitch} {self._unit_angle}"
+        )
+
+        if self.netto > 0 :
+            painter.drawText(
+                self.width() - 80 - 19,
+                41,
+                f"+{self.netto} {self._unit_netto} "
+            )
+        else:
+            painter.drawText(
+                self.width() - 80 - 19,
+                41,
+                f"{self.netto} {self._unit_netto} "
+            )
+        painter.drawText(
+            self.width() - 80 - 9,
+            26,
+            f"Vario"
+        )
+        
+        painter.setPen(QPen(QColor(255, 255, 255)))
+
+
+        painter.drawText(
+            420,
             40,
             f"Time : {self.time}"
         )
         
         painter.drawText(
-            300,
+            420,
             80,
             f"Duration : {self.duration}"
         )
@@ -888,16 +970,32 @@ class HUDWidget(QWidget):
         painter.drawText(
             20,
             40,
-            f"Altitude ({self._unit_alt}) : {self.altitude} "
+            f"Altitude : {self.altitude} {self._unit_alt}"
         )
         
         painter.drawText(
             20,
             80,
-            f"Ground Speed ({self._unit_ground_speed}) : {self.ground_speed} "
+            f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
+        )
+
+        painter.drawText(
+            220,
+            40,
+            f"Roll : {self.roll} {self._unit_angle}"
+        )
+
+        painter.drawText(
+            220,
+            80,
+            f"Pitch : {self.pitch} {self._unit_angle}"
         )
         
-    
+        painter.drawText(
+            self.width() - 80 - 10,
+            25,
+            f"Vario"
+        )
         
         if self.netto > 0 :
             painter.drawText(
