@@ -120,10 +120,9 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
     return gl.GLMeshItem(
         vertexes=verts,
         faces=faces,
-        faceColors=colors,
         smooth=True,
         drawEdges=False,
-        shader='balloon'
+        shader='shaded'
     )
 
 
@@ -272,6 +271,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         # self._model = load_glb_mesh("gui/models/para2.glb")
         self._model = load_obj_mesh("gui/models/para_v4.obj")
         self.addItem(self._model)
+        self._model.setColor(QColor("#FF1717"))
         self._items.append(self._model)
         # Building arrow 
         self._wind_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 0.6, 1.0, 0.8))
@@ -645,6 +645,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         r, g, b, a = qcolor_trajectory.getRgbF()
         gl_color = (r, g, b, a)
         self._trajectory.setData(color = gl_color)
+        self._model.setColor(QColor(self.settings.value("model" , "#322D2D")))
         self.settings.endGroup()
 
  

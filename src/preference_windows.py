@@ -131,10 +131,12 @@ class ColorDialog(QtWidgets.QDialog):
         self.color_button_grid = ColorButton(color="#FFFFFF")  
         self.color_button_dynaplot = ColorButton(color="#ff0000") 
         self.color_button_background = ColorButton(color="#a29c9c") 
+        self.color_button_model = ColorButton(color="#FF1717")
         
         self.grid_color_widget.layout().addWidget(self.color_button_grid)
         self.dynaplot_color_widget.layout().addWidget(self.color_button_dynaplot)
         self.background_color_widget.layout().addWidget(self.color_button_background)
+        self.model_color_widget.layout().addWidget(self.color_button_model)
         
         self.buttonBox.accepted.connect(self.write_settings)    
         self.read_settings()
@@ -148,6 +150,7 @@ class ColorDialog(QtWidgets.QDialog):
         self.settings.setValue("grid", self.color_button_grid.color())
         self.settings.setValue("dynaplot", self.color_button_dynaplot.color())
         self.settings.setValue("background", self.color_button_background.color())
+        self.settings.setValue("model", self.color_button_model.color())
         self.settings.endGroup()
         
         self.colorWindBarbsChanged.emit()
@@ -164,6 +167,7 @@ class ColorDialog(QtWidgets.QDialog):
         self.color_button_grid.setColor(self.settings.value("grid" , "#FFFFFF"))
         self.color_button_dynaplot.setColor(self.settings.value("dynaplot" , "#ff0000"))
         self.color_button_background.setColor(self.settings.value("background" , "#a29c9c"))
+        self.color_button_model.setColor(self.settings.value("model" , "#FF1717"))
         self.settings.endGroup()
 
 
