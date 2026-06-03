@@ -441,6 +441,7 @@ class ParaGliderWidget(gl.GLViewWidget):
          # North vector 
 
         self._north_arrow.resetTransform()
+        self._north_arrow.rotate(90, 0 , 0 , 1, True)
         self._north_arrow.translate(
             self._x,
             self._y,

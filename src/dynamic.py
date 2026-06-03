@@ -10,7 +10,6 @@ from PyQt6.QtGui import QFontMetrics, QPainter, QColor, QPen, QFont
 from PyQt6.QtCore import QSettings, Qt
 
 fps = 30
-
 class DynamicTab(QtCore.QObject):
 
 
@@ -109,6 +108,8 @@ class DynamicTab(QtCore.QObject):
         self._wind_tilt_interp = None
         self._wind_tilt = None
         self._wind_speed_interp = None
+
+        self.gnss_offset = 0
 
         self.gl_container = QWidget()
         stack = QStackedLayout(self.gl_container)
@@ -235,6 +236,7 @@ class DynamicTab(QtCore.QObject):
                     break 
         
         if self._flight:
+
             self._populate_var_combobox()
             self._interpolate_data()
             self._return_min_radius()
@@ -248,7 +250,11 @@ class DynamicTab(QtCore.QObject):
 
 
     def _interpolate_data(self, method = 'spline'):
-
+        """
+        This function interpolate the data accordingly to fps (30 by default).
+        The interpolation can be spline (cubic) or nearest to preserve the "raw" data.
+        Moreover, we are applying a GNSS offset to IGC file that can be changed. 
+        """
         if method == 'spline':
             def interp(time_origine, time_interp, variable_to_interp):
                 return interp_spline(time_origine, time_interp, variable_to_interp)
@@ -256,6 +262,28 @@ class DynamicTab(QtCore.QObject):
             def interp(time_origine, time_interp, variable_to_interp):
                 return interp_nearest(time_origine, time_interp, variable_to_interp)
 
+        # Number of iterations to offset according to a lag in seconds 
+        gnss_shift = int(round(self.gnss_offset * fps))
+
+
+        def interp_and_shift(arr):
+            result = interp(self._time_interp, t_seconds, arr)
+            if gnss_shift == 0:
+                return result
+            shifted = np.roll(result, -gnss_shift)
+            if gnss_shift > 0:
+                shifted[-gnss_shift:] = result[-1]
+            else:
+                shifted[:-gnss_shift] = result[0]
+            return shifted
+
+    
+        if self._flight['file_name'].split('.')[1] == "igc" or self._flight['file_name'].split('.')[1] == "IGC":
+            self.gnss_offset = -1
+            z_data = self._flight['data']['QNS_alt']
+        else: 
+            self.gnss_offset = 0 
+            z_data = self._flight['data']['GNSS_alt']   
 
         times = self._flight['data']['GNSS_time']
 
@@ -266,10 +294,6 @@ class DynamicTab(QtCore.QObject):
             for t in times
         ], dtype=np.float64)
 
-        
-        # GPS offseting correction
-        t_seconds -= 0.5
-
         self._time_raw = t_seconds
 
         self._time_interp = np.arange(
@@ -278,6 +302,7 @@ class DynamicTab(QtCore.QObject):
             1/fps
         )
 
+        
 
         self._pitch_interp =  interp(
             self._time_interp,
@@ -305,22 +330,25 @@ class DynamicTab(QtCore.QObject):
 
         _x_local, _y_local = convert_gps_to_local_xy(self._flight['data']['GNSS_lon'], self._flight['data']['GNSS_lat'])
 
-        self._x_interp =  interp(
-            self._time_interp,
-            t_seconds,
-            _x_local
-        ) 
+        # self._x_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     _x_local
+        # ) 
 
-        self._y_interp =  interp(
-            self._time_interp,
-            t_seconds,
-            _y_local
-        ) 
+        # self._y_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     _y_local
+        # ) 
+
+        self._x_interp     = interp_and_shift(_x_local)
+        self._y_interp     = interp_and_shift(_y_local)
 
         self._z_interp =  interp(
             self._time_interp,
             t_seconds,
-            self._flight['data']['QNS_alt']
+            z_data,
         ) 
 
         self.model_widget.set_trajectory(
@@ -335,17 +363,21 @@ class DynamicTab(QtCore.QObject):
             self._flight['data']['netto']
         )
 
-        self._alt_interp =  interp(
-            self._time_interp,
-            t_seconds,
-            self._flight['data']['GNSS_alt']
-        )
+        # self._alt_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     self._flight['data']['GNSS_alt']
+        # )
 
-        self._speed_interp =  interp(
-            self._time_interp,
-            t_seconds,
-            self._flight['data']['GNSS_speed']
-        )
+        self._alt_interp   = interp_and_shift(self._flight['data']['GNSS_alt'])
+
+        # self._speed_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     self._flight['data']['GNSS_speed']
+        # )
+
+        self._speed_interp = interp_and_shift(self._flight['data']['GNSS_speed'])
 
         wind_vel = np.asarray(
             self._flight['data']['wind_vel'],
@@ -410,11 +442,13 @@ class DynamicTab(QtCore.QObject):
                 self._flight['data']['GNSS_head']
             )
         )
-        gnss_heading_interp =  interp(
-            self._time_interp,
-            t_seconds,
-            gnss_heading
-        )
+        # gnss_heading_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     gnss_heading
+        # )
+        gnss_heading_interp = interp_and_shift(gnss_heading)
+
         self._gnss_heading_interp = np.degrees(gnss_heading_interp)
 
 
