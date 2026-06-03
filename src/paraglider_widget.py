@@ -107,34 +107,17 @@ def create_ground(
     return ground
 
 def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
-
-    """
-    Charge un fichier .obj et retourne un GLMeshItem avec coloration par zone.
-    Structure détectée sur para_v3.obj (axe Y) :
-        Y > -1          → voile        (rouge vif)
-        -6 < Y < -1     → pilote/sellette (bleu-gris contrasté)
-        Y < -6          → suspentes    (gris clair)
-    """
-
     from pathlib import Path
 
     mesh = trimesh.load(Path(obj_path), force='mesh')
-    verts  = np.array(mesh.vertices, dtype=float)
-    faces  = np.array(mesh.faces,    dtype=int)
-    # Centre Y de chaque face → détermine la zone
-    y_centers = verts[faces, 1].mean(axis=1)
-    colors = np.ones((len(faces), 4), dtype=float)
-    # Voile : rouge vif
-    voile = y_centers >= -1
-    colors[voile] = [0.85, 0.12, 0.12, 1.0]
-    # Pilote / sellette : bleu-gris bien contrasté
-    pilote = (y_centers >= -6) & (y_centers < -1)
-    colors[pilote] = [0.25, 0.45, 0.80, 1.0]
-    # Suspentes : gris clair (fines cordes)
-    suspentes = y_centers < -6
-    colors[suspentes] = [0.82, 0.82, 0.82, 1.0]
+    verts = np.array(mesh.vertices, dtype=float)
+    faces = np.array(mesh.faces, dtype=int)
 
-    item = gl.GLMeshItem(
+    colors = np.full((len(faces), 4),
+                     [0.15, 0.15, 0.15, 1.0],
+                     dtype=float)
+
+    return gl.GLMeshItem(
         vertexes=verts,
         faces=faces,
         faceColors=colors,
@@ -142,8 +125,6 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
         drawEdges=False,
         shader='balloon'
     )
-
-    return item
 
 
 def load_arrow_mesh(
