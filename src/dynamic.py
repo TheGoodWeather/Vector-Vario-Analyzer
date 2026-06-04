@@ -262,9 +262,6 @@ class DynamicTab(QtCore.QObject):
             def interp(time_origine, time_interp, variable_to_interp):
                 return interp_nearest(time_origine, time_interp, variable_to_interp)
 
-        # Number of iterations to offset according to a lag in seconds 
-        gnss_shift = int(round(self.gnss_offset * fps))
-
 
         def interp_and_shift(arr):
             result = interp(self._time_interp, t_seconds, arr)
@@ -279,13 +276,16 @@ class DynamicTab(QtCore.QObject):
 
     
         if self._flight['file_name'].split('.')[1] == "igc" or self._flight['file_name'].split('.')[1] == "IGC":
-            self.gnss_offset = -1
+            self.gnss_offset = 10
             z_data = self._flight['data']['QNS_alt']
         else: 
             self.gnss_offset = 0 
             z_data = self._flight['data']['GNSS_alt']   
 
         times = self._flight['data']['GNSS_time']
+
+        # Number of iterations to offset according to a lag in seconds 
+        gnss_shift = int(round(self.gnss_offset * fps))
 
         t0 = times[0]
 
