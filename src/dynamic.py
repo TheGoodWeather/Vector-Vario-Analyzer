@@ -276,7 +276,7 @@ class DynamicTab(QtCore.QObject):
 
     
         if self._flight['file_name'].split('.')[1] == "igc" or self._flight['file_name'].split('.')[1] == "IGC":
-            self.gnss_offset = 10
+            self.gnss_offset = 0 # At 0 for the moment, can be modified in the future when we will know more about gnss_lag
             z_data = self._flight['data']['QNS_alt']
         else: 
             self.gnss_offset = 0 
