@@ -1,11 +1,18 @@
+import webbrowser
+
 from PyQt6 import QtWidgets, uic, QtGui
-from PyQt6.QtWidgets import QScrollArea, QVBoxLayout, QTextEdit, QPushButton, QTableWidget, QTableWidgetItem, QLabel
+from PyQt6.QtWidgets import QMessageBox, QScrollArea, QVBoxLayout, QTextEdit, QPushButton, QTableWidget, QTableWidgetItem, QLabel
 from PyQt6.QtCore import Qt, pyqtSignal, QSettings
 import sys
 from pathlib  import Path 
 from constants import SOFTWARE_VERSION
+import requests
+from packaging.version import Version
 
 
+GITHUB_OWNER = "TheGoodWeather"
+GITHUB_REPO = "Vector-Vario-Analyzer"
+DOWNLOAD_URL = "https://vectorvario.com/en/analyzer/"
 class UnitDialog(QtWidgets.QDialog):
     
     
@@ -309,6 +316,71 @@ class AboutDialog(QtWidgets.QDialog):
         layout.addWidget(btn_close)
 
 
+
+def check_version(parent = None):
+
+    def get_latest_version():
+        url = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
+
+        try:
+            response = requests.get(url, timeout=5)
+            response.raise_for_status()
+
+            data = response.json()
+            return data["tag_name"]
+
+        except Exception:
+            return None
+
+    latest = get_latest_version()  
+    if latest is None:
+        QMessageBox.warning(
+            parent,
+            "Version",
+            "Impossible to reach GitHub repository"
+            f"Current : v{SOFTWARE_VERSION}"
+        )
+        return
+
+    if Version(latest) > Version(SOFTWARE_VERSION):
+        msg = QMessageBox(parent)
+        msg.setWindowTitle("Update Available")
+        msg.setIcon(QMessageBox.Information)
+
+        msg.setText(
+            f"A new version is available: {latest}\n\n"
+            f"Current version: v{SOFTWARE_VERSION}"
+        )
+
+        download_btn = msg.addButton(
+            "Download",
+            QMessageBox.AcceptRole
+        )
+
+        msg.addButton(
+            QMessageBox.Close
+        )
+
+        msg.exec()
+
+        if msg.clickedButton() == download_btn:
+            webbrowser.open(DOWNLOAD_URL)
+
+
+    elif Version(latest) == Version(SOFTWARE_VERSION):
+        QMessageBox.information(
+            parent,
+            "Version",
+            f"You are using the latest version : v{SOFTWARE_VERSION}."
+        )
+    elif Version(latest) < Version(SOFTWARE_VERSION):
+        QMessageBox.warning(
+            parent,
+            "Version",
+            f"You are not using a stable version.\n"
+            f"Current : v{SOFTWARE_VERSION}\n"
+            f"Latest stable : {latest}"
+        )
 
 def resource_path(relative_path: str) -> Path:
     """Retourne le chemin absolu, compatible dev et PyInstaller."""

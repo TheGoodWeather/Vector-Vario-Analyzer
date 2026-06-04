@@ -2297,6 +2297,7 @@
     <addaction name="actionAbout"/>
     <addaction name="actionDependancies"/>
     <addaction name="actionLicense"/>
+    <addaction name="actionVersion"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPreferences"/>
@@ -2351,6 +2352,11 @@
   <action name="actionReport_bug">
    <property name="text">
     <string>Report bug</string>
+   </property>
+  </action>
+  <action name="actionVersion">
+   <property name="text">
+    <string>Version</string>
    </property>
   </action>
  </widget>

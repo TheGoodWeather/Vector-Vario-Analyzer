@@ -29,7 +29,7 @@ from plot_emagram import SkewTWidget
 from overlay_map import OSMTileOverlay
 from dropzone import DropZone
 from polar_generator import update_polar_generator_values
-from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog, AboutDialog
+from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog, AboutDialog, check_version
 import plot
 import qtawesome as qta
 
@@ -90,6 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionLicense.triggered.connect(self.display_license_window)
         self.actionDependancies.triggered.connect(self.display_requirements_window)
         self.actionAbout.triggered.connect(self.display_about_window)
+        self.actionVersion.triggered.connect(lambda: check_version(self))
         """
         Widgets tab import  / export
         """
@@ -1089,6 +1090,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def display_about_window(self):
         dialog = AboutDialog(self)
+        dialog.exec()
+
+    def display_version_window(self):
+        dialog = VersionDialog(self)
         dialog.exec()
         
         
