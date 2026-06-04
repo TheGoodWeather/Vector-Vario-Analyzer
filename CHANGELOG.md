@@ -9,6 +9,7 @@ All notable changes to Vector Vario Software will be documented in this file.
 Some comboboxes and tables are now sorted for a better viewing
 Horizontal and vertical units dissociated
 Feature : Dynamic tab - linear interpolation 
+Feature : Version checking
 
 ### Changed
 
