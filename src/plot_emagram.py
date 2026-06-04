@@ -3,6 +3,7 @@ import numpy as np
 from PyQt6 import QtCore , QtGui
 from utils import mapping
 from windbarbs import WindBarbs
+from VerticalWind import VerticalWindDialog
 
 L = 2.501e6 # J/kg : latent heat of vaporization at 0°C (2.257 J/kg at 100°C)
 Ra = 287.04  # J/kg : gas constant for dry air
@@ -43,6 +44,10 @@ class SkewTWidget:
         #Windbarbs
         self.wind_barbs = WindBarbs(plot_widget)
         self.wind_barbs.P_bot = self.P_bot
+
+        #Vertical wind dialog 
+        self.vertical_wind_dialog = VerticalWindDialog()
+
         
         # self.myregP = LinearRegression()
         # self.myregT100 = LinearRegression()
@@ -316,6 +321,9 @@ class SkewTWidget:
         self._P_data_full = P_full  #converting from Pa to hPa
         self._Tdry_data = Tdry
         self._calculate_linreg(self._P_data, self._Tdry_data)
+        
+        # Updating the hodograph
+        self.vertical_wind_dialog.update_hodograph(speed, angle)
     
     def _update_windbarbs_display(self):
         vb = self.plot_widget.getViewBox()
@@ -729,3 +737,7 @@ class SkewTWidget:
         self._P_data = None
         self._Tdry_data = None
         self.plot_widget.autoRange()
+
+
+    def show_vertical_wind_dialog(self):
+        self.vertical_wind_dialog.show()
