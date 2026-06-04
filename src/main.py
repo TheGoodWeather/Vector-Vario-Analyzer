@@ -113,7 +113,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab]
         for tab in self.tab_list:
             index = self.tabWidget.indexOf(tab)
-            self.tabWidget.setTabEnabled(index, False)
+            self.tabWidget.setTabEnabled(index, True)
             
         self.tableWidget_database.setColumnCount(len(headers))
         self.tableWidget_database.setHorizontalHeaderLabels(headers)

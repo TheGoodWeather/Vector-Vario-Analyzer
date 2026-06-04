@@ -323,7 +323,8 @@ class SkewTWidget:
         self._calculate_linreg(self._P_data, self._Tdry_data)
         
         # Updating the hodograph
-        self.vertical_wind_dialog.update_hodograph(speed, angle)
+        if self.vertical_wind_dialog.isVisible():
+            self.vertical_wind_dialog.update_hodograph(speed, angle)
     
     def _update_windbarbs_display(self):
         vb = self.plot_widget.getViewBox()
