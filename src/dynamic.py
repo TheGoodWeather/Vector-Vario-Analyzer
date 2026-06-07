@@ -50,7 +50,6 @@ class DynamicTab(QtCore.QObject):
                  obj_path: str = None):
         
         super().__init__()
-
         self.radioButton_free_view = radioButton_free_view
         self.radioButton_front_view = radioButton_front_view
         self.radioButton_behind_view = radioButton_behind_view
@@ -228,7 +227,6 @@ class DynamicTab(QtCore.QObject):
             self._cursor_lines.append(line)
         
     def _fetch_flight(self, flight_text):
-        
         for flight in self.flight_data_set:
             if flight['file_name'].split(".")[0] == flight_text or (flight['metadata']['alias'] == flight_text):
                 if flight['is_data_processed'] and flight['data'] and flight['is_flight_selected']:
@@ -684,6 +682,10 @@ class DynamicTab(QtCore.QObject):
         current_index = (current_index + 1) % len(speeds)
         self._playback_speed = speeds[current_index]
         self.pushButton_speed.setText(f"x{self._playback_speed}")
+
+    def update_data_set(self, dataset):
+        self.flight_data_set = dataset
+        self._fetch_flight(self.comboBox_select_flight_dyntab.currentText())
         
         
     def _play_step(self):
