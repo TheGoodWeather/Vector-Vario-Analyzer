@@ -10,6 +10,7 @@ from PyQt6.QtGui import QFontMetrics, QPainter, QColor, QPen, QFont
 from PyQt6.QtCore import QSettings, Qt
 
 fps = 30
+
 class DynamicTab(QtCore.QObject):
 
 
@@ -177,11 +178,23 @@ class DynamicTab(QtCore.QObject):
         
         self._playback_speed = 1.0   # 0.5 / 1 / 2
         self._play_elapsed = 0.0     # temps simulé écoulé
+        
 
+        self._setup_keyboard_shortcuts()
+
+    def _setup_keyboard_shortcuts(self):
         # Keyboard events management
-        self.gl_container.installEventFilter(self)
-        self.gl_container.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.gl_container.setFocus()
+        app = QtCore.QCoreApplication.instance()
+        app.installEventFilter(self)
+        # app.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        # app.setFocus()
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Space:
+                self._on_space_pressed()
+                return True   # événement consommé, ne se propage pas
+        return super().eventFilter(obj, event)
 
     def _setup_widget(self):
         
@@ -607,51 +620,6 @@ class DynamicTab(QtCore.QObject):
         self.model_widget.set_wind_vector(wind_azimut,wind_tilt, wind_speed)
         self.model_widget.set_tas_vector(yaw, tas)
         self.model_widget.set_bearing_vector(bearing,gnss_speed)
-
-
-    def eventFilter(self, obj, event):
-        if event.type() == QtCore.QEvent.Type.KeyPress:
-            key = event.key()
-            # SPACE -> play/pause
-            if key == Qt.Key.Key_Space:
-                if self._play_timer.isActive():
-                    self.pause()
-                else:
-                    self.play()
-                event.accept()
-                return True
-            # RIGHT -> frame suivante
-            elif key == Qt.Key.Key_Right:
-                self.next_frame()
-                event.accept()
-                return True
-            # LEFT -> frame précédente
-            elif key == Qt.Key.Key_Left:
-                self.previous_frame()
-                event.accept()                
-                return True
-            # UP -> vitesse +
-            elif key == Qt.Key.Key_Up:
-                self._playback_speed *= 2
-                return True
-            # DOWN -> vitesse -
-            elif key == Qt.Key.Key_Down:
-                self._playback_speed /= 2
-                return True
-            # vues caméra
-            elif key == Qt.Key.Key_F:
-                self.model_widget.set_view_front()
-                return True
-            elif key == Qt.Key.Key_B:
-                self.model_widget.set_view_behind()
-                return True
-            elif key == Qt.Key.Key_T:
-                self.model_widget.set_view_top()
-                return True
-            elif key == Qt.Key.Key_G:
-                self.model_widget.set_view_free()
-                return True
-        return super().eventFilter(obj, event)
         
 
     def next_frame(self):
@@ -666,13 +634,18 @@ class DynamicTab(QtCore.QObject):
         self._set_time(max(0, self._current_time - dt))
         
     def play(self):
-        self._elapsed_timer.restart()
-        self._play_timer.start(16)   # vise 60 Hz, on régule nous-mêmes
-        # self._play_timer.start(int(1000 / fps))
+        if not self._play_timer.isActive():
+            self.pushButton_pause.setChecked(False)
+            self.pushButton_play.setChecked(True)
+            self._elapsed_timer.restart()
+            self._play_timer.start(16)   # vise 60 Hz, on régule nous-mêmes
+            # self._play_timer.start(int(1000 / fps))
         
     def pause(self):
-
-        self._play_timer.stop()
+        if self._play_timer.isActive():
+            self._play_timer.stop()
+            self.pushButton_pause.setChecked(True)
+            self.pushButton_play.setChecked(False)
     
     def change_speed(self):
         
@@ -708,7 +681,11 @@ class DynamicTab(QtCore.QObject):
         self._set_time(self._current_time)
         
        
-    
+    def _on_space_pressed(self):
+        if self._play_timer.isActive():
+            self.pause()
+        else:
+            self.play()
 
     
     def _update_hud(self):

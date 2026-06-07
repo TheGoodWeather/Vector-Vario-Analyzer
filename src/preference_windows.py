@@ -66,6 +66,7 @@ class ColorButton(QtWidgets.QPushButton):
 
     def __init__(self, *args, color=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setFixedSize(24, 24)
         self._color = None
         self._default = color
         self.pressed.connect(self.onColorPicker)

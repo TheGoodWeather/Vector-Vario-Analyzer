@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #Table ------------------------------------
         headers = ["","Flight Name", "Flight date", "Start altitude","Max altitude", "Pilot", "Comment", "Alias"]
-        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab]
+        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab, self.dyna_tab]
         for tab in self.tab_list:
             index = self.tabWidget.indexOf(tab)
             self.tabWidget.setTabEnabled(index, False)
@@ -514,10 +514,12 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.pushButton_pause = QtWidgets.QPushButton(qta.icon('mdi6.pause'), '')
         self.pushButton_pause.setFixedSize(25, 25)
+        self.pushButton_pause.setCheckable(True)
         self.widget_control_buttons.layout().addWidget(self.pushButton_pause)
         
         self.pushButton_play = QtWidgets.QPushButton(qta.icon('mdi6.play'), '')
         self.pushButton_play.setFixedSize(25, 25)
+        self.pushButton_play.setCheckable(True)
         self.widget_control_buttons.layout().addWidget(self.pushButton_play)
         
         
