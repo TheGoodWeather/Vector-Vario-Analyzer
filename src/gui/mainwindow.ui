@@ -2002,6 +2002,20 @@
                 </property>
                </spacer>
               </item>
+              <item>
+               <widget class="QCheckBox" name="checkBox_show_grid">
+                <property name="text">
+                 <string>Grid</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_28">
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
+              </item>
              </layout>
             </widget>
            </item>

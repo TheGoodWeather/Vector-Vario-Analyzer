@@ -650,6 +650,8 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._model.setColor(QColor(self.settings.value("model" , "#322D2D")))
         self.settings.endGroup()
 
+    def show_grid(self, state):
+        self._grid.setVisible(state)
  
     
 

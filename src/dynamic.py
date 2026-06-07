@@ -48,6 +48,7 @@ class DynamicTab(QtCore.QObject):
                  checkbox_vertical_vector_dyna,
                  radioButton_interpolated_dyna,
                  radioButton_raw_dyna,
+                 checkBox_show_grid,
                  obj_path: str = None):
         
         super().__init__()
@@ -84,7 +85,7 @@ class DynamicTab(QtCore.QObject):
         self.checkbox_vertical_vector_dyna = checkbox_vertical_vector_dyna
         self.radioButton_interpolated_dyna = radioButton_interpolated_dyna
         self.radioButton_raw_dyna = radioButton_raw_dyna
-
+        self.checkBox_show_grid = checkBox_show_grid
         self.settings = QSettings("Vector Vario", "VVA")
 
         self._cursor_lines = []
@@ -169,6 +170,9 @@ class DynamicTab(QtCore.QObject):
         self.checkbox_vertical_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_vertical_vector_dyna, rgba_to_hex(0.3,0.4, 0.5, 0.8)))
         self.checkbox_vertical_vector_dyna.setChecked(False)
 
+        self.checkBox_show_grid.stateChanged.connect(lambda state: self.model_widget.show_grid(state))
+        self.checkBox_show_grid.setChecked(True)
+
         self.radioButton_interpolated_dyna.toggled.connect(lambda state : self.change_interpolation(state))
         #self.radioButton_interpolated_dyna.setChecked(True)
 
@@ -232,7 +236,7 @@ class DynamicTab(QtCore.QObject):
                 angle=90,
                 movable=True,
                 pos = self._raw_index,
-                pen=pg.mkPen('r', width=2)
+                pen=pg.mkPen(QColor(0,0,0), width=3)
             )
             line.sigPositionChanged.connect(lambda line: self._cursor_moved(line))
             plot.addItem(line)
@@ -829,6 +833,8 @@ class DynamicTab(QtCore.QObject):
             padding: 2px 6px;
         }}
         """)
+
+        
 
 
         
