@@ -632,9 +632,11 @@ class ParaGliderWidget(gl.GLViewWidget):
     def set_min_radius(self, radius):
         self._min_radius_skybox = radius 
 
-    def set_len_grid(self, x, y):
-        self._grid.setSize(x* 4, y* 4)
-        spacing = max(x,y) / 50
+    def set_len_grid(self, origin_x, origin_y, len_x, len_y):
+        self._grid.resetTransform()
+        self._grid.translate(origin_x, origin_y, -4)
+        self._grid.setSize(len_x* 4, len_y* 4)
+        spacing = max(len_x,len_y) / 50
         self._grid.setSpacing(spacing, spacing)
 
     def apply_color_changes(self):

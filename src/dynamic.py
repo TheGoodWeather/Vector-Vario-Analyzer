@@ -823,13 +823,20 @@ class DynamicTab(QtCore.QObject):
     
 
     def _return_min_radius(self, step: int = 10) -> float:
-
+        """
+        Returns the size of the flight in order to create a grid model that suits bests
+        """
         rad_x = abs(np.max(self._x_interp) - np.min(self._x_interp))
         rad_y = abs(np.max(self._y_interp) - np.min(self._y_interp))
         rad_z = abs(np.max(self._z_interp) - np.min(self._z_interp))
 
-        self.model_widget.set_min_radius(2* max([rad_x, rad_y, rad_z]))
-        self.model_widget.set_len_grid(rad_x, rad_y)
+        coeff_z = mapping(np.max(self._z_interp),0, 6000, 1, 3)
+        # coeff_z = 1
+        origin_x = np.min(self._x_interp) + rad_x / 2
+        origin_y = np.min(self._y_interp) + rad_y / 2
+        len_x = rad_x * coeff_z
+        len_y = rad_y * coeff_z 
+        self.model_widget.set_len_grid(origin_x, origin_y, len_x, len_y)
 
     def _change_checkbox_color(self, state, checkbox, color: str):
         if state :
