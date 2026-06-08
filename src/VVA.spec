@@ -13,7 +13,8 @@ a = Analysis(
     binaries=[],
     datas=[
         ('gui/*.ui', 'gui'),              # fichiers .ui
-        ('gui/icons/*', 'gui/icons'),  
+        ('gui/icons/*', 'gui/icons'),
+        ('gui/models/*', 'gui/models'),
 		('../requirements.txt', '.'),      # ← à la racine du bundle
 		('../LICENSE.txt', '.'),               # ← à la racine du bundl# icônes
     ],
@@ -46,7 +47,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name=f'Vector Vario Analyzer {SOFTWARE_VERSION}',
+    name=f'Vector Vario Analyzer v{SOFTWARE_VERSION}',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -62,5 +63,5 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    name=f'Vector Vario Analyzer {SOFTWARE_VERSION}',
+    name=f'Vector Vario Analyzer v{SOFTWARE_VERSION}',
 )

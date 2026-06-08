@@ -7,7 +7,7 @@ class DropZone(QtWidgets.QLabel):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setText("1 - Drop IGC or CSV file here")
+        self.setText("1 - Drop IGC file here")
         self.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet("""
             QLabel {

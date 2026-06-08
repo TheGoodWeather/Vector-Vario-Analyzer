@@ -1,4 +1,4 @@
-# Vector Vario Analyzer v0.02
+# Vector Vario Analyzer v0.03
 
 ![vector vario software logo](src/gui/icons/logo.png)
 

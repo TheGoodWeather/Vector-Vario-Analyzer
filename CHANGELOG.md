@@ -4,16 +4,32 @@ All notable changes to Vector Vario Software will be documented in this file.
 
 ## [Unreleased]
 
+
+
+## [0.03] - 08-06-2026
+
 ### Added
 
+Some comboboxes and tables are now sorted for a better viewing
+Horizontal and vertical units dissociated
+Feature : Dynamic tab - linear interpolation 
+Feature : Version checking
 
 ### Changed
 
+No Autorange when changing color mapping in 2D Map
+README updated
+AspectRatio disable on polar graph
 
 ### Fixed
 
+Bug while creating polar region -> None value returned when region is close to end
+Bug while updating preferences ->  Linear Regions vanished
+Corecting calculus errors in Glide Ratio 
+New linear region width corrected in Polar Tab 
 
 ## [0.02] - 20-05-2026
+=======
 
 ### Added
 

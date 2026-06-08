@@ -316,6 +316,8 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
                 colorbar.setOpacity(0) 
                 widget_min.setValue(0)
                 widget_max.setValue(0)
+                plot_widget.autoRange()   
+
                 
 
 
@@ -384,7 +386,6 @@ def update_2D_plot(flight_dic, tab_widget_flight, plot_widget, combobox_variable
             if flight['plot']['text_map_end']:
                 flight['plot']['text_map_end'].hide()
         
-    plot_widget.autoRange()   
         
 
 def update_colorbar(colorbar, plot_widget_colorbar, z_min, z_max, variable, cmap, widget_min, widget_max):
@@ -599,6 +600,7 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
         if y is None or len(y) == 0:
             return
 
+
         x = np.arange(len(y))
 
         plot_widget.setLimits(
@@ -615,6 +617,8 @@ def update_sample_serie_plot(flight_dic, comboBox_flight, combobox_var, plot_wid
         
         break  
     plot_widget.autoRange()
+    
+
 
 def create_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget, combobox_flight, legend_vxvz, ias_comp):
     """
@@ -669,7 +673,7 @@ def calculate_roi(flight, edge):
         last_xmin, last_xmax = existing_rois[-1]
         remaining = max(t_end - last_xmax, 0)
 
-        if remaining > 0:
+        if remaining > total_duration * 0.08:
             interval = max(
                 remaining * 0.1,
                 total_duration * 0.08
@@ -692,7 +696,6 @@ def calculate_roi(flight, edge):
     
     
 def load_polar_roi(flight_dic, plot_widget_time, plot_widget_vxvz, table_polar_widget, combobox_flight , legend_vxvz, ias_comp):
-    
     for flight in flight_dic:
         if flight['is_data_processed'] and flight['is_flight_selected']:
             for roi_data in flight['plot']['roi_polar']:
@@ -786,23 +789,20 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
                             
                             # we set the ias compensation 
                             ias_comp = np.multiply(flight['data']['IAS'] , (1+ (ias_comp_coeff/100) ))
-                            #Then the array are converted into the desired unit
-                            ias_comp = convert_array_to_unit(ias_comp, 'IAS')
+                            #Then the array are converted into the desired unit NO 
+                            #ias_comp = convert_array_to_unit(ias_comp, 'IAS')
                             vario_ias = flight['data']['VarioIAS']
                             vx = np.sqrt(np.subtract(np.square(ias_comp), np.square(vario_ias)))
-                            
-                            
-                            
 
                             vx_avg = round(np.nanmean(vx[int(x_min):int(x_max)]),2)
                             ias_avg = round(np.nanmean(ias_comp[int(x_min):int(x_max)]),2)
                             vario_avg = round(np.nanmean(vario_ias[int(x_min):int(x_max)]),2)
                             glide_ratio_avg = round(np.divide(vx_avg, vario_avg ), 2)
                             
-                            roi_data[1] = ias_avg
-                            roi_data[2] = vx_avg
-                            roi_data[3] = vario_avg
-                            roi_data[4] = glide_ratio_avg
+                            roi_data[1] = ias_avg #m/s
+                            roi_data[2] = convert_array_to_unit(vx_avg,"IAS") #m/s
+                            roi_data[3] = vario_avg #m/s
+                            roi_data[4] = glide_ratio_avg 
                             
                             if flight['plot']['crosshair_v_polar']:
                                 flight['plot']['crosshair_v_polar'].hide()
@@ -842,9 +842,7 @@ def reset_highlights(flight_dic, plot_widget):
 
 def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
     
-    #plot_widget.clear()
     legend_vxvz.clear()  
-    plot_widget.setAspectLocked(True)
     plot_widget.enableAutoRange(True)
     plot_widget.setLabel("top", f"Vx {get_unit('IAS')}")
     plot_widget.setLabel("left","Vz m/s")

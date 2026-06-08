@@ -9,13 +9,14 @@ from PyQt6.QtWidgets import QRadioButton, QTableWidgetItem, QMessageBox, QHeader
 from PyQt6.QtCore import Qt, QPoint, QSize, QThreadPool, QSettings  # ← fusionné
 from PyQt6.QtGui import QColor, QBrush, QIcon, QPixmap
 
-# Libs tierces lourdes
+# Libs tierces lougirdes
 import numpy as np
 import pyqtgraph as pg
 
 # Modules internes
+from dynamic import DynamicTab
 from constants import SOFTWARE_VERSION
-from utils import get_label
+from utils import get_label, is_all_nan
 from units import get_unit, convert_array_to_unit
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
@@ -28,7 +29,7 @@ from plot_emagram import SkewTWidget
 from overlay_map import OSMTileOverlay
 from dropzone import DropZone
 from polar_generator import update_polar_generator_values
-from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog, AboutDialog
+from preference_windows import UnitDialog, ColorDialog, LicenseDialog, RequirementsDialog, AboutDialog, check_version
 import plot
 import qtawesome as qta
 
@@ -54,11 +55,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.unit_dialog.unitsChanged.connect(lambda : update_polar_generator_values(self.horizontalSlider_auw.value(), self.horizontalSlider_ar.value(), self.horizontalSlider_sproj.value(),  self.widget_harness_polar , self.polar_generated_curve, self.crosshair_trim_speed, self.graph_tabpolar_vxvz))
         self.unit_dialog.unitsChanged.connect(lambda : self.populate_table_2D_variable(label_table_data = self.label_table_data, table_data = self.tableWidget_data_point_tab2D))
         self.unit_dialog.unitsChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar,self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap))
-       
+        self.unit_dialog.unitsChanged.connect(lambda : plot.load_polar_roi(self.flight, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz,  self.tableView_polar_points,  self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz,  self.horizontalSlider_ias_comp ))
+        self.unit_dialog.unitsChanged.connect(lambda : plot.load_emagram_roi(self.flight, self.graph_atmtab_timeserie, self.skewt, self.comboBox_flight_select_atmtab ))
+        
         self.color_dialog = ColorDialog(parent = self)  
         self.color_dialog.colorWindBarbsChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap ))
-
+        
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
@@ -87,6 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionLicense.triggered.connect(self.display_license_window)
         self.actionDependancies.triggered.connect(self.display_requirements_window)
         self.actionAbout.triggered.connect(self.display_about_window)
+        self.actionVersion.triggered.connect(lambda: check_version(self))
         """
         Widgets tab import  / export
         """
@@ -106,7 +110,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #Table ------------------------------------
         headers = ["","Flight Name", "Flight date", "Start altitude","Max altitude", "Pilot", "Comment", "Alias"]
-        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab]
+        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab, self.dyna_tab]
         for tab in self.tab_list:
             index = self.tabWidget.indexOf(tab)
             self.tabWidget.setTabEnabled(index, False)
@@ -133,6 +137,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_database.itemChanged.connect(lambda : self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D))
         self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab))
         self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab))
+        self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab))
         self.tableWidget_database.itemChanged.connect(lambda : self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D ))
         
         
@@ -500,29 +505,79 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkBox_windbarbs_atm.setCheckState(Qt.CheckState.Unchecked)
 
 
-
+        """
+        Widgets tab DYNAMIC
+        """
         
-    # def resource_path(self, relative_path):
-    #     """
-    #     Get absolute path to resource (for PyInstaller and development) 
-    #     """
-    #     if hasattr(sys, '_MEIPASS'):
-    #         return Path(sys._MEIPASS) / relative_path
-    #     return Path(__file__).parent / relative_path
-    
-    # def external_path(self, relative_path):
-    #     """
-    #     Get the absolute path to an external file or folder (like config/) that is located
-    #     next to the executable or script, but NOT bundled inside the .exe.
-    #     """
-    #     if getattr(sys, 'frozen', False):
-    #         # Running from a PyInstaller bundle (.exe)
-    #         base_path = Path(sys.executable).parent
-    #     else:
-    #         # Running from source (.py)
-    #         base_path = Path(__file__).parent
-    
-    #     return base_path / relative_path
+        self.pushButton_previous = QtWidgets.QPushButton(qta.icon('mdi6.skip-previous'), '')
+        self.pushButton_previous.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_previous)
+        
+        self.pushButton_pause = QtWidgets.QPushButton(qta.icon('mdi6.pause'), '')
+        self.pushButton_pause.setFixedSize(25, 25)
+        self.pushButton_pause.setCheckable(True)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_pause)
+        
+        self.pushButton_play = QtWidgets.QPushButton(qta.icon('mdi6.play'), '')
+        self.pushButton_play.setFixedSize(25, 25)
+        self.pushButton_play.setCheckable(True)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_play)
+        
+        
+        self.pushButton_next = QtWidgets.QPushButton(qta.icon('mdi6.skip-next'), '')
+        self.pushButton_next.setFixedSize(25, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_next)
+        
+        self.pushButton_speed = QtWidgets.QPushButton(qta.icon('mdi6.speedometer'), '')
+        self.pushButton_speed.setFixedSize(40, 25)
+        self.widget_control_buttons.layout().addWidget(self.pushButton_speed)
+        
+        self.dynamic = DynamicTab(
+            self.flight,
+            self.comboBox_select_flight_dyntab,
+            self.plotwidget_1_dyntab, 
+            self.plotwidget_2_dyntab, 
+            self.plotwidget_3_dyntab,
+            self.comboBox_var_1_dyntab,
+            self.comboBox_var_2_dyntab,
+            self.comboBox_var_3_dyntab,
+            self.lcdNumber_var_1,
+            self.lcdNumber_var_2,
+            self.lcdNumber_var_3,
+            self.model_window, 
+            
+            self.pushButton_previous,
+            self.pushButton_pause ,
+            self.pushButton_play,
+            self.pushButton_next,
+            self.pushButton_speed,
+
+            self.radioButton_free_view,
+            self.radioButton_front_view,
+            self.radioButton_behind_view,
+            self.radioButton_top_view,
+            self.radioButton_left_view,
+            self.radioButton_right_view,
+
+            self.label_unit_var1_dyna,
+            self.label_unit_var2_dyna,
+            self.label_unit_var3_dyna,
+
+            self.checkbox_wind_vector_dyna,
+            self.checkbox_north_vector_dyna,
+            self.checkbox_tas_vector_dyna,
+            self.checkbox_bearing_vector_dyna,
+            self.checkbox_vertical_vector_dyna,
+            self.radioButton_interpolated_dyna,
+            self.radioButton_raw_dyna,
+
+            self.checkBox_show_grid,
+            self.comboBox_colormap_dyna,
+            str(resource_path("gui/models/para_v3.obj")))
+        
+        self.unit_dialog.unitsChanged.connect(self.dynamic.update_units)
+        self.color_dialog.colorDynaChanged.connect(self.dynamic.apply_color_change)
+
     
     def write_settings_main(self):
         """
@@ -572,6 +627,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         self.write_settings_main()
+        self.dynamic.cleanup() 
         super().closeEvent(event)
         event.accept()
         
@@ -734,6 +790,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+        self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D)
         
         return
@@ -762,6 +819,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+            self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
+            self.dynamic.update_data_set(self.flight)
             self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D )
             return
         
@@ -806,7 +865,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
     def populate_combobox_flight(self, data, combo_box_flight):
         """
-        Set the flights that has been analyzed into the specified combobox. Used in 1D plot, polar and emagram
+        Set the flights that has been analyzed into the specified combobox. Used in 1D plot, polar, emagram and dynamics
 
         """
         #first we remove all the items in the combobox 
@@ -992,11 +1051,18 @@ class MainWindow(QtWidgets.QMainWindow):
     
         # Intersection : uniquement les variables présentes dans TOUS les vols
         common_vars = sets_of_vars[0].intersection(*sets_of_vars[1:])
-    
         combobox_var.addItem('None')
-        for variable in sorted(common_vars):
-            combobox_var.addItem(get_label(variable), userData=variable)
-      
+
+        for variable in sorted(
+            common_vars,
+            key=lambda v: get_label(v).lower()
+        ):
+
+            combobox_var.addItem(
+                get_label(variable),
+                userData=variable
+            )
+            
     
     
 
@@ -1035,6 +1101,10 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def display_about_window(self):
         dialog = AboutDialog(self)
+        dialog.exec()
+
+    def display_version_window(self):
+        dialog = VersionDialog(self)
         dialog.exec()
         
         
@@ -1239,7 +1309,8 @@ class MainWindow(QtWidgets.QMainWindow):
         
         row = 0
         for variable in flight['data']:
-            if len(flight['data'][variable]) > 0:
+            data = flight['data'][variable]
+            if len(data) > 0 and not is_all_nan(data):
                 table_data.insertRow(row)
     
                 item_variable = QTableWidgetItem(get_label(variable))
@@ -1262,7 +1333,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 table_data.setItem(row, 2, item_unit)
     
                 row += 1  
-        
+        table_data.sortItems( 0 ,Qt.AscendingOrder)
     def on_1D_point_clicked(self, event, flight_dic, plot_widget, combobox_flight, table_data):
         """
         This function displays crosshair to the closest point where the user clicked
@@ -1446,25 +1517,31 @@ def flight_data_path() -> Path:
     return path
 
 if __name__ == "__main__":
-    try:
+    # try:
+    
         
-        if not QtWidgets.QApplication.instance():
-            app = QtWidgets.QApplication(sys.argv)
-        else : 
-            app = QtWidgets.QApplication.instance() 
+    app = QtWidgets.QApplication.instance()
+
+    if app is None:
+        app = QtWidgets.QApplication(sys.argv)
         
-        #splash screen
-        pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
-        splash = QSplashScreen(pixmap)
-        splash.show()
         
-        app.processEvents()
-        app.setStyle("Fusion")
-        app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
-        window = MainWindow()
+    #splash screen
+    pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
+    splash = QSplashScreen(pixmap)
+    splash.show()
+    
+    app.processEvents()
+    app.setStyle("Fusion")
+    app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
+    window = MainWindow()
+    
+    window.show()
+    splash.finish(window)
+    # sys.exit(app.exec())
+    app.exec()
+    window.close()
         
-        window.show()
-        splash.finish(window)
-        sys.exit(app.exec())
-    except Exception as e:
-        logger.exception(f"Fatal error occurred during startup {e}")
+    # except Exception as e:
+    #     logger.exception(f"Fatal error occurred during startup {e}")
+        

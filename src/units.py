@@ -2,14 +2,14 @@ from PyQt6.QtCore import QSettings
 import numpy as np
 
 units_coeff_dic = {
-    "radian" : 0.0174533, #deg to rad
-    "degree" : 1.0, #deg to deg
+    "rad" : 0.0174533, #deg to rad
+    "°" : 1.0, #deg to deg
     "m/s" : 1.0, #m/s to m/s
-    "knot" : 1.94384, #m/s to knot
+    "knt" : 1.94384, #m/s to knot
     "km/h" : 3.6 , #m/s to km/h
     "mph" : 2.23694, #m/s to mph
-    "meters" : 1.0, #meters to meters
-    "feet" : 3.28084, #meters to feet
+    "m" : 1.0, #meters to meters
+    "ft" : 3.28084, #meters to feet
     "Pa" : 1.0, #Pa to Pa
     "hPa" : 0.01, #Pa to hPa
     "atm" : 9.86923e-6, #Pa to atm
@@ -28,7 +28,8 @@ default_unit = {
 
 var_to_unit_group_dic = {
     "heading" : ["compass_head", "GNSS_head" , "wind_origin"],
-    "speed" : ["GNSS_speed", "vario" , "wind_vel", "IAS" , "VarioIAS" , "TAS" , "netto" ,"GNSS_velD"],
+    "speed" : ["GNSS_speed", "wind_vel", "IAS", "TAS","GNSS_velD"],
+    "vertical_speed" : ["vario", "VarioIAS", "netto"],
     "coordinates" : ["GNSS_lat","GNSS_lon" ],
     "altitude" : ["GNSS_alt", "QNS_alt" , "LCL"], 
     "temperature" : ["T_sensor", "air_T", "AirTheta" , "AirTd"],
@@ -36,13 +37,13 @@ var_to_unit_group_dic = {
     "pressure" : ["DP" , "P_stat" , "AirES" , "AirE"]}
 
 unit_group = {
-    "heading" : ["degree", "radian"],
+    "heading" : ["°", "rad"],
     "speed" : ["m/s", "knot", "km/h", "mph"],
-    "altitude": ["meters", "feet"],
+    "vertical_speed" : ["m/s", "knt", "km/h", "mph"],
+    "altitude": ["m", "ft"],
     "temperature": ["°C", "°K", "°F"],
-    "angle": ["degree", "radian"],
-    "pressure": ["Pa", "hPa", "atm", "mbar"],
-    "coordinates": ["Decimal degrees", "Degrees decimal minutes", "Degrees minutes seconds"]}
+    "angle": ["°", "rad"],
+    "pressure": ["Pa", "hPa", "atm", "mbar"]}
 
 def get_unit(variable):
     
@@ -102,3 +103,29 @@ def convert_gps_coords_DDM_to_DD(lat_DDM, lon_DDM):
 
     
     return lat_DD, lon_DD
+
+
+def convert_gps_to_local_xy(lon, lat):
+
+    lat_dd = np.asarray(lat, dtype=np.float64)
+    lon_dd = np.asarray(lon, dtype=np.float64)
+
+    lat0 = lat_dd[0]
+    lon0 = lon_dd[0]
+
+    R = 6371000
+
+    x = (lon_dd - lon0) * np.cos(np.radians(lat0)) * R * np.pi / 180
+    y = (lat_dd - lat0) * R * np.pi / 180
+
+    # print(f"lat 0 : {lat_dd[0]}")
+    # print(f"lat 100 : {lat_dd[100]}")
+    # print(f"delta lat = {(lat_dd[100] - lat_dd[0])}")
+    # print(f"y : {y[100]}")
+
+    # print(f"lon 0 : {lon_dd[0]}")
+    # print(f"lon 100 : {lon_dd[100]}")
+    # print(f"delta lon = {(lon_dd[100] - lon_dd[0])}")
+    # print(f"x : {x[100]}")
+
+    return x, y

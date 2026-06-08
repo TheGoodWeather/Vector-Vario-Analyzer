@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.interpolate import CubicSpline , interp1d
 
 
 
@@ -39,6 +40,7 @@ VARIABLE_LABELS = {
     
 }
 
+VARIABLE_KEYS = {v: k for k, v in VARIABLE_LABELS.items()}
 
 def mapping(value, fromLow, fromHigh, toLow, toHigh):
     return (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow) + toLow
@@ -79,3 +81,119 @@ def get_label(variable: str) -> str:
     Return a more comprehensive label from the VARIABLE_LEVELS list
     """
     return VARIABLE_LABELS.get(variable, variable)
+
+
+
+def is_all_nan(data):
+
+    arr = np.asarray(data)
+
+    # types numériques seulement
+    if np.issubdtype(arr.dtype, np.number):
+        return np.all(np.isnan(arr))
+
+    return False
+
+
+def sort_combobox_alphabetically(combobox):
+    """
+    Trie un QComboBox par ordre alphabétique
+    tout en conservant les userData.
+    """
+
+    items = []
+
+    for i in range(combobox.count()):
+
+        text = combobox.itemText(i)
+        data = combobox.itemData(i)
+
+        items.append((text, data))
+
+    # tri alphabétique insensible à la casse
+    items.sort(key=lambda x: x[0].lower())
+
+    combobox.clear()
+
+    for text, data in items:
+        combobox.addItem(text, userData=data)
+
+def get_variable(label: str) -> str:
+    """
+    Return the internal variable name from a user-friendly label.
+    """
+    return VARIABLE_KEYS.get(label, label)
+
+def interp_spline(t_new, t, values):
+    
+    values = np.asarray(values, dtype=float)
+
+    # supprime NaN
+    mask = ~np.isnan(values)
+
+    t_clean = t[mask]
+    v_clean = values[mask]
+
+    # fallback sécurité
+    if len(v_clean) < 2:
+        return np.full_like(t_new, np.nan)
+
+    spline = CubicSpline(
+        t_clean,
+        v_clean,
+        bc_type='natural'
+    )
+
+    return spline(t_new)
+
+
+def interp_nearest(t_new, t, values):
+
+    values = np.asarray(values, dtype=float)
+
+    # suppression NaN
+    mask = ~np.isnan(values)
+
+    t_clean = t[mask]
+    v_clean = values[mask]
+
+    # sécurité
+    if len(v_clean) < 2:
+        return np.full_like(t_new, np.nan)
+
+    f = interp1d(
+        t_clean,
+        v_clean,
+        kind='nearest',
+        bounds_error=False,
+        fill_value=np.nan
+    )
+
+    return f(t_new)
+
+
+
+def rgba_to_hex(r: float, g: float, b: float, a: float = 1.0) -> str:
+    """
+    Convertit RGBA (0.0 → 1.0) en hexadécimal '#RRGGBBAA'.
+    """
+    ri, gi, bi, ai = (int(round(c * 255)) for c in (r, g, b, a))
+    return f'#{ri:02X}{gi:02X}{bi:02X}{ai:02X}'
+
+
+def hex_to_rgba(hex_color: str) -> tuple[float, float, float, float]:
+    """
+    Convertit un hexadécimal '#RRGGBB' ou '#RRGGBBAA' en RGBA (0.0 → 1.0).
+    Le '#' est optionnel.
+    """
+    h = hex_color.lstrip('#')
+
+    if len(h) == 6:
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        a = 255
+    elif len(h) == 8:
+        r, g, b, a = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16), int(h[6:8], 16)
+    else:
+        raise ValueError(f"Format hex invalide : '{hex_color}' (attendu #RRGGBB ou #RRGGBBAA)")
+
+    return r / 255.0, g / 255.0, b / 255.0, a / 255.0
