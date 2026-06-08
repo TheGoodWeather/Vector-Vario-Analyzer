@@ -1,6 +1,7 @@
 from PyQt6 import QtGui
 import numpy as np
 import pyqtgraph.opengl as gl
+import pyqtgraph as pg
 from PyQt6.QtCore import QSettings, QTimer
 from pyqtgraph.Qt import QtCore
 from PyQt6.QtGui import QColor, QVector3D
@@ -516,6 +517,23 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.opts['near'] = max(0.01, cam_dist * 0.001)
         self.opts['far']  = cam_dist * 10.0
         self.update()
+
+    
+
+    def _apply_colormap(self, variable: np.ndarray, cmap_name: str = 'turbo') -> np.ndarray:
+        cmap = pg.colormap.get(cmap_name)
+
+        v = np.asarray(variable, dtype=np.float64)
+        v_min, v_max = np.nanmin(v), np.nanmax(v)
+
+        if v_max == v_min:
+            norm = np.zeros_like(v)
+        else:
+            norm = np.clip((v - v_min) / (v_max - v_min), 0, 1)
+
+        # mode='float' retourne un array (N, 4) float dans [0, 1] → parfait pour GLLinePlotItem
+        return cmap.map(norm, mode='float').astype(np.float32)
+
     # ------------------------------------------------------------------
     # API publique
     # ------------------------------------------------------------------
@@ -652,6 +670,21 @@ class ParaGliderWidget(gl.GLViewWidget):
 
     def show_grid(self, state):
         self._grid.setVisible(state)
+
+    def set_color_trajectory(self, variable: np.ndarray = None, to_mapped: bool = False, cmap_name: str = 'turbo'):
+        
+        if to_mapped:
+            if variable is not None :
+                colors = self._apply_colormap(variable, cmap_name)
+
+            self._trajectory.setData(color=colors)
+        
+        else: 
+
+            qcolor_trajectory = QColor(self.settings.value("colors/dynaplot" , "#ff0000"))
+            r, g, b, a = qcolor_trajectory.getRgbF()
+            gl_color = (r, g, b, a)
+            self._trajectory.setData(color = gl_color) 
  
     
 

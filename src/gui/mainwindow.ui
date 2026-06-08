@@ -2089,6 +2089,16 @@
               <item>
                <widget class="QComboBox" name="comboBox_select_flight_dyntab"/>
               </item>
+              <item>
+               <widget class="QLabel" name="label_30">
+                <property name="text">
+                 <string>Color mapping</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="comboBox_colormap_dyna"/>
+              </item>
              </layout>
             </widget>
            </item>
@@ -2365,7 +2375,7 @@
      <x>0</x>
      <y>0</y>
      <width>997</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

@@ -49,6 +49,7 @@ class DynamicTab(QtCore.QObject):
                  radioButton_interpolated_dyna,
                  radioButton_raw_dyna,
                  checkBox_show_grid,
+                 comboBox_colormap_dyna,
                  obj_path: str = None):
         
         super().__init__()
@@ -86,6 +87,7 @@ class DynamicTab(QtCore.QObject):
         self.radioButton_interpolated_dyna = radioButton_interpolated_dyna
         self.radioButton_raw_dyna = radioButton_raw_dyna
         self.checkBox_show_grid = checkBox_show_grid
+        self.comboBox_colormap_dyna = comboBox_colormap_dyna
         self.settings = QSettings("Vector Vario", "VVA")
 
         self._cursor_lines = []
@@ -140,7 +142,8 @@ class DynamicTab(QtCore.QObject):
         self.comboBox_var_1_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_1_dyntab, self._curve1 , self.comboBox_var_1_dyntab, self.label_unit_var1_dyna ))
         self.comboBox_var_2_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab, self.label_unit_var2_dyna))
         self.comboBox_var_3_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_3_dyntab, self._curve3 , self.comboBox_var_3_dyntab ,self.label_unit_var3_dyna))
-        
+        self.comboBox_colormap_dyna.currentIndexChanged.connect(lambda: self._set_color_trajectory(self.comboBox_colormap_dyna))
+
         self.pushButton_play.clicked.connect(self.play)
         self.pushButton_pause.clicked.connect(self.pause)
         self.pushButton_next.clicked.connect(self.next_frame)
@@ -262,7 +265,24 @@ class DynamicTab(QtCore.QObject):
             self.comboBox_var_2_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("pitch"))
             self.comboBox_var_3_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("roll"))
 
+            self.model_widget.set_color_trajectory(self._alt_interp)
 
+    def _set_color_trajectory(self, combobox):
+        """
+        Choose a variable and send it to paraglider_widget to plot it colormapped
+        """
+        variable = combobox.currentData()
+        if variable is not None:
+            z = self._flight['data'][variable]
+            if self.radioButton_interpolated_dyna.isChecked():
+                z_interp = interp_spline(self._time_interp, self._time_raw, z) 
+            else :
+                z_interp = interp_nearest(self._time_interp,self._time_raw,  z) 
+            to_mapped = True
+        else:
+            z_interp = None
+            to_mapped = False
+        self.model_widget.set_color_trajectory(z_interp, to_mapped)
 
     def _interpolate_data(self, method = 'spline'):
         """
@@ -471,7 +491,7 @@ class DynamicTab(QtCore.QObject):
 
     
     def _populate_var_combobox(self):
-        for combobox in [self.comboBox_var_1_dyntab, self.comboBox_var_2_dyntab, self.comboBox_var_3_dyntab ]:
+        for combobox in [self.comboBox_var_1_dyntab, self.comboBox_var_2_dyntab, self.comboBox_var_3_dyntab, self.comboBox_colormap_dyna]:
             variable_to_sort = []
             combobox.clear()
             combobox.addItem("None", userData = None)
@@ -624,6 +644,8 @@ class DynamicTab(QtCore.QObject):
         self.model_widget.set_wind_vector(wind_azimut,wind_tilt, wind_speed)
         self.model_widget.set_tas_vector(yaw, tas)
         self.model_widget.set_bearing_vector(bearing,gnss_speed)
+
+        
         
 
     def next_frame(self):
@@ -862,6 +884,8 @@ class DynamicTab(QtCore.QObject):
 
     def apply_color_change(self):
         self.model_widget.apply_color_changes()
+        # We reset the combobox color mapping 
+        self.comboBox_colormap_dyna.setCurrentIndex(0)
 
 
 
