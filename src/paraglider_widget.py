@@ -1,44 +1,64 @@
 from PyQt6 import QtGui
 import numpy as np
 import pyqtgraph.opengl as gl
-from PyQt6.QtCore import QTimer
+import pyqtgraph as pg
+from PyQt6.QtCore import QSettings, QTimer
 from pyqtgraph.Qt import QtCore
 from PyQt6.QtGui import QColor, QVector3D
 from utils import mapping
 import trimesh
 
+import numpy as np
+import pyqtgraph.opengl as gl
 
 
-
-def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
-
+def create_green_dome(
+    radius,
+    color,
+    stacks=32,
+    slices=64
+):
     """
-    Charge un fichier .obj et retourne un GLMeshItem avec coloration par zone.
-    Structure détectée sur para_v3.obj (axe Y) :
-        Y > -1          → voile        (rouge vif)
-        -6 < Y < -1     → pilote/sellette (bleu-gris contrasté)
-        Y < -6          → suspentes    (gris clair)
+    Demi-sphère inversée :
+    
+    - ouverte vers le haut
+    - creuse
+    - section circulaire à z = 0
+    - point le plus bas à z = -radius
     """
 
-    from pathlib import Path
+    phi = np.linspace(np.pi / 2, np.pi, stacks)
+    theta = np.linspace(0, 2 * np.pi, slices)
 
-    mesh = trimesh.load(Path(obj_path), force='mesh')
-    verts  = np.array(mesh.vertices, dtype=float)
-    faces  = np.array(mesh.faces,    dtype=int)
-    # Centre Y de chaque face → détermine la zone
-    y_centers = verts[faces, 1].mean(axis=1)
-    colors = np.ones((len(faces), 4), dtype=float)
-    # Voile : rouge vif
-    voile = y_centers >= -1
-    colors[voile] = [0.85, 0.12, 0.12, 1.0]
-    # Pilote / sellette : bleu-gris bien contrasté
-    pilote = (y_centers >= -6) & (y_centers < -1)
-    colors[pilote] = [0.25, 0.45, 0.80, 1.0]
-    # Suspentes : gris clair (fines cordes)
-    suspentes = y_centers < -6
-    colors[suspentes] = [0.82, 0.82, 0.82, 1.0]
+    phi, theta = np.meshgrid(phi, theta, indexing='ij')
 
-    item = gl.GLMeshItem(
+    # coordonnées sphériques
+    x = radius * np.sin(phi) * np.cos(theta)
+    y = radius * np.sin(phi) * np.sin(theta)
+    z = radius * np.cos(phi)
+
+    verts = np.stack((x, y, z), axis=-1).reshape(-1, 3)
+
+    faces = []
+
+    for i in range(stacks - 1):
+        for j in range(slices - 1):
+
+            a = i * slices + j
+            b = (i + 1) * slices + j
+            c = (i + 1) * slices + (j + 1)
+            d = i * slices + (j + 1)
+
+            # orientation vers l'intérieur
+            faces.append([a, c, b])
+            faces.append([a, d, c])
+
+    faces = np.array(faces, dtype=np.int32)
+
+    colors = np.ones((len(faces), 4), dtype=np.float32)
+    colors[:] = color
+
+    dome = gl.GLMeshItem(
         vertexes=verts,
         faces=faces,
         faceColors=colors,
@@ -47,7 +67,64 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
         shader='balloon'
     )
 
-    return item
+    dome.setGLOptions('opaque')
+
+    return dome
+
+def create_ground(
+    size=50000,
+    color=(1.0, 0.0, 0.0, 0.0)
+):
+
+    import numpy as np
+    import pyqtgraph.opengl as gl
+
+    verts = np.array([
+        [-size, -size, 0],
+        [ size, -size, 0],
+        [ size,  size, 0],
+        [-size,  size, 0],
+    ], dtype=np.float32)
+
+    faces = np.array([
+        [0, 1, 2],
+        [0, 2, 3]
+    ], dtype=np.uint32)
+
+    colors = np.array([
+        color,
+        color
+    ], dtype=np.float32)
+
+    ground = gl.GLMeshItem(
+        vertexes=verts,
+        faces=faces,
+        faceColors=colors,
+        smooth=False,
+        drawEdges=False,
+        shader="balloon"
+    )
+
+    return ground
+
+def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
+    from pathlib import Path
+
+    mesh = trimesh.load(Path(obj_path), force='mesh')
+    verts = np.array(mesh.vertices, dtype=float)
+    faces = np.array(mesh.faces, dtype=int)
+
+    colors = np.full((len(faces), 4),
+                     [0.15, 0.15, 0.15, 1.0],
+                     dtype=float)
+
+    return gl.GLMeshItem(
+        vertexes=verts,
+        faces=faces,
+        smooth=True,
+        drawEdges=False,
+        shader='shaded'
+    )
 
 
 def load_arrow_mesh(
@@ -73,10 +150,71 @@ def load_arrow_mesh(
 
     return item
 
+def load_stl_mesh(
+    stl_path: str,
+    color=(0.0, 0.0, 1.0, 1.0)
+) -> gl.GLMeshItem:
+    from pathlib import Path
+    mesh = trimesh.load(Path(stl_path), force='mesh')
+    verts = np.array(mesh.vertices, dtype=float)
+    faces = np.array(mesh.faces,    dtype=int)
+    item = gl.GLMeshItem(
+        vertexes=verts,
+        faces=faces,
+        color=color,
+        smooth=True,
+        drawEdges=False,
+        shader='balloon'
+    )
+    return item
 
 
+def load_glb_mesh(
+    glb_path: str,
+    color=(0.0, 0.0, 1.0, 1.0)
+) -> gl.GLMeshItem:
 
+    from pathlib import Path
 
+    # Chargement de la scène GLB
+    scene = trimesh.load(
+        Path(glb_path),
+        force='scene'
+    )
+
+    # Fusion de tous les meshes
+    meshes = []
+
+    for geom in scene.geometry.values():
+
+        if isinstance(geom, trimesh.Trimesh):
+            meshes.append(geom)
+
+    if len(meshes) == 0:
+        raise ValueError("No mesh found in GLB file")
+
+    mesh = trimesh.util.concatenate(meshes)
+
+    verts = np.array(
+        mesh.vertices,
+        dtype=np.float32
+    )
+
+    faces = np.array(
+        mesh.faces,
+        dtype=np.uint32
+    )
+
+    item = gl.GLMeshItem(
+        vertexes=verts,
+        faces=faces,
+        color=color,
+        smooth=True,
+        drawEdges=False,
+        shader='balloon'
+    )
+
+    return item
 
 class ParaGliderWidget(gl.GLViewWidget):
     """
@@ -97,29 +235,44 @@ class ParaGliderWidget(gl.GLViewWidget):
     def __init__(self, parent=None, obj_path: str = None):
         super().__init__(parent)
 
-        self.setBackgroundColor((200, 200, 200, 200))   # fond sombre
+        self.settings = QSettings("Vector Vario", "VVA")
+
+        self.setBackgroundColor(QColor(self.settings.value("colors/background" , "#b5b5b5")))   
         self.setCameraPosition(distance=14, elevation=20, azimuth=45)
         self._view = "free"
         self._cam_azimuth = 45
         self._cam_elevation = 20
 
         self._items = []
-        # Grille de référence au sol
+        # Ground
+        # radius = 200
+        # self._dome_ground = create_green_dome(
+        #     radius=radius,
+        #     color=(0.184, 0.62, 0.345, 1.0)
+        # )
+        # # self._dome_ground.setGLOptions('additive')
+        # self.addItem(self._dome_ground)
+        # self._items.append(self._dome_ground)
+         # Grille de référence au sol
+
         self._grid = gl.GLGridItem()
         self._grid.setSize(200, 200)
         self._grid.setSpacing(20, 20)
-        self._grid.setColor(QColor(13, 143, 9))
+        self._grid.setColor(QColor(self.settings.value("colors/grid" , "#FFFFFF")))
         self._grid.translate(0, 0, -4)
         self.addItem(self._grid)
         self._items.append(self._grid)
+
         # Axe de référence (debug, optionnel)
         self._axis = gl.GLAxisItem()
         self._axis.setSize(3, 3, 3)
         self.addItem(self._axis)
         self._items.append(self._axis)
         # Construction du modèle
-        self._model = load_obj_mesh(obj_path)
+        # self._model = load_glb_mesh("gui/models/para2.glb")
+        self._model = load_obj_mesh("gui/models/para_v4.obj")
         self.addItem(self._model)
+        self._model.setColor(QColor("#FF1717"))
         self._items.append(self._model)
         # Building arrow 
         self._wind_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 0.6, 1.0, 0.8))
@@ -138,17 +291,25 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.addItem(self._bearing_arrow)
         self._items.append(self._bearing_arrow)
 
+        self._vertical_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3,0.4, 0.5, 0.8))
+        self.addItem(self._vertical_arrow)
+        self._items.append(self._vertical_arrow)
+
 
         # Trajectoire du parapente 
+        qcolor_trajectory = QColor(self.settings.value("colors/plot" , "#ff0000"))
+        r, g, b, a = qcolor_trajectory.getRgbF()
+        gl_color = (r, g, b, a)
         self._trajectory = gl.GLLinePlotItem(
             pos=np.zeros((1,3)),
-            color=(1, 0, 0, 1),  # rouge RGBA
+            color= gl_color,
             width=2,
             antialias=False,
             mode='line_strip'
         )
         self._trajectory.setGLOptions('opaque')  # ← respecte le depth buffer
         self.addItem(self._trajectory)
+
         
         # debug_points = self.debug_points()
         # self.addItem(debug_points)
@@ -166,6 +327,8 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._tas = 0.0
         self._gnss_speed = 0.0
         self._bearing = 0.0
+
+        self._min_radius_skybox = 0.0
         
         self.set_attitude(0,0,0)
         self.set_position(0,0,0)
@@ -181,7 +344,7 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
-
+       
         match self._view:
 
             case "top":
@@ -212,7 +375,7 @@ class ParaGliderWidget(gl.GLViewWidget):
 
             case "free":
                 return
-        
+        self._update_clipping_planes()
         self._smooth_camera(target_azimuth, target_elevation)
         
     def _smooth_camera(self, target_azimuth, target_elevation ):
@@ -245,13 +408,13 @@ class ParaGliderWidget(gl.GLViewWidget):
         
 
     # ------------------------------------------------------------------
-    # Rotation du modèle
+    # Models translation and rotation
     # ------------------------------------------------------------------
     
 
     def _update_transform(self):
-        
 
+        #TRANSLATION
         # Paraglider
         item = self._model
         item.resetTransform()
@@ -260,54 +423,116 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._y,
             self._z
         )
+        # ROTATION
         item.rotate(-self._yaw + 90, 0, 0, 1, True)
         item.rotate(- self._pitch, 0, 1,0 , True)  
         item.rotate(self._roll - 90, 1, 0, 0, True)
-
-
+   
         # Wind vector 
         self._wind_arrow.resetTransform()
+        self._wind_arrow.rotate(- self._wind_azimut - 90, 0 , 0 , 1, True)
+        self._wind_arrow.rotate(- self._wind_tilt , 0 , 1 , 0, True)
         self._wind_arrow.translate(
             self._x,
             self._y,
             self._z
         )
-        self._wind_arrow.rotate(- self._wind_azimut - 90, 0 , 0 , 1, True)
-        self._wind_arrow.rotate(- self._wind_tilt , 0 , 1 , 0, True)
-        self._wind_arrow.scale(mapping(self._wind_speed,0,30,0.1,3), 1, 1)
+
 
          # North vector 
+
         self._north_arrow.resetTransform()
+        self._north_arrow.rotate(90, 0 , 0 , 1, True)
         self._north_arrow.translate(
             self._x,
             self._y,
             self._z
         )
-        self._north_arrow.rotate(90, 0 , 0 , 1, True)
-
           # TAS vector 
         self._tas_arrow.resetTransform()
+        self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
         self._tas_arrow.translate(
             self._x,
             self._y,
             self._z
         )
-        self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
-        self._tas_arrow.scale(mapping(self._tas,0,30,0.1,3), 1, 1)
-
          # Bearing vector 
         self._bearing_arrow.resetTransform()
+        self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
         self._bearing_arrow.translate(
             self._x,
             self._y,
             self._z
         )
-        self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
+         # Vertical vector 
+        self._vertical_arrow.resetTransform()
+        self._vertical_arrow.rotate(-90, 0 , 1 , 0, True)
+        self._vertical_arrow.translate(
+            self._x,
+            self._y,
+            self._z
+        )
+    
+        #SCALING
+        self._wind_arrow.scale(mapping(self._wind_speed,0,30,0.1,3), 1, 1)
+        self._tas_arrow.scale(mapping(self._tas,0,30,0.1,3), 1, 1)
         self._bearing_arrow.scale(mapping(self._gnss_speed,0,30,0.1,3), 1, 1)
 
-
         self._camera_follow()
+
+
+        #SKYBOX
+        # cam_dist = self.opts['distance']
+        # cam_center = self._get_camera_pos()
+        # if cam_dist + self._min_radius_skybox <= self._min_radius_skybox:
+        #     dome_radius = self._min_radius_skybox
+        # else :
+        #     dome_radius = cam_dist * 1.2 + self._min_radius_skybox
+       
+
+        # self._dome_ground.resetTransform()
+        # self._dome_ground.translate(
+        #     cam_center[0],
+        #     cam_center[1],
+        #     cam_center[2]
+        # )
+        # self._dome_ground.scale(dome_radius, dome_radius, dome_radius)
            
+    def _get_camera_pos(self) -> np.ndarray:
+        """Retourne la position XYZ de la caméra dans le repère monde."""
+        dist = self.opts['distance']
+        elev = np.radians(self.opts['elevation'])
+        azim = np.radians(self.opts['azimuth'])
+        center = self.opts['center']  # QVector3D
+
+        x = center.x() + dist * np.cos(elev) * np.cos(azim)
+        y = center.y() + dist * np.cos(elev) * np.sin(azim)
+        z = center.z() + dist * np.sin(elev)
+
+        return np.array([x, y, z], dtype=float)
+    
+    def _update_clipping_planes(self):
+        cam_dist = self.opts['distance']
+        # near = 0.1% de la distance caméra, far = 10× la distance caméra
+        self.opts['near'] = max(0.01, cam_dist * 0.001)
+        self.opts['far']  = cam_dist * 10.0
+        self.update()
+
+    
+
+    def _apply_colormap(self, variable: np.ndarray, cmap_name: str = 'turbo') -> np.ndarray:
+        cmap = pg.colormap.get(cmap_name)
+
+        v = np.asarray(variable, dtype=np.float64)
+        v_min, v_max = np.nanmin(v), np.nanmax(v)
+
+        if v_max == v_min:
+            norm = np.zeros_like(v)
+        else:
+            norm = np.clip((v - v_min) / (v_max - v_min), 0, 1)
+
+        # mode='float' retourne un array (N, 4) float dans [0, 1] → parfait pour GLLinePlotItem
+        return cmap.map(norm, mode='float').astype(np.float32)
 
     # ------------------------------------------------------------------
     # API publique
@@ -419,6 +644,47 @@ class ParaGliderWidget(gl.GLViewWidget):
     def set_visibility_bearing_vector(self, visible):
         self._bearing_arrow.setVisible(visible)
 
+    def set_visibility_vertical_vector(self, visible):
+        self._vertical_arrow.setVisible(visible)
+
+    def set_min_radius(self, radius):
+        self._min_radius_skybox = radius 
+
+    def set_len_grid(self, origin_x, origin_y, len_x, len_y):
+        self._grid.resetTransform()
+        self._grid.translate(origin_x, origin_y, -4)
+        self._grid.setSize(len_x* 4, len_y* 4)
+        spacing = max(len_x,len_y) / 50
+        self._grid.setSpacing(spacing, spacing)
+
+    def apply_color_changes(self):
+        self.settings.beginGroup("colors")
+        self._grid.setColor(QColor(self.settings.value("grid" , "#FFFFFF")))
+        self.setBackgroundColor(QColor(self.settings.value("background" , "#908989")))
+        qcolor_trajectory = QColor(self.settings.value("dynaplot" , "#ff0000"))
+        r, g, b, a = qcolor_trajectory.getRgbF()
+        gl_color = (r, g, b, a)
+        self._trajectory.setData(color = gl_color)
+        self._model.setColor(QColor(self.settings.value("model" , "#322D2D")))
+        self.settings.endGroup()
+
+    def show_grid(self, state):
+        self._grid.setVisible(state)
+
+    def set_color_trajectory(self, variable: np.ndarray = None, to_mapped: bool = False, cmap_name: str = 'turbo'):
+        
+        if to_mapped:
+            if variable is not None :
+                colors = self._apply_colormap(variable, cmap_name)
+
+            self._trajectory.setData(color=colors)
+        
+        else: 
+
+            qcolor_trajectory = QColor(self.settings.value("colors/dynaplot" , "#ff0000"))
+            r, g, b, a = qcolor_trajectory.getRgbF()
+            gl_color = (r, g, b, a)
+            self._trajectory.setData(color = gl_color) 
  
     
 

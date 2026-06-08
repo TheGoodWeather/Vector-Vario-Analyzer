@@ -73,6 +73,7 @@ class ColorButton(QtWidgets.QPushButton):
 
     def __init__(self, *args, color=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setFixedSize(24, 24)
         self._color = None
         self._default = color
         self.pressed.connect(self.onColorPicker)
@@ -112,6 +113,7 @@ class ColorDialog(QtWidgets.QDialog):
     
     colorWindBarbsChanged = pyqtSignal()
     colorPlotChanged = pyqtSignal()
+    colorDynaChanged = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -125,24 +127,43 @@ class ColorDialog(QtWidgets.QDialog):
 
         uic.loadUi(resource_path("gui/colorwindow.ui"), self)  # Load the .ui file directly
         self.settings = QSettings("Vector Vario", "VVA")
+
+        # Map explorer
         self.color_button_windbarb = ColorButton(color="#000000")  # Start with black as default
         self.color_button_plot = ColorButton(color="#ff0000") #Start with red as default
         self.windbarbs_color_widget.layout().addWidget(self.color_button_windbarb)
         self.plot_color_widget.layout().addWidget(self.color_button_plot)
 
+        # Dyna tab
+
+        self.color_button_grid = ColorButton(color="#FFFFFF")  
+        self.color_button_dynaplot = ColorButton(color="#ff0000") 
+        self.color_button_background = ColorButton(color="#a29c9c") 
+        self.color_button_model = ColorButton(color="#FF1717")
         
-        self.read_settings()
+        self.grid_color_widget.layout().addWidget(self.color_button_grid)
+        self.dynaplot_color_widget.layout().addWidget(self.color_button_dynaplot)
+        self.background_color_widget.layout().addWidget(self.color_button_background)
+        self.model_color_widget.layout().addWidget(self.color_button_model)
+        
         self.buttonBox.accepted.connect(self.write_settings)    
-        
+        self.read_settings()
+
 
         
     def write_settings(self):
         self.settings.beginGroup("colors")
         self.settings.setValue("windbarbs", self.color_button_windbarb.color())
         self.settings.setValue("plot", self.color_button_plot.color())
+        self.settings.setValue("grid", self.color_button_grid.color())
+        self.settings.setValue("dynaplot", self.color_button_dynaplot.color())
+        self.settings.setValue("background", self.color_button_background.color())
+        self.settings.setValue("model", self.color_button_model.color())
         self.settings.endGroup()
+        
         self.colorWindBarbsChanged.emit()
         self.colorPlotChanged.emit()
+        self.colorDynaChanged.emit()
         self.close()
         
     def read_settings(self):
@@ -151,7 +172,10 @@ class ColorDialog(QtWidgets.QDialog):
         self.settings.beginGroup("colors")
         self.color_button_windbarb.setColor(self.settings.value("windbarbs" , "#000000"))
         self.color_button_plot.setColor(self.settings.value("plot" , "#ff0000"))
-
+        self.color_button_grid.setColor(self.settings.value("grid" , "#FFFFFF"))
+        self.color_button_dynaplot.setColor(self.settings.value("dynaplot" , "#ff0000"))
+        self.color_button_background.setColor(self.settings.value("background" , "#a29c9c"))
+        self.color_button_model.setColor(self.settings.value("model" , "#FF1717"))
         self.settings.endGroup()
 
 

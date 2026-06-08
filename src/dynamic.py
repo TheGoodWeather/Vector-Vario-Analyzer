@@ -1,13 +1,13 @@
 import pyqtgraph as pg
 import numpy as np
 from PyQt6 import QtCore , QtGui
-from utils import mapping
+from utils import mapping, rgba_to_hex, hex_to_rgba
 from paraglider_widget import ParaGliderWidget
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QStackedLayout
 from units import convert_array_to_unit, get_unit, convert_gps_to_local_xy
-from utils import get_label, get_variable
-from PyQt6.QtGui import QPainter, QColor, QPen, QFont
-from PyQt6.QtCore import Qt
+from utils import get_label, get_variable, interp_spline, interp_nearest
+from PyQt6.QtGui import QFontMetrics, QPainter, QColor, QPen, QFont
+from PyQt6.QtCore import QSettings, Qt
 
 fps = 30
 
@@ -45,10 +45,14 @@ class DynamicTab(QtCore.QObject):
                  checkbox_north_vector_dyna,
                  checkbox_tas_vector_dyna,
                  checkbox_bearing_vector_dyna,
+                 checkbox_vertical_vector_dyna,
+                 radioButton_interpolated_dyna,
+                 radioButton_raw_dyna,
+                 checkBox_show_grid,
+                 comboBox_colormap_dyna,
                  obj_path: str = None):
         
         super().__init__()
-
         self.radioButton_free_view = radioButton_free_view
         self.radioButton_front_view = radioButton_front_view
         self.radioButton_behind_view = radioButton_behind_view
@@ -79,8 +83,13 @@ class DynamicTab(QtCore.QObject):
         self.checkbox_north_vector_dyna = checkbox_north_vector_dyna
         self.checkbox_tas_vector_dyna =checkbox_tas_vector_dyna
         self.checkbox_bearing_vector_dyna = checkbox_bearing_vector_dyna
+        self.checkbox_vertical_vector_dyna = checkbox_vertical_vector_dyna
+        self.radioButton_interpolated_dyna = radioButton_interpolated_dyna
+        self.radioButton_raw_dyna = radioButton_raw_dyna
+        self.checkBox_show_grid = checkBox_show_grid
+        self.comboBox_colormap_dyna = comboBox_colormap_dyna
+        self.settings = QSettings("Vector Vario", "VVA")
 
-    
         self._cursor_lines = []
         self._current_time = 0.0 #second
         self._interp_index = 0
@@ -102,6 +111,8 @@ class DynamicTab(QtCore.QObject):
         self._wind_tilt_interp = None
         self._wind_tilt = None
         self._wind_speed_interp = None
+
+        self.gnss_offset = 0
 
         self.gl_container = QWidget()
         stack = QStackedLayout(self.gl_container)
@@ -131,7 +142,8 @@ class DynamicTab(QtCore.QObject):
         self.comboBox_var_1_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_1_dyntab, self._curve1 , self.comboBox_var_1_dyntab, self.label_unit_var1_dyna ))
         self.comboBox_var_2_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab, self.label_unit_var2_dyna))
         self.comboBox_var_3_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_3_dyntab, self._curve3 , self.comboBox_var_3_dyntab ,self.label_unit_var3_dyna))
-        
+        self.comboBox_colormap_dyna.currentIndexChanged.connect(lambda: self._set_color_trajectory(self.comboBox_colormap_dyna))
+
         self.pushButton_play.clicked.connect(self.play)
         self.pushButton_pause.clicked.connect(self.pause)
         self.pushButton_next.clicked.connect(self.next_frame)
@@ -146,13 +158,26 @@ class DynamicTab(QtCore.QObject):
         self.radioButton_right_view.toggled.connect(self.model_widget.set_view_right) 
 
         self.checkbox_wind_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_wind_vector(state))
+        self.checkbox_wind_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_wind_vector_dyna, rgba_to_hex(0.3, 0.6, 1.0, 0.8)))
         self.checkbox_wind_vector_dyna.setChecked(True)
         self.checkbox_north_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_north_vector(state))
+        self.checkbox_north_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_north_vector_dyna, rgba_to_hex(1.0, 0.2, 0.2, 0.8)))
         self.checkbox_north_vector_dyna.setChecked(False)
         self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_tas_vector(state))
+        self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_tas_vector_dyna, rgba_to_hex(0.2, 0.8, 1.0, 0.8)))
         self.checkbox_tas_vector_dyna.setChecked(False)
         self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_bearing_vector(state))
+        self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_bearing_vector_dyna, rgba_to_hex(0.3, 1.0, 0.5, 0.8)))
         self.checkbox_bearing_vector_dyna.setChecked(False)
+        self.checkbox_vertical_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_vertical_vector(state))
+        self.checkbox_vertical_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_vertical_vector_dyna, rgba_to_hex(0.3,0.4, 0.5, 0.8)))
+        self.checkbox_vertical_vector_dyna.setChecked(False)
+
+        self.checkBox_show_grid.stateChanged.connect(lambda state: self.model_widget.show_grid(state))
+        self.checkBox_show_grid.setChecked(True)
+
+        self.radioButton_interpolated_dyna.toggled.connect(lambda state : self.change_interpolation(state))
+        #self.radioButton_interpolated_dyna.setChecked(True)
 
         self._play_timer = QtCore.QTimer()
         self._play_timer.timeout.connect(self._play_step)
@@ -160,11 +185,23 @@ class DynamicTab(QtCore.QObject):
         
         self._playback_speed = 1.0   # 0.5 / 1 / 2
         self._play_elapsed = 0.0     # temps simulé écoulé
+        
 
+        self._setup_keyboard_shortcuts()
+
+    def _setup_keyboard_shortcuts(self):
         # Keyboard events management
-        self.gl_container.installEventFilter(self)
-        self.gl_container.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.gl_container.setFocus()
+        app = QtCore.QCoreApplication.instance()
+        app.installEventFilter(self)
+        # app.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        # app.setFocus()
+
+    def eventFilter(self, obj, event):
+        if event.type() == QtCore.QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Space:
+                self._on_space_pressed()
+                return True   # événement consommé, ne se propage pas
+        return super().eventFilter(obj, event)
 
     def _setup_widget(self):
         
@@ -183,7 +220,11 @@ class DynamicTab(QtCore.QObject):
         self.plotwidget_3_dyntab.setXLink(self.plotwidget_1_dyntab)
         self.plotwidget_1_dyntab.setXLink(self.plotwidget_2_dyntab)
        
-
+        self.plotwidget_1_dyntab.scene().sigMouseClicked.connect(lambda event: self._on_graph_clicked(event,self.plotwidget_1_dyntab))
+        self.plotwidget_2_dyntab.scene().sigMouseClicked.connect(lambda event: self._on_graph_clicked(event,self.plotwidget_2_dyntab))
+        self.plotwidget_3_dyntab.scene().sigMouseClicked.connect(lambda event: self._on_graph_clicked(event,self.plotwidget_3_dyntab ))
+                                                         
+                                                                 
         self.label_unit_var1_dyna.setText("")
         self.label_unit_var2_dyna.setText("")
         self.label_unit_var3_dyna.setText("")
@@ -198,7 +239,7 @@ class DynamicTab(QtCore.QObject):
                 angle=90,
                 movable=True,
                 pos = self._raw_index,
-                pen=pg.mkPen('r', width=2)
+                pen=pg.mkPen(QColor(0,0,0), width=3)
             )
             line.sigPositionChanged.connect(lambda line: self._cursor_moved(line))
             plot.addItem(line)
@@ -206,7 +247,6 @@ class DynamicTab(QtCore.QObject):
             self._cursor_lines.append(line)
         
     def _fetch_flight(self, flight_text):
-        
         for flight in self.flight_data_set:
             if flight['file_name'].split(".")[0] == flight_text or (flight['metadata']['alias'] == flight_text):
                 if flight['is_data_processed'] and flight['data'] and flight['is_flight_selected']:
@@ -214,8 +254,10 @@ class DynamicTab(QtCore.QObject):
                     break 
         
         if self._flight:
+
             self._populate_var_combobox()
             self._interpolate_data()
+            self._return_min_radius()
             self._set_time(0.0)
 
 
@@ -223,16 +265,67 @@ class DynamicTab(QtCore.QObject):
             self.comboBox_var_2_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("pitch"))
             self.comboBox_var_3_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("roll"))
 
+            self.model_widget.set_color_trajectory(self._alt_interp)
+
+    def _set_color_trajectory(self, combobox):
+        """
+        Choose a variable and send it to paraglider_widget to plot it colormapped
+        """
+        variable = combobox.currentData()
+        if variable is not None:
+            z = self._flight['data'][variable]
+            if self.radioButton_interpolated_dyna.isChecked():
+                z_interp = interp_spline(self._time_interp, self._time_raw, z) 
+            else :
+                z_interp = interp_nearest(self._time_interp,self._time_raw,  z) 
+            to_mapped = True
+        else:
+            z_interp = None
+            to_mapped = False
+        self.model_widget.set_color_trajectory(z_interp, to_mapped)
+
+    def _interpolate_data(self, method = 'spline'):
+        """
+        This function interpolate the data accordingly to fps (30 by default).
+        The interpolation can be spline (cubic) or nearest to preserve the "raw" data.
+        Moreover, we are applying a GNSS offset to IGC file that can be changed. 
+        """
+        if method == 'spline':
+            def interp(time_origine, time_interp, variable_to_interp):
+                return interp_spline(time_origine, time_interp, variable_to_interp)
+        else :
+            def interp(time_origine, time_interp, variable_to_interp):
+                return interp_nearest(time_origine, time_interp, variable_to_interp)
 
 
-    def _interpolate_data(self):
+        def interp_and_shift(arr):
+            result = interp(self._time_interp, t_seconds, arr)
+            if gnss_shift == 0:
+                return result
+            shifted = np.roll(result, -gnss_shift)
+            if gnss_shift > 0:
+                shifted[-gnss_shift:] = result[-1]
+            else:
+                shifted[:-gnss_shift] = result[0]
+            return shifted
+
+    
+        if self._flight['file_name'].split('.')[1] == "igc" or self._flight['file_name'].split('.')[1] == "IGC":
+            self.gnss_offset = 0 # At 0 for the moment, can be modified in the future when we will know more about gnss_lag
+            z_data = self._flight['data']['QNS_alt']
+        else: 
+            self.gnss_offset = 0 
+            z_data = self._flight['data']['GNSS_alt']   
 
         times = self._flight['data']['GNSS_time']
+
+        # Number of iterations to offset according to a lag in seconds 
+        gnss_shift = int(round(self.gnss_offset * fps))
 
         t0 = times[0]
 
         t_seconds = np.array([
-            (t - t0).total_seconds()
+            (t - t0).total_seconds() 
             for t in times
         ], dtype=np.float64)
 
@@ -244,14 +337,15 @@ class DynamicTab(QtCore.QObject):
             1/fps
         )
 
+        
 
-        self._pitch_interp = np.interp(
+        self._pitch_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['pitch']
         )
 
-        self._roll_interp = np.interp(
+        self._roll_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['roll']
@@ -262,7 +356,7 @@ class DynamicTab(QtCore.QObject):
                 self._flight['data']['compass_head']
             )
         )
-        yaw_interp = np.interp(
+        yaw_interp =  interp(
             self._time_interp,
             t_seconds,
             yaw
@@ -271,23 +365,26 @@ class DynamicTab(QtCore.QObject):
 
         _x_local, _y_local = convert_gps_to_local_xy(self._flight['data']['GNSS_lon'], self._flight['data']['GNSS_lat'])
 
-        self._x_interp = np.interp(
-            self._time_interp,
-            t_seconds,
-            _x_local
-        )
+        # self._x_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     _x_local
+        # ) 
 
-        self._y_interp = np.interp(
-            self._time_interp,
-            t_seconds,
-            _y_local
-        )
+        # self._y_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     _y_local
+        # ) 
 
-        self._z_interp = np.interp(
+        self._x_interp     = interp_and_shift(_x_local)
+        self._y_interp     = interp_and_shift(_y_local)
+
+        self._z_interp =  interp(
             self._time_interp,
             t_seconds,
-            self._flight['data']['GNSS_alt']
-        )
+            z_data,
+        ) 
 
         self.model_widget.set_trajectory(
             self._x_interp ,
@@ -295,23 +392,27 @@ class DynamicTab(QtCore.QObject):
             self._z_interp,
         )
 
-        self._netto_interp = np.interp(
+        self._netto_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['netto']
         )
 
-        self._alt_interp = np.interp(
-            self._time_interp,
-            t_seconds,
-            self._flight['data']['GNSS_alt']
-        )
+        # self._alt_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     self._flight['data']['GNSS_alt']
+        # )
 
-        self._speed_interp = np.interp(
-            self._time_interp,
-            t_seconds,
-            self._flight['data']['GNSS_speed']
-        )
+        self._alt_interp   = interp_and_shift(self._flight['data']['GNSS_alt'])
+
+        # self._speed_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     self._flight['data']['GNSS_speed']
+        # )
+
+        self._speed_interp = interp_and_shift(self._flight['data']['GNSS_speed'])
 
         wind_vel = np.asarray(
             self._flight['data']['wind_vel'],
@@ -340,7 +441,7 @@ class DynamicTab(QtCore.QObject):
                 self._flight['data']['wind_origin']
             )
         )
-        wind_dir_interp = np.interp(
+        wind_dir_interp =  interp(
             self._time_interp,
             t_seconds,
             wind_dir
@@ -348,24 +449,24 @@ class DynamicTab(QtCore.QObject):
         self._wind_dir_interp = np.degrees(wind_dir_interp)
 
 
-        self._wind_tilt_interp = np.interp(
+        self._wind_tilt_interp =  interp(
             self._time_interp,
             t_seconds,
             self._wind_tilt)
         
-        self._wind_speed_interp = np.interp(
+        self._wind_speed_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['wind_vel']
         )
 
-        self._tas_interp = np.interp(
+        self._tas_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['TAS']
         )
 
-        self._vario_interp = np.interp(
+        self._vario_interp =  interp(
             self._time_interp,
             t_seconds,
             self._flight['data']['vario']
@@ -376,20 +477,21 @@ class DynamicTab(QtCore.QObject):
                 self._flight['data']['GNSS_head']
             )
         )
-        gnss_heading_interp = np.interp(
-            self._time_interp,
-            t_seconds,
-            gnss_heading
-        )
+        # gnss_heading_interp =  interp(
+        #     self._time_interp,
+        #     t_seconds,
+        #     gnss_heading
+        # )
+        gnss_heading_interp = interp_and_shift(gnss_heading)
+
         self._gnss_heading_interp = np.degrees(gnss_heading_interp)
 
 
     
 
-
     
     def _populate_var_combobox(self):
-        for combobox in [self.comboBox_var_1_dyntab, self.comboBox_var_2_dyntab, self.comboBox_var_3_dyntab ]:
+        for combobox in [self.comboBox_var_1_dyntab, self.comboBox_var_2_dyntab, self.comboBox_var_3_dyntab, self.comboBox_colormap_dyna]:
             variable_to_sort = []
             combobox.clear()
             combobox.addItem("None", userData = None)
@@ -402,7 +504,6 @@ class DynamicTab(QtCore.QObject):
                 combobox.addItem(variable, userData=get_variable(variable))
 
     def _update_plot(self, plot_widget, curve, combobox_var, label_widget_unit):
-        
         
         variable = combobox_var.currentData() 
         if not variable:
@@ -430,12 +531,11 @@ class DynamicTab(QtCore.QObject):
         pen = pg.mkPen(self._flight['plot']['plot_color'], width=1)
         
         curve.setPen(pen)
-
         curve.setData(x,y)
-
         plot_widget.autoRange()   
-
         label_widget_unit.setText(str(get_unit(variable)))
+        
+        self._update_lcds()
 
     
     def _cursor_moved(self, line):
@@ -449,10 +549,10 @@ class DynamicTab(QtCore.QObject):
             len(self._time_raw) - 1
         )
 
-        # 1) convertir raw index → temps
+        # convertir raw index → temps
         self._current_time = self._time_raw[self._raw_index]
 
-        # 2) convertir temps → index interpolé
+        # convertir temps → index interpolé
         self._interp_index = int(self._current_time * fps)
 
         self._interp_index = np.clip(
@@ -460,8 +560,8 @@ class DynamicTab(QtCore.QObject):
             0,
             len(self._time_interp) - 1
         )
-
-        # 3) sync UI
+        # sync UI
+        self._update_cursor()
         self._update_model()
         self._update_lcds()
         self._update_hud()
@@ -527,9 +627,9 @@ class DynamicTab(QtCore.QObject):
         pitch= self._pitch_interp[i]
         roll= self._roll_interp[i]
         yaw= self._yaw_interp[i]
-        x = self._x_interp[i]
+        x = self._x_interp[i] 
         y = self._y_interp[i]
-        z = self._z_interp[i]
+        z = self._z_interp[i] 
         wind_azimut = self._wind_dir_interp[i]
         wind_tilt = self._wind_tilt_interp[i]
         wind_speed = self._wind_speed_interp[i]
@@ -545,50 +645,7 @@ class DynamicTab(QtCore.QObject):
         self.model_widget.set_tas_vector(yaw, tas)
         self.model_widget.set_bearing_vector(bearing,gnss_speed)
 
-
-    def eventFilter(self, obj, event):
-        if event.type() == QtCore.QEvent.Type.KeyPress:
-            key = event.key()
-            # SPACE -> play/pause
-            if key == Qt.Key.Key_Space:
-                if self._play_timer.isActive():
-                    self.pause()
-                else:
-                    self.play()
-                event.accept()
-                return True
-            # RIGHT -> frame suivante
-            elif key == Qt.Key.Key_Right:
-                self.next_frame()
-                event.accept()
-                return True
-            # LEFT -> frame précédente
-            elif key == Qt.Key.Key_Left:
-                self.previous_frame()
-                event.accept()                
-                return True
-            # UP -> vitesse +
-            elif key == Qt.Key.Key_Up:
-                self._playback_speed *= 2
-                return True
-            # DOWN -> vitesse -
-            elif key == Qt.Key.Key_Down:
-                self._playback_speed /= 2
-                return True
-            # vues caméra
-            elif key == Qt.Key.Key_F:
-                self.model_widget.set_view_front()
-                return True
-            elif key == Qt.Key.Key_B:
-                self.model_widget.set_view_behind()
-                return True
-            elif key == Qt.Key.Key_T:
-                self.model_widget.set_view_top()
-                return True
-            elif key == Qt.Key.Key_G:
-                self.model_widget.set_view_free()
-                return True
-        return super().eventFilter(obj, event)
+        
         
 
     def next_frame(self):
@@ -603,13 +660,18 @@ class DynamicTab(QtCore.QObject):
         self._set_time(max(0, self._current_time - dt))
         
     def play(self):
-        self._elapsed_timer.restart()
-        self._play_timer.start(16)   # vise 60 Hz, on régule nous-mêmes
-        # self._play_timer.start(int(1000 / fps))
+        if not self._play_timer.isActive():
+            self.pushButton_pause.setChecked(False)
+            self.pushButton_play.setChecked(True)
+            self._elapsed_timer.restart()
+            self._play_timer.start(16)   # vise 60 Hz, on régule nous-mêmes
+            # self._play_timer.start(int(1000 / fps))
         
     def pause(self):
-
-        self._play_timer.stop()
+        if self._play_timer.isActive():
+            self._play_timer.stop()
+            self.pushButton_pause.setChecked(True)
+            self.pushButton_play.setChecked(False)
     
     def change_speed(self):
         
@@ -619,6 +681,10 @@ class DynamicTab(QtCore.QObject):
         current_index = (current_index + 1) % len(speeds)
         self._playback_speed = speeds[current_index]
         self.pushButton_speed.setText(f"x{self._playback_speed}")
+
+    def update_data_set(self, dataset):
+        self.flight_data_set = dataset
+        self._fetch_flight(self.comboBox_select_flight_dyntab.currentText())
         
         
     def _play_step(self):
@@ -641,7 +707,11 @@ class DynamicTab(QtCore.QObject):
         self._set_time(self._current_time)
         
        
-    
+    def _on_space_pressed(self):
+        if self._play_timer.isActive():
+            self.pause()
+        else:
+            self.play()
 
     
     def _update_hud(self):
@@ -650,8 +720,10 @@ class DynamicTab(QtCore.QObject):
         y = self._interp_index
         vario = convert_array_to_unit(self._vario_interp[y], "vario")
         altitude = convert_array_to_unit(self._alt_interp[y], "GNSS_alt")
+        roll = convert_array_to_unit(self._roll_interp[y], "roll")
+        pitch = convert_array_to_unit(self._pitch_interp[y], "pitch")
         time = self._flight['data']['GNSS_time'][i]
-        formatted_time = time.strftime("%H:%M")
+        formatted_time = time.strftime("%d-%m-%Y %H:%M")
         ground_speed = convert_array_to_unit(self._speed_interp[y], "GNSS_speed")
         duration = self._flight['data']['GNSS_time'][i] - self._flight['data']['GNSS_time'][0]
         total_seconds = int(duration.total_seconds())
@@ -669,6 +741,8 @@ class DynamicTab(QtCore.QObject):
         self.hud_widget.set_ground_speed(round(ground_speed,2))
         self.hud_widget.set_time(formatted_time)
         self.hud_widget.set_duration(formatted_duration)
+        self.hud_widget.set_pitch(pitch)
+        self.hud_widget.set_roll(roll)
         
     def _update_lcds(self):
         i = self._raw_index
@@ -712,9 +786,80 @@ class DynamicTab(QtCore.QObject):
             if np.isnan(value):
                 lcd.display("---")
             else:
-                lcd.display(round(float(value), 2))
-                        
+                if variable == 'G_force':
+                    lcd.display(round(float(value), 3))
+                else:
+                    lcd.display(round(float(value), 2))
+
+    def _on_graph_clicked(self, event, plot_widget):
+
+        pos = event.scenePos()
+        vb = plot_widget.getViewBox()
+        
+        mouse_point = vb.mapSceneToView(pos)
+        self._raw_index = int(mouse_point.x())
+        # sécurité
+
+        self._raw_index = np.clip(
+            self._raw_index,
+            0,
+            len(self._time_raw) - 1
+        )
+
+        # convertir raw index → temps
+        self._current_time = self._time_raw[self._raw_index]
+
+        # convertir temps → index interpolé
+        self._interp_index = int(self._current_time * fps)
+
+        self._interp_index = np.clip(
+            self._interp_index,
+            0,
+            len(self._time_interp) - 1
+        )
+        # sync UI
+        self._update_cursor()
+        self._update_model()
+        self._update_lcds()
+        self._update_hud()
+        
     
+
+    def _return_min_radius(self, step: int = 10) -> float:
+        """
+        Returns the size of the flight in order to create a grid model that suits bests
+        """
+        rad_x = abs(np.max(self._x_interp) - np.min(self._x_interp))
+        rad_y = abs(np.max(self._y_interp) - np.min(self._y_interp))
+        rad_z = abs(np.max(self._z_interp) - np.min(self._z_interp))
+
+        coeff_z = mapping(np.max(self._z_interp),0, 6000, 1, 3)
+        # coeff_z = 1
+        origin_x = np.min(self._x_interp) + rad_x / 2
+        origin_y = np.min(self._y_interp) + rad_y / 2
+        len_x = rad_x * coeff_z
+        len_y = rad_y * coeff_z 
+        self.model_widget.set_len_grid(origin_x, origin_y, len_x, len_y)
+
+    def _change_checkbox_color(self, state, checkbox, color: str):
+        if state :
+            r, g, b, _ = hex_to_rgba(color)
+            bg = f'rgba({int(r*255)}, {int(g*255)}, {int(b*255)}, 0.35)'
+        else :
+            bg = 'white'
+
+        checkbox.setStyleSheet(f"""
+        QCheckBox {{
+            background-color: {bg};
+            border-radius: 4px;
+            padding: 2px 6px;
+        }}
+        """)
+
+        
+
+
+        
     def cleanup(self):
         """
         Close correctly the GL widget
@@ -728,8 +873,19 @@ class DynamicTab(QtCore.QObject):
         self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab, self.label_unit_var2_dyna)
         self._update_plot(self.plotwidget_3_dyntab, self._curve3 , self.comboBox_var_3_dyntab ,self.label_unit_var3_dyna)
         self.hud_widget.update_units()
+        
 
 
+    def change_interpolation(self, state):
+        if state: #by default we set the interpolation to spline
+            self._interpolate_data('spline')
+        else:
+            self._interpolate_data('nearest')
+
+    def apply_color_change(self):
+        self.model_widget.apply_color_changes()
+        # We reset the combobox color mapping 
+        self.comboBox_colormap_dyna.setCurrentIndex(0)
 
 
 
@@ -744,10 +900,13 @@ class HUDWidget(QWidget):
         self.time = 0
         self.duration = 0
         self.altitude = 0
+        self.roll = 0.0
+        self.pitch = 0.0 
         
         self._unit_netto = get_unit("netto")
         self._unit_alt = get_unit("GNSS_alt")
         self._unit_ground_speed = get_unit("GNSS_speed")
+        self._unit_angle = get_unit("roll")
 
         # Transparent
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -778,69 +937,254 @@ class HUDWidget(QWidget):
         self.ground_speed = round(value,1)
         self.update()
 
+    def set_roll(self, value):
+        self.roll = round(value,1)
+        self.update()
+
+    def set_pitch(self, value):
+        self.pitch = round(value,1)
+        self.update()
+
 
     def update_units(self):
         self._unit_netto = get_unit("netto")
         self._unit_alt = get_unit("GNSS_alt")
         self._unit_ground_speed = get_unit("GNSS_speed")
+        self._unit_angle = get_unit("roll")
+
+    # def paintEvent(self, event):
+
+    #     painter = QPainter(self)
+    #     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+    
+    #     # -------------------------------------------------
+    #     # TEXTE
+    #     # -------------------------------------------------
+
+    #     painter.setPen(QPen(QColor(0, 0, 0, 180)))
+    #     font = QFont()
+    #     font.setPointSize(10)
+    #     font.setBold(True)
+    #     painter.setFont(font)
+
+
+
+    #     painter.drawText(
+    #         421,
+    #         41,
+    #         f"Time : {self.time}"
+    #     )
+        
+    #     painter.drawText(
+    #         421,
+    #         81,
+    #         f"Duration : {self.duration}"
+    #     )
+        
+    #     painter.drawText(
+    #         21,
+    #         41,
+    #         f"Altitude : {self.altitude} {self._unit_alt}"
+    #     )
+        
+    #     painter.drawText(
+    #         21,
+    #         81,
+    #         f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
+    #     )
+
+    #     painter.drawText(
+    #         221,
+    #         41,
+    #         f"Roll : {self.roll} {self._unit_angle}"
+    #     )
+
+    #     painter.drawText(
+    #         221,
+    #         81,
+    #         f"Pitch : {self.pitch} {self._unit_angle}"
+    #     )
+
+    #     if self.netto > 0 :
+    #         painter.drawText(
+    #             self.width() - 80 - 19,
+    #             41,
+    #             f"+{self.netto} {self._unit_netto} "
+    #         )
+    #     else:
+    #         painter.drawText(
+    #             self.width() - 80 - 19,
+    #             41,
+    #             f"{self.netto} {self._unit_netto} "
+    #         )
+    #     painter.drawText(
+    #         self.width() - 80 - 9,
+    #         26,
+    #         f"Vario"
+    #     )
+        
+    #     painter.setPen(QPen(QColor(255, 255, 255)))
+
+
+    #     painter.drawText(
+    #         420,
+    #         40,
+    #         f"Time : {self.time}"
+    #     )
+        
+    #     painter.drawText(
+    #         420,
+    #         80,
+    #         f"Duration : {self.duration}"
+    #     )
+        
+    #     painter.drawText(
+    #         20,
+    #         40,
+    #         f"Altitude : {self.altitude} {self._unit_alt}"
+    #     )
+        
+    #     painter.drawText(
+    #         20,
+    #         80,
+    #         f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
+    #     )
+
+    #     painter.drawText(
+    #         220,
+    #         40,
+    #         f"Roll : {self.roll} {self._unit_angle}"
+    #     )
+
+    #     painter.drawText(
+    #         220,
+    #         80,
+    #         f"Pitch : {self.pitch} {self._unit_angle}"
+    #     )
+        
+    #     painter.drawText(
+    #         self.width() - 80 - 10,
+    #         25,
+    #         f"Vario"
+    #     )
+        
+    #     if self.netto > 0 :
+    #         painter.drawText(
+    #             self.width() - 80 - 20,
+    #             40,
+    #             f"+{self.netto} {self._unit_netto} "
+    #         )
+    #     else:
+    #         painter.drawText(
+    #             self.width() - 80 - 20,
+    #             40,
+    #             f"{self.netto} {self._unit_netto} "
+    #         )
+    #     # -------------------------------------------------
+    #     # JAUGE SIMPLE
+    #     # -------------------------------------------------
+
+    #     gauge_x = self.width() - 80
+    #     gauge_y = 50
+    #     gauge_h = 200
+    #     gauge_w = 20
+
+    #     # fond
+    #     painter.setBrush(QColor(40, 40, 40, 180))
+    #     painter.drawRect(gauge_x, gauge_y, gauge_w, gauge_h)
+
+    #     # valeur
+    #     value = max(-6, min(6, convert_array_to_unit(self.netto, "netto")))
+
+    #     #normalized = (value + 5) / 10.0
+
+    #     fill_h = int(mapping(value, -6, 6,0, gauge_h))
+        
+    #     x = gauge_x
+    #     y = int(gauge_y + gauge_h - fill_h)
+    #     w = gauge_w
+    #     h = fill_h
+    #     painter.setBrush(QColor(0, 255, 0, 200))
+    #     painter.drawRect(x, y, w, h)
+
+    #     painter.end()
 
     def paintEvent(self, event):
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    
-        # -------------------------------------------------
-        # TEXTE
-        # -------------------------------------------------
-
-        painter.setPen(QPen(QColor(255, 255, 255)))
 
         font = QFont()
         font.setPointSize(10)
         font.setBold(True)
-
         painter.setFont(font)
+        
+        fm = QFontMetrics(font)
 
-        painter.drawText(
-            300,
-            40,
-            f"Time : {self.time}"
-        )
-        
-        painter.drawText(
-            300,
-            80,
-            f"Duration : {self.duration}"
-        )
-        
-        painter.drawText(
-            20,
-            40,
-            f"Altitude ({self._unit_alt}) : {self.altitude} "
-        )
-        
-        painter.drawText(
-            20,
-            80,
-            f"Ground Speed ({self._unit_ground_speed}) : {self.ground_speed} "
-        )
-        
-    
-        
-        if self.netto > 0 :
-            painter.drawText(
-                self.width() - 80 - 20,
-                40,
-                f"+{self.netto} {self._unit_netto} "
-            )
-        else:
-            painter.drawText(
-                self.width() - 80 - 20,
-                40,
-                f"{self.netto} {self._unit_netto} "
-            )
         # -------------------------------------------------
-        # JAUGE SIMPLE
+        # DONNÉES
+        # -------------------------------------------------
+
+        sign = "+" if self.netto > 0 else ""
+        fields = [
+            ("Altitude",     f"{self.altitude} {self._unit_alt}"),
+            ("Ground Speed", f"{self.ground_speed} {self._unit_ground_speed}"),
+            ("Roll",         f"{self.roll} {self._unit_angle}"),
+            ("Pitch",        f"{self.pitch} {self._unit_angle}"),
+            ("Time",         f"{self.time}"),
+            ("Duration",     f"{self.duration}"),
+        ]
+        texts = [f"{label} : {value}" for label, value in fields]
+
+        # -------------------------------------------------
+        # SEUIL : largeur minimale pour tenir en 3 colonnes
+        # -------------------------------------------------
+
+        col_width   = max(fm.horizontalAdvance(t) for t in texts) + 20
+        gauge_space = 100   # réservé pour la jauge à droite
+        needed_3col = col_width * 3 + gauge_space
+
+        w = self.width()
+        margin_x = 20
+        margin_y = 30
+        line_h   = fm.height() + 10
+
+        # -------------------------------------------------
+        # LAYOUT : 3 colonnes × 2 lignes  ou  1 colonne × N lignes
+        # -------------------------------------------------
+
+        if w >= needed_3col:
+            # 3 colonnes, 2 lignes — disposition originale
+            positions = [
+                (margin_x,           margin_y),           # Altitude
+                (margin_x,           margin_y + line_h),  # Ground Speed
+                (margin_x + col_width,     margin_y),     # Roll
+                (margin_x + col_width,     margin_y + line_h),  # Pitch
+                (margin_x + col_width * 2, margin_y),     # Time
+                (margin_x + col_width * 2, margin_y + line_h),  # Duration
+            ]
+        else:
+            # 1 colonne, N lignes
+            positions = [
+                (margin_x, margin_y + i * line_h)
+                for i in range(len(texts))
+            ]
+
+        # -------------------------------------------------
+        # TEXT
+        # -------------------------------------------------
+
+        for text, (x, y) in zip(texts, positions):
+            # ombre
+            painter.setPen(QPen(QColor(0, 0, 0, 180)))
+            painter.drawText(x + 1, y , text)
+            # texte blanc par-dessus
+            painter.setPen(QPen(QColor(255, 255, 255)))
+            painter.drawText(x, y, text)
+
+        # -------------------------------------------------
+        # VARIO GAUGE
         # -------------------------------------------------
 
         gauge_x = self.width() - 80
@@ -866,5 +1210,15 @@ class HUDWidget(QWidget):
         painter.setBrush(QColor(0, 255, 0, 200))
         painter.drawRect(x, y, w, h)
 
+        # Label Vario — ombre + blanc
+        sign = "+" if self.netto > 0 else ""
+        vario_text = f"{sign}{self.netto} {self._unit_netto}"
+
+        for label, tx, ty in [("Vario", gauge_x - 7, gauge_y - 25),
+                            (vario_text, gauge_x - 9, gauge_y - 10)]:
+            painter.setPen(QPen(QColor(0, 0, 0, 180)))
+            painter.drawText(tx + 1, ty + 1, label)
+            painter.setPen(QPen(QColor(255, 255, 255)))
+            painter.drawText(tx, ty, label)
+
         painter.end()
-     

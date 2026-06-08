@@ -2,14 +2,14 @@ from PyQt6.QtCore import QSettings
 import numpy as np
 
 units_coeff_dic = {
-    "radian" : 0.0174533, #deg to rad
-    "degree" : 1.0, #deg to deg
+    "rad" : 0.0174533, #deg to rad
+    "°" : 1.0, #deg to deg
     "m/s" : 1.0, #m/s to m/s
-    "knot" : 1.94384, #m/s to knot
+    "knt" : 1.94384, #m/s to knot
     "km/h" : 3.6 , #m/s to km/h
     "mph" : 2.23694, #m/s to mph
-    "meters" : 1.0, #meters to meters
-    "feet" : 3.28084, #meters to feet
+    "m" : 1.0, #meters to meters
+    "ft" : 3.28084, #meters to feet
     "Pa" : 1.0, #Pa to Pa
     "hPa" : 0.01, #Pa to hPa
     "atm" : 9.86923e-6, #Pa to atm
@@ -27,12 +27,12 @@ var_to_unit_group_dic = {
     "pressure" : ["DP" , "P_stat" , "AirES" , "AirE"]}
 
 unit_group = {
-    "heading" : ["degree", "radian"],
+    "heading" : ["°", "rad"],
     "speed" : ["m/s", "knot", "km/h", "mph"],
-    "vertical_speed" : ["m/s", "knot", "km/h", "mph"],
-    "altitude": ["meters", "feet"],
+    "vertical_speed" : ["m/s", "knt", "km/h", "mph"],
+    "altitude": ["m", "ft"],
     "temperature": ["°C", "°K", "°F"],
-    "angle": ["degree", "radian"],
+    "angle": ["°", "rad"],
     "pressure": ["Pa", "hPa", "atm", "mbar"]}
 
 def get_unit(variable):

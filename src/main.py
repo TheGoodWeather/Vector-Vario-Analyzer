@@ -61,7 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.color_dialog = ColorDialog(parent = self)  
         self.color_dialog.colorWindBarbsChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap ))
-
+        
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
@@ -110,7 +110,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #Table ------------------------------------
         headers = ["","Flight Name", "Flight date", "Start altitude","Max altitude", "Pilot", "Comment", "Alias"]
-        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab]
+        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab, self.dyna_tab]
         for tab in self.tab_list:
             index = self.tabWidget.indexOf(tab)
             self.tabWidget.setTabEnabled(index, False)
@@ -515,10 +515,12 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.pushButton_pause = QtWidgets.QPushButton(qta.icon('mdi6.pause'), '')
         self.pushButton_pause.setFixedSize(25, 25)
+        self.pushButton_pause.setCheckable(True)
         self.widget_control_buttons.layout().addWidget(self.pushButton_pause)
         
         self.pushButton_play = QtWidgets.QPushButton(qta.icon('mdi6.play'), '')
         self.pushButton_play.setFixedSize(25, 25)
+        self.pushButton_play.setCheckable(True)
         self.widget_control_buttons.layout().addWidget(self.pushButton_play)
         
         
@@ -565,9 +567,17 @@ class MainWindow(QtWidgets.QMainWindow):
             self.checkbox_north_vector_dyna,
             self.checkbox_tas_vector_dyna,
             self.checkbox_bearing_vector_dyna,
+            self.checkbox_vertical_vector_dyna,
+            self.radioButton_interpolated_dyna,
+            self.radioButton_raw_dyna,
+
+            self.checkBox_show_grid,
+            self.comboBox_colormap_dyna,
             str(resource_path("gui/models/para_v3.obj")))
         
         self.unit_dialog.unitsChanged.connect(self.dynamic.update_units)
+        self.color_dialog.colorDynaChanged.connect(self.dynamic.apply_color_change)
+
     
     def write_settings_main(self):
         """
@@ -810,6 +820,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
             self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
+            self.dynamic.update_data_set(self.flight)
             self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D )
             return
         

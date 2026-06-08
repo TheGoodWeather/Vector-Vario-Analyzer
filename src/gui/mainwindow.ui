@@ -1039,6 +1039,12 @@
                     <property name="text">
                      <string>Save polar points</string>
                     </property>
+                    <property name="checkable">
+                     <bool>false</bool>
+                    </property>
+                    <property name="checked">
+                     <bool>false</bool>
+                    </property>
                    </widget>
                   </item>
                  </layout>
@@ -1757,6 +1763,9 @@
         <item>
          <widget class="QWidget" name="widget_33" native="true">
           <layout class="QVBoxLayout" name="verticalLayout_27">
+           <property name="spacing">
+            <number>0</number>
+           </property>
            <item>
             <widget class="QWidget" name="model_window" native="true">
              <property name="sizePolicy">
@@ -1769,8 +1778,8 @@
            </item>
            <item>
             <widget class="QWidget" name="widget_32" native="true">
-             <layout class="QHBoxLayout" name="horizontalLayout_17">
-              <item>
+             <layout class="QGridLayout" name="gridLayout_4">
+              <item row="0" column="0">
                <widget class="QLabel" name="label_3">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
@@ -1783,7 +1792,33 @@
                 </property>
                </widget>
               </item>
-              <item>
+              <item row="0" column="2">
+               <widget class="QRadioButton" name="radioButton_front_view">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Front</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="7">
+               <spacer name="horizontalSpacer_7">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item row="0" column="1">
                <widget class="QRadioButton" name="radioButton_free_view">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1799,20 +1834,7 @@
                 </property>
                </widget>
               </item>
-              <item>
-               <widget class="QRadioButton" name="radioButton_front_view">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Front</string>
-                </property>
-               </widget>
-              </item>
-              <item>
+              <item row="0" column="3">
                <widget class="QRadioButton" name="radioButton_behind_view">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1825,7 +1847,7 @@
                 </property>
                </widget>
               </item>
-              <item>
+              <item row="0" column="4">
                <widget class="QRadioButton" name="radioButton_top_view">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1838,7 +1860,7 @@
                 </property>
                </widget>
               </item>
-              <item>
+              <item row="0" column="5">
                <widget class="QRadioButton" name="radioButton_left_view">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1851,7 +1873,7 @@
                 </property>
                </widget>
               </item>
-              <item>
+              <item row="0" column="6">
                <widget class="QRadioButton" name="radioButton_right_view">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1863,19 +1885,6 @@
                  <string>Side Right</string>
                 </property>
                </widget>
-              </item>
-              <item>
-               <spacer name="horizontalSpacer_7">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
-                </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
               </item>
              </layout>
             </widget>
@@ -1928,6 +1937,16 @@
                </widget>
               </item>
               <item>
+               <widget class="QCheckBox" name="checkbox_vertical_vector_dyna">
+                <property name="text">
+                 <string>Vertical</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
                <spacer name="horizontalSpacer_9">
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -1939,6 +1958,63 @@
                  </size>
                 </property>
                </spacer>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QWidget" name="widget_35" native="true">
+             <layout class="QHBoxLayout" name="horizontalLayout_24">
+              <item>
+               <widget class="QLabel" name="label_26">
+                <property name="text">
+                 <string>Interpolation method :</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="radioButton_interpolated_dyna">
+                <property name="text">
+                 <string>Spline</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QRadioButton" name="radioButton_raw_dyna">
+                <property name="text">
+                 <string>Nearest</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <spacer name="horizontalSpacer_10">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QCheckBox" name="checkBox_show_grid">
+                <property name="text">
+                 <string>Grid</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_28">
+                <property name="text">
+                 <string/>
+                </property>
+               </widget>
               </item>
              </layout>
             </widget>
@@ -1961,6 +2037,21 @@
            </size>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_19">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
            <item>
             <widget class="QWidget" name="widget_31" native="true">
              <layout class="QHBoxLayout" name="horizontalLayout_21">
@@ -1997,6 +2088,16 @@
               </item>
               <item>
                <widget class="QComboBox" name="comboBox_select_flight_dyntab"/>
+              </item>
+              <item>
+               <widget class="QLabel" name="label_30">
+                <property name="text">
+                 <string>Color mapping</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QComboBox" name="comboBox_colormap_dyna"/>
               </item>
              </layout>
             </widget>
@@ -2130,7 +2231,7 @@
                  <item>
                   <widget class="QLabel" name="label_27">
                    <property name="text">
-                    <string>Variable plot 1</string>
+                    <string>Variable plot 2</string>
                    </property>
                   </widget>
                  </item>
@@ -2216,7 +2317,7 @@
                  <item>
                   <widget class="QLabel" name="label_29">
                    <property name="text">
-                    <string>Variable plot 1</string>
+                    <string>Variable plot 3</string>
                    </property>
                   </widget>
                  </item>
@@ -2274,7 +2375,7 @@
      <x>0</x>
      <y>0</y>
      <width>997</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

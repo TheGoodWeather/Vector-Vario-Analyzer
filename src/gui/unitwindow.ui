@@ -28,12 +28,12 @@
        <widget class="QComboBox" name="comboBox_heading">
         <item>
          <property name="text">
-          <string>degree</string>
+          <string>°</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>radian</string>
+          <string>rad</string>
          </property>
         </item>
        </widget>
@@ -54,7 +54,7 @@
         </item>
         <item>
          <property name="text">
-          <string>knot</string>
+          <string>knt</string>
          </property>
         </item>
         <item>
@@ -106,12 +106,12 @@
        <widget class="QComboBox" name="comboBox_altitude">
         <item>
          <property name="text">
-          <string>meters</string>
+          <string>m</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>feet</string>
+          <string>ft</string>
          </property>
         </item>
        </widget>
@@ -153,12 +153,12 @@
        <widget class="QComboBox" name="comboBox_angle">
         <item>
          <property name="text">
-          <string>degree</string>
+          <string>°</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>radian</string>
+          <string>rad</string>
          </property>
         </item>
        </widget>
@@ -215,7 +215,7 @@
         </item>
         <item>
          <property name="text">
-          <string>knot</string>
+          <string>knt</string>
          </property>
         </item>
         <item>
