@@ -4,7 +4,7 @@ from PyQt6 import QtCore , QtGui
 from utils import mapping, rgba_to_hex, hex_to_rgba
 from paraglider_widget import ParaGliderWidget
 from PyQt6.QtWidgets import QVBoxLayout, QWidget, QStackedLayout
-from units import convert_array_to_unit, get_unit, convert_gps_to_local_xy
+from units import convert_array_to_unit, convert_local_xy_to_gps, get_unit, convert_gps_to_local_xy, convert_gps_to_local_xy_v2
 from utils import get_label, get_variable, interp_spline, interp_nearest
 from PyQt6.QtGui import QFontMetrics, QPainter, QColor, QPen, QFont
 from PyQt6.QtCore import QSettings, Qt
@@ -257,7 +257,8 @@ class DynamicTab(QtCore.QObject):
 
             self._populate_var_combobox()
             self._interpolate_data()
-            self._return_min_radius()
+            self._return_data_ground()
+            self._fetch_DEM_data()
             self._set_time(0.0)
 
 
@@ -312,7 +313,9 @@ class DynamicTab(QtCore.QObject):
     
         if self._flight['file_name'].split('.')[1] == "igc" or self._flight['file_name'].split('.')[1] == "IGC":
             self.gnss_offset = 0 # At 0 for the moment, can be modified in the future when we will know more about gnss_lag
-            z_data = self._flight['data']['QNS_alt']
+            # z_data = self._flight['data']['QNS_alt']
+            z_data = self._flight['data']['GNSS_alt']   
+
         else: 
             self.gnss_offset = 0 
             z_data = self._flight['data']['GNSS_alt']   
@@ -363,7 +366,11 @@ class DynamicTab(QtCore.QObject):
         )
         self._yaw_interp = np.degrees(yaw_interp)
 
-        _x_local, _y_local = convert_gps_to_local_xy(self._flight['data']['GNSS_lon'], self._flight['data']['GNSS_lat'])
+        _x_local, _y_local = convert_gps_to_local_xy_v2(self._flight['data']['GNSS_lon'], self._flight['data']['GNSS_lat'] , self._flight['data']['GNSS_lon'][0], self._flight['data']['GNSS_lat'][0] )
+
+        # print(f"Trajectory GNSS longitude {self._flight['data']['GNSS_lon'][0:10]}")
+        # print(f"trajectory Local longitude {_x_local[0:10]}")
+        # print("_______________")
 
         # self._x_interp =  interp(
         #     self._time_interp,
@@ -823,23 +830,79 @@ class DynamicTab(QtCore.QObject):
         self._update_lcds()
         self._update_hud()
         
-    
+    def _fetch_DEM_data(self):
+        """
+        Fetch DEM z_data according to the size of the trajectory.
+        """
+        from DEM import DEMFetcher
+        step = 35 # A 30 meters resolution because we won't be able to have a better res with DEM data
 
-    def _return_min_radius(self, step: int = 10) -> float:
+        # DEM Data
+        fetcher = DEMFetcher()
+
+    
+        # # X Y data
+        x_local, y_local = convert_gps_to_local_xy_v2(self._flight['data']['GNSS_lon'], self._flight['data']['GNSS_lat'], self._flight['data']['GNSS_lon'][0], self._flight['data']['GNSS_lat'][0])
+        z_paraglider = self._flight['data']['GNSS_alt']
+        dist_x = abs(np.max(x_local) - np.min(x_local))
+        dist_y = abs(np.max(y_local) - np.min(y_local))
+        coeff_z = mapping(np.max(z_paraglider),0, 6000, 1, 6)
+
+        origin_x = np.min(x_local) + dist_x / 2
+        origin_y = np.min(y_local) + dist_y / 2
+
+        len_x = dist_x * coeff_z
+        len_y = dist_y * coeff_z 
+
+        x_min_local = origin_x - len_x / 2
+        x_max_local = origin_x + len_x / 2
+
+        y_min_local = origin_y - len_y / 2
+        y_max_local = origin_y + len_y / 2
+
+        lon_min_gnss , lat_min_gnss = convert_local_xy_to_gps(x_min_local, y_min_local, self._flight['data']['GNSS_lon'][0] ,  self._flight['data']['GNSS_lat'][0])
+        lon_max_gnss , lat_max_gnss = convert_local_xy_to_gps(x_max_local, y_max_local, self._flight['data']['GNSS_lon'][0] ,  self._flight['data']['GNSS_lat'][0])
+
+        # lat_min_gnss = np.min(self._flight['data']['GNSS_lat'])
+        # lon_min_gnss = np.min(self._flight['data']['GNSS_lon'])
+        # lat_max_gnss = np.max(self._flight['data']['GNSS_lat'])
+        # lon_max_gnss = np.max(self._flight['data']['GNSS_lon'])
+
+        grid = fetcher.get_elevation_grid(
+        lat_min=lat_min_gnss, lat_max=lat_max_gnss,
+        lon_min=lon_min_gnss,  lon_max=lon_max_gnss,
+        resolution=step,
+        )
+              
+        x_local, y_local = convert_gps_to_local_xy_v2(grid['lons'], grid['lats'], self._flight['data']['GNSS_lon'][0], self._flight['data']['GNSS_lat'][0])
+
+        # (f"Grid longitude {grid['lons'][0:10]}")
+        # print(f"Local longitude {x_local[0:10]}")
+        # print("_______________")
+
+        self.model_widget.set_data_ground(x_local,y_local, grid["elevations"])
+
+
+
+    def _return_data_ground(self):
         """
-        Returns the size of the flight in order to create a grid model that suits bests
+        Returns the size of the flight in order to create a grid model and a terrain that suits bests
         """
+     
+        
         rad_x = abs(np.max(self._x_interp) - np.min(self._x_interp))
         rad_y = abs(np.max(self._y_interp) - np.min(self._y_interp))
-        rad_z = abs(np.max(self._z_interp) - np.min(self._z_interp))
 
         coeff_z = mapping(np.max(self._z_interp),0, 6000, 1, 3)
-        # coeff_z = 1
+
         origin_x = np.min(self._x_interp) + rad_x / 2
         origin_y = np.min(self._y_interp) + rad_y / 2
+
         len_x = rad_x * coeff_z
         len_y = rad_y * coeff_z 
+
         self.model_widget.set_len_grid(origin_x, origin_y, len_x, len_y)
+
 
     def _change_checkbox_color(self, state, checkbox, color: str):
         if state :

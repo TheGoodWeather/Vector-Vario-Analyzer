@@ -106,14 +106,53 @@ def convert_gps_to_local_xy(lon, lat):
     x = (lon_dd - lon0) * np.cos(np.radians(lat0)) * R * np.pi / 180
     y = (lat_dd - lat0) * R * np.pi / 180
 
-    # print(f"lat 0 : {lat_dd[0]}")
-    # print(f"lat 100 : {lat_dd[100]}")
-    # print(f"delta lat = {(lat_dd[100] - lat_dd[0])}")
-    # print(f"y : {y[100]}")
-
-    # print(f"lon 0 : {lon_dd[0]}")
-    # print(f"lon 100 : {lon_dd[100]}")
-    # print(f"delta lon = {(lon_dd[100] - lon_dd[0])}")
-    # print(f"x : {x[100]}")
 
     return x, y
+
+def convert_gps_to_local_xy_v2(lon, lat, lon0, lat0):
+
+    lat_dd = np.asarray(lat, dtype=np.float64)
+    lon_dd = np.asarray(lon, dtype=np.float64)
+
+    R = 6371000
+
+    x = (lon_dd - lon0) * np.cos(np.radians(lat0)) * R * np.pi / 180
+    y = (lat_dd - lat0) * R * np.pi / 180
+
+
+    return x, y
+
+
+def convert_local_xy_to_gps(x, y, lon0, lat0):
+    """
+    Convertit des coordonnées locales (mètres) vers GPS.
+
+    Parameters
+    ----------
+    x : array-like
+        Coordonnée Est/Ouest locale (m)
+    y : array-like
+        Coordonnée Nord/Sud locale (m)
+    lon0 : float
+        Longitude de référence (deg)
+    lat0 : float
+        Latitude de référence (deg)
+
+    Returns
+    -------
+    lon : ndarray
+    lat : ndarray
+    """
+
+    x = np.asarray(x, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
+
+    R = 6371000.0
+
+    lat = lat0 + y * 180.0 / (np.pi * R)
+
+    lon = lon0 + x * 180.0 / (
+        np.pi * R * np.cos(np.radians(lat0))
+    )
+
+    return lon, lat

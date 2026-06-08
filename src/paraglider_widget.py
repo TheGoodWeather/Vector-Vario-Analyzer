@@ -263,6 +263,11 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.addItem(self._grid)
         self._items.append(self._grid)
 
+        # Terrain
+
+        self._ground = gl.GLSurfacePlotItem()
+        self.addItem(self._ground)
+
         # Axe de référence (debug, optionnel)
         self._axis = gl.GLAxisItem()
         self._axis.setSize(3, 3, 3)
@@ -653,9 +658,20 @@ class ParaGliderWidget(gl.GLViewWidget):
     def set_len_grid(self, origin_x, origin_y, len_x, len_y):
         self._grid.resetTransform()
         self._grid.translate(origin_x, origin_y, -4)
-        self._grid.setSize(len_x* 4, len_y* 4)
+        self._grid.setSize(len_x, len_y)
         spacing = max(len_x,len_y) / 50
         self._grid.setSpacing(spacing, spacing)
+
+
+    def set_data_ground(self, len_x, len_y, z_matrix):
+        self._ground.setData(
+            x=len_x,
+            y=len_y,
+            z=z_matrix,
+            showGrid = True
+        )
+        self._ground.setColor(QColor(200,200,200,100))
+        self._ground.setShader('shaded')
 
     def apply_color_changes(self):
         self.settings.beginGroup("colors")
