@@ -339,7 +339,44 @@ class AboutDialog(QtWidgets.QDialog):
         btn_close.clicked.connect(self.close)
         layout.addWidget(btn_close)
 
+def version_dialog(
+    parent,
+    title,
+    text,
+    icon=QMessageBox.Icon.Information,
+    show_download=False
+):
+    msg = QMessageBox(parent)
+    msg.setWindowTitle(title)
+    msg.setText(text)
+    msg.setIcon(icon)
 
+    download_btn = None
+
+    if show_download:
+        download_btn = msg.addButton(
+            "Download",
+            QMessageBox.AcceptRole
+        )
+
+    changelog_btn = msg.addButton(
+        "Display Changelog",
+        QMessageBox.ActionRole
+    )
+
+    close_btn = msg.addButton(
+        QMessageBox.Close
+    )
+
+    msg.exec()
+
+    clicked = msg.clickedButton()
+
+    if clicked == download_btn:
+        webbrowser.open(DOWNLOAD_URL)
+
+    elif clicked == changelog_btn:
+        show_changelog(parent)
 
 def check_version(parent = None):
 
@@ -358,86 +395,45 @@ def check_version(parent = None):
 
     latest = get_latest_version()  
     if latest is None:
-        QMessageBox.warning(
+        version_dialog(
             parent,
             "Version",
-            "Impossible to reach GitHub repository"
-            f"Current : v{SOFTWARE_VERSION}"
+            "Impossible to reach GitHub repository\n"
+            f"Current: v{SOFTWARE_VERSION}",
+            QMessageBox.Warning
         )
         return
 
     if Version(latest) > Version(SOFTWARE_VERSION):
-        msg = QMessageBox(parent)
-        msg.setWindowTitle("Update Available")
-        msg.setIcon(QMessageBox.Information)
 
-        msg.setText(
+        version_dialog(
+            parent,
+            "Update Available",
             f"A new version is available: {latest}\n\n"
-            f"Current version: v{SOFTWARE_VERSION}"
+            f"Current version: v{SOFTWARE_VERSION}",
+            QMessageBox.Information,
+            show_download=True
         )
-
-        download_btn = msg.addButton(
-            "Download",
-            QMessageBox.AcceptRole
-        )
-        
-        changelog_btn = msg.addButton(
-            "Display Changelog",
-            QMessageBox.ActionRole
-        )
-
-        msg.addButton(
-            QMessageBox.Close
-        )
-
-        msg.exec()
-
-        clicked = msg.clickedButton()
-
-        if clicked == download_btn:
-            webbrowser.open(DOWNLOAD_URL)
-
-        elif clicked == changelog_btn:
-            show_changelog(parent)
-
 
     elif Version(latest) == Version(SOFTWARE_VERSION):
-        msg = QMessageBox(parent)
-        QMessageBox.information(
+
+        version_dialog(
             parent,
             "Version",
-            f"You are using the latest version : v{SOFTWARE_VERSION}."
+            f"You are using the latest version: v{SOFTWARE_VERSION}.",
+            QMessageBox.Information
         )
-        changelog_btn = msg.addButton(
-            "Display Changelog",
-            QMessageBox.ActionRole
-        )
-        msg.exec()
 
-        clicked = msg.clickedButton()
+    else:
 
-        if clicked == changelog_btn:
-            show_changelog(parent)
-        
-    elif Version(latest) < Version(SOFTWARE_VERSION):
-        msg = QMessageBox(parent)
-        QMessageBox.warning(
+        version_dialog(
             parent,
             "Version",
             f"You are not using a stable version.\n"
-            f"Current : v{SOFTWARE_VERSION}\n"
-            f"Latest stable : {latest}"
+            f"Current: v{SOFTWARE_VERSION}\n"
+            f"Latest stable: {latest}",
+            QMessageBox.Warning
         )
-        changelog_btn = msg.addButton(
-            "Display Changelog",
-            QMessageBox.ActionRole
-        )
-        msg.exec()
-
-        clicked = msg.clickedButton()
-
-        if clicked == changelog_btn:
-            show_changelog(parent)
 
 def show_changelog(parent=None):
     try:

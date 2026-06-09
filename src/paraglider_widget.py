@@ -1,3 +1,6 @@
+from pathlib import Path
+import sys
+
 from PyQt6 import QtGui
 import numpy as np
 import pyqtgraph.opengl as gl
@@ -270,28 +273,28 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._items.append(self._axis)
         # Construction du modèle
         # self._model = load_glb_mesh("gui/models/para2.glb")
-        self._model = load_obj_mesh("gui/models/para_v4.obj")
+        self._model = load_obj_mesh(resource_path("gui/models/para_v4.obj"))
         self.addItem(self._model)
         self._model.setColor(QColor("#FF1717"))
         self._items.append(self._model)
         # Building arrow 
-        self._wind_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 0.6, 1.0, 0.8))
+        self._wind_arrow = load_arrow_mesh(resource_path("gui/models/arrow1.obj"), (0.3, 0.6, 1.0, 0.8))
         self.addItem(self._wind_arrow)
         self._items.append(self._wind_arrow)
 
-        self._north_arrow = load_arrow_mesh("gui/models/arrow1.obj", (1.0, 0.2, 0.2, 0.8))
+        self._north_arrow = load_arrow_mesh(resource_path("gui/models/arrow1.obj"), (1.0, 0.2, 0.2, 0.8))
         self.addItem(self._north_arrow)
         self._items.append(self._north_arrow)
 
-        self._tas_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.2, 0.8, 1.0, 0.8))
+        self._tas_arrow = load_arrow_mesh(resource_path("gui/models/arrow1.obj"), (0.2, 0.8, 1.0, 0.8))
         self.addItem(self._tas_arrow)
         self._items.append(self._tas_arrow)
 
-        self._bearing_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3, 1.0, 0.5, 0.8))
-        self.addItem(self._bearing_arrow)
-        self._items.append(self._bearing_arrow)
+        # self._bearing_arrow = load_arrow_mesh(resource_path("gui/models/arrow1.obj"), (0.3, 1.0, 0.5, 0.8))
+        # self.addItem(self._bearing_arrow)
+        # self._items.append(self._bearing_arrow)
 
-        self._vertical_arrow = load_arrow_mesh("gui/models/arrow1.obj", (0.3,0.4, 0.5, 0.8))
+        self._vertical_arrow = load_arrow_mesh(resource_path("gui/models/arrow1.obj"), (0.3,0.4, 0.5, 0.8))
         self.addItem(self._vertical_arrow)
         self._items.append(self._vertical_arrow)
 
@@ -326,7 +329,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._wind_tilt = 0.0
         self._tas = 0.0
         self._gnss_speed = 0.0
-        self._bearing = 0.0
+        # self._bearing = 0.0
 
         self._min_radius_skybox = 0.0
         
@@ -457,13 +460,13 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._z
         )
          # Bearing vector 
-        self._bearing_arrow.resetTransform()
-        self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
-        self._bearing_arrow.translate(
-            self._x,
-            self._y,
-            self._z
-        )
+        # self._bearing_arrow.resetTransform()
+        # self._bearing_arrow.rotate(-self._bearing + 90, 0 , 0 , 1, True)
+        # self._bearing_arrow.translate(
+        #     self._x,
+        #     self._y,
+        #     self._z
+        # )
          # Vertical vector 
         self._vertical_arrow.resetTransform()
         self._vertical_arrow.rotate(-90, 0 , 1 , 0, True)
@@ -476,7 +479,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         #SCALING
         self._wind_arrow.scale(mapping(self._wind_speed,0,30,0.1,3), 1, 1)
         self._tas_arrow.scale(mapping(self._tas,0,30,0.1,3), 1, 1)
-        self._bearing_arrow.scale(mapping(self._gnss_speed,0,30,0.1,3), 1, 1)
+        # self._bearing_arrow.scale(mapping(self._gnss_speed,0,30,0.1,3), 1, 1)
 
         self._camera_follow()
 
@@ -626,9 +629,9 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._tas = tas
         self._yaw = yaw
     
-    def set_bearing_vector(self, bearing, speed):
-        self._gnss_speed = speed
-        self._bearing = bearing
+    # def set_bearing_vector(self, bearing, speed):
+    #     self._gnss_speed = speed
+    #     self._bearing = bearing
 
     
 
@@ -641,8 +644,8 @@ class ParaGliderWidget(gl.GLViewWidget):
     def set_visibility_tas_vector(self, visible):
         self._tas_arrow.setVisible(visible)
     
-    def set_visibility_bearing_vector(self, visible):
-        self._bearing_arrow.setVisible(visible)
+    # def set_visibility_bearing_vector(self, visible):
+    #     self._bearing_arrow.setVisible(visible)
 
     def set_visibility_vertical_vector(self, visible):
         self._vertical_arrow.setVisible(visible)
@@ -688,4 +691,15 @@ class ParaGliderWidget(gl.GLViewWidget):
  
     
 
+#RESSOURCE PATH FOR PYINSTALLER
+def resource_path(relative_path: str) -> Path:
+    """Retourne le chemin absolu, compatible dev et PyInstaller."""
+    if hasattr(sys, '_MEIPASS'):
+        # Mode PyInstaller : ressources extraites dans un dossier temp
+        base = Path(sys._MEIPASS)
+    else:
+        # Mode développement
+        base = Path(__file__).parent  # remonte à src/
+
+    return base / relative_path
 

@@ -44,7 +44,7 @@ class DynamicTab(QtCore.QObject):
                  checkbox_wind_vector_dyna,
                  checkbox_north_vector_dyna,
                  checkbox_tas_vector_dyna,
-                 checkbox_bearing_vector_dyna,
+                #  checkbox_bearing_vector_dyna,
                  checkbox_vertical_vector_dyna,
                  radioButton_interpolated_dyna,
                  radioButton_raw_dyna,
@@ -82,7 +82,7 @@ class DynamicTab(QtCore.QObject):
         self.checkbox_wind_vector_dyna = checkbox_wind_vector_dyna
         self.checkbox_north_vector_dyna = checkbox_north_vector_dyna
         self.checkbox_tas_vector_dyna =checkbox_tas_vector_dyna
-        self.checkbox_bearing_vector_dyna = checkbox_bearing_vector_dyna
+        # self.checkbox_bearing_vector_dyna = checkbox_bearing_vector_dyna
         self.checkbox_vertical_vector_dyna = checkbox_vertical_vector_dyna
         self.radioButton_interpolated_dyna = radioButton_interpolated_dyna
         self.radioButton_raw_dyna = radioButton_raw_dyna
@@ -166,9 +166,9 @@ class DynamicTab(QtCore.QObject):
         self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_tas_vector(state))
         self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_tas_vector_dyna, rgba_to_hex(0.2, 0.8, 1.0, 0.8)))
         self.checkbox_tas_vector_dyna.setChecked(False)
-        self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_bearing_vector(state))
-        self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_bearing_vector_dyna, rgba_to_hex(0.3, 1.0, 0.5, 0.8)))
-        self.checkbox_bearing_vector_dyna.setChecked(False)
+        # self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_bearing_vector(state))
+        # self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_bearing_vector_dyna, rgba_to_hex(0.3, 1.0, 0.5, 0.8)))
+        # self.checkbox_bearing_vector_dyna.setChecked(False)
         self.checkbox_vertical_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_vertical_vector(state))
         self.checkbox_vertical_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_vertical_vector_dyna, rgba_to_hex(0.3,0.4, 0.5, 0.8)))
         self.checkbox_vertical_vector_dyna.setChecked(False)
@@ -311,7 +311,7 @@ class DynamicTab(QtCore.QObject):
 
     
         if self._flight['file_name'].split('.')[1] == "igc" or self._flight['file_name'].split('.')[1] == "IGC":
-            self.gnss_offset = 0 # At 0 for the moment, can be modified in the future when we will know more about gnss_lag
+            self.gnss_offset = 0.8 # At 0 for the moment, can be modified in the future when we will know more about gnss_lag
             z_data = self._flight['data']['QNS_alt']
         else: 
             self.gnss_offset = 0 
@@ -365,18 +365,6 @@ class DynamicTab(QtCore.QObject):
 
         _x_local, _y_local = convert_gps_to_local_xy(self._flight['data']['GNSS_lon'], self._flight['data']['GNSS_lat'])
 
-        # self._x_interp =  interp(
-        #     self._time_interp,
-        #     t_seconds,
-        #     _x_local
-        # ) 
-
-        # self._y_interp =  interp(
-        #     self._time_interp,
-        #     t_seconds,
-        #     _y_local
-        # ) 
-
         self._x_interp     = interp_and_shift(_x_local)
         self._y_interp     = interp_and_shift(_y_local)
 
@@ -398,19 +386,7 @@ class DynamicTab(QtCore.QObject):
             self._flight['data']['netto']
         )
 
-        # self._alt_interp =  interp(
-        #     self._time_interp,
-        #     t_seconds,
-        #     self._flight['data']['GNSS_alt']
-        # )
-
         self._alt_interp   = interp_and_shift(self._flight['data']['GNSS_alt'])
-
-        # self._speed_interp =  interp(
-        #     self._time_interp,
-        #     t_seconds,
-        #     self._flight['data']['GNSS_speed']
-        # )
 
         self._speed_interp = interp_and_shift(self._flight['data']['GNSS_speed'])
 
@@ -472,20 +448,18 @@ class DynamicTab(QtCore.QObject):
             self._flight['data']['vario']
         )
 
-        gnss_heading = np.unwrap(
-            np.radians(
-                self._flight['data']['GNSS_head']
-            )
-        )
-        # gnss_heading_interp =  interp(
-        #     self._time_interp,
-        #     t_seconds,
-        #     gnss_heading
+
+        # REMOVED FOR V0.03 BECAUSE NOT WORKING WHEN GNSS IS NAN 
+
+        # gnss_heading = np.unwrap(
+        #     np.radians(
+        #         self._flight['data']['GNSS_head']
+        #     )
         # )
-        gnss_heading_interp = interp_and_shift(gnss_heading)
+        # gnss_heading_interp = interp_and_shift(gnss_heading)
+        # self._gnss_heading_interp = np.degrees(gnss_heading_interp)
 
-        self._gnss_heading_interp = np.degrees(gnss_heading_interp)
-
+      
 
     
 
@@ -635,7 +609,7 @@ class DynamicTab(QtCore.QObject):
         wind_speed = self._wind_speed_interp[i]
         tas = self._tas_interp[i]
         gnss_speed = self._speed_interp[i]
-        bearing = self._gnss_heading_interp[i]
+        # bearing = self._gnss_heading_interp[i]
         
 
 
@@ -643,8 +617,7 @@ class DynamicTab(QtCore.QObject):
         self.model_widget.set_position(x,y,z)
         self.model_widget.set_wind_vector(wind_azimut,wind_tilt, wind_speed)
         self.model_widget.set_tas_vector(yaw, tas)
-        self.model_widget.set_bearing_vector(bearing,gnss_speed)
-
+        # self.model_widget.set_bearing_vector(bearing,gnss_speed)
         
         
 

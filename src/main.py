@@ -566,14 +566,14 @@ class MainWindow(QtWidgets.QMainWindow):
             self.checkbox_wind_vector_dyna,
             self.checkbox_north_vector_dyna,
             self.checkbox_tas_vector_dyna,
-            self.checkbox_bearing_vector_dyna,
+            # self.checkbox_bearing_vector_dyna,
             self.checkbox_vertical_vector_dyna,
             self.radioButton_interpolated_dyna,
             self.radioButton_raw_dyna,
 
             self.checkBox_show_grid,
             self.comboBox_colormap_dyna,
-            str(resource_path("gui/models/para_v3.obj")))
+            str(resource_path("gui/models/para_v4.obj")))
         
         self.unit_dialog.unitsChanged.connect(self.dynamic.update_units)
         self.color_dialog.colorDynaChanged.connect(self.dynamic.apply_color_change)

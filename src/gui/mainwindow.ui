@@ -1927,16 +1927,6 @@
                </widget>
               </item>
               <item>
-               <widget class="QCheckBox" name="checkbox_bearing_vector_dyna">
-                <property name="text">
-                 <string>Bearing</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
                <widget class="QCheckBox" name="checkbox_vertical_vector_dyna">
                 <property name="text">
                  <string>Vertical</string>
@@ -2375,7 +2365,7 @@
      <x>0</x>
      <y>0</y>
      <width>997</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
