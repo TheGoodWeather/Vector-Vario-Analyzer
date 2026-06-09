@@ -1,7 +1,7 @@
 import webbrowser
 
 from PyQt6 import QtWidgets, uic, QtGui
-from PyQt6.QtWidgets import QMessageBox, QScrollArea, QVBoxLayout, QTextEdit, QPushButton, QTableWidget, QTableWidgetItem, QLabel
+from PyQt6.QtWidgets import QDialog, QMessageBox, QScrollArea, QTextBrowser, QVBoxLayout, QTextEdit, QPushButton, QTableWidget, QTableWidgetItem, QLabel
 from PyQt6.QtCore import Qt, pyqtSignal, QSettings
 import sys
 from pathlib  import Path 
@@ -380,6 +380,11 @@ def check_version(parent = None):
             "Download",
             QMessageBox.AcceptRole
         )
+        
+        changelog_btn = msg.addButton(
+            "Display Changelog",
+            QMessageBox.ActionRole
+        )
 
         msg.addButton(
             QMessageBox.Close
@@ -387,17 +392,35 @@ def check_version(parent = None):
 
         msg.exec()
 
-        if msg.clickedButton() == download_btn:
+        clicked = msg.clickedButton()
+
+        if clicked == download_btn:
             webbrowser.open(DOWNLOAD_URL)
+
+        elif clicked == changelog_btn:
+            show_changelog(parent)
 
 
     elif Version(latest) == Version(SOFTWARE_VERSION):
+        msg = QMessageBox(parent)
         QMessageBox.information(
             parent,
             "Version",
             f"You are using the latest version : v{SOFTWARE_VERSION}."
         )
+        changelog_btn = msg.addButton(
+            "Display Changelog",
+            QMessageBox.ActionRole
+        )
+        msg.exec()
+
+        clicked = msg.clickedButton()
+
+        if clicked == changelog_btn:
+            show_changelog(parent)
+        
     elif Version(latest) < Version(SOFTWARE_VERSION):
+        msg = QMessageBox(parent)
         QMessageBox.warning(
             parent,
             "Version",
@@ -405,6 +428,48 @@ def check_version(parent = None):
             f"Current : v{SOFTWARE_VERSION}\n"
             f"Latest stable : {latest}"
         )
+        changelog_btn = msg.addButton(
+            "Display Changelog",
+            QMessageBox.ActionRole
+        )
+        msg.exec()
+
+        clicked = msg.clickedButton()
+
+        if clicked == changelog_btn:
+            show_changelog(parent)
+
+def show_changelog(parent=None):
+    try:
+        changelog_path = resource_path("changelog.md")
+
+        with open(changelog_path, "r", encoding="utf-8") as f:
+            markdown_content = f.read()
+
+    except Exception as e:
+        QMessageBox.warning(
+            parent,
+            "Changelog",
+            f"Unable to load changelog.md\n\n{e}"
+        )
+        return
+
+    dialog = QDialog(parent)
+    dialog.setWindowTitle("Changelog")
+    dialog.resize(800, 600)
+
+    layout = QVBoxLayout(dialog)
+
+    browser = QTextBrowser()
+    browser.setMarkdown(markdown_content)
+
+    close_btn = QPushButton("Close")
+    close_btn.clicked.connect(dialog.accept)
+
+    layout.addWidget(browser)
+    layout.addWidget(close_btn)
+
+    dialog.exec()
 
 def resource_path(relative_path: str) -> Path:
     """Retourne le chemin absolu, compatible dev et PyInstaller."""
