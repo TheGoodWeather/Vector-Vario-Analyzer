@@ -1,55 +1,60 @@
 # Changelog
 
-All notable changes to Vector Vario Software will be documented in this file.
-
-## [Unreleased]
-
-### Added
-
-Some comboboxes and tables are now sorted for a better viewing
-Horizontal and vertical units dissociated
-Feature : Dynamic tab - linear interpolation 
-Feature : Version checking
-
-### Changed
-
-No Autorange when changing color mapping in 2D Map
-README updated
-AspectRatio disable on polar graph
-### Fixed
-
-Bug while creating polar region -> None value returned when region is close to end
-Bug while updating preferences ->  Linear Regions vanished
-=======
-
-
-### Fixed
-
-Bug while creating polar region -> None value returned when region is close to end
-Corecting calculus errors in Glide Ratio 
-New linear region width corrected in Polar Tab 
-
->>>>>>> feature/dynamic_tab
-## [0.02] - 11-05-2026
-
-### Added
-
-Splash screen for startup
-
-### Changed
-
-Heavy packages deleted and/or replaced 
-Raising specific errors while uploading IGC file
-Confirmation of file modifications removed (alias or comment)
-
-### Fixed
-
-GNSS coordinates -> supporting South and West coordinates 
-GNSS losses -> supports now when GNSS losses occurs while flying 
+All notable changes to **Vector Vario Software** are documented in this file.
 
 ---
 
-## [0.01] - 07-05-2026
+## [0.03] - 2026-06-09
 
-First release of the software.
-"Import-Export" "Time Series" "Map Explorer" "Polar" and "Skew-T" tools
+### Added
+
+- Some combo boxes and tables are now automatically sorted for better readability.
+- Horizontal and vertical units can now be configured independently.
+- New **Dynamic Tab** feature with linear interpolation.
+- Automatic version checking.
+
+### Changed
+
+- Disabled auto-range when changing color mapping in the 2D Map.
+- Updated README documentation.
+- Disabled Aspect Ratio locking on polar graphs.
+
+### Fixed
+
+- Fixed an issue when creating a polar region near the end of the dataset that could return a `None` value.
+- Fixed a bug where linear regions disappeared after updating preferences.
+- Corrected glide ratio calculation errors.
+- Corrected the default width of new linear regions in the Polar tab.
+
+---
+
+## [0.02] - 2026-05-11
+
+### Added
+
+- Splash screen displayed during application startup.
+
+### Changed
+
+- Removed or replaced several heavy dependencies.
+- Improved error handling when importing IGC files.
+- Removed modification confirmation dialogs for aliases and comments.
+
+### Fixed
+
+- Added support for southern and western hemisphere GNSS coordinates.
+- Fixed handling of GNSS signal losses occurring during flight.
+
+---
+
+## [0.01] - 2026-05-07
+
+### Added
+
+Initial release of Vector Vario Software, including:
+
+- Import / Export
+- Time Series
+- Map Explorer
+- Polar Analysis
+- Skew-T Diagram
