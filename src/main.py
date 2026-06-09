@@ -997,7 +997,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def populate_combobox_variable(self, flight_dic, combobox_var, choice, tab):
         """
         This function populate the variable according to the flight selected in the combobox in selected tab
-        It also set a prioritarization of the variable IAS in the polar tab, and GNSS_alt for the emagram tab
+        It also set a 
+        oritarization of the variable IAS in the polar tab, and GNSS_alt for the emagram tab
         """
         combobox_var.clear()
         

@@ -19,6 +19,7 @@ units_coeff_dic = {
 default_unit = {
     "heading": "degree",
     "speed": "km/h",
+    "vertical_speed": "m/s",
     "altitude": "meters",
     "temperature": "°C",
     "angle": "degree",
