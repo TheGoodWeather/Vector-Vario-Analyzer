@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Jun 14 18:15:25 2025
 
-@author: Utilisateur
-"""
 import logging
+import os
 import sys
+import tempfile
 from pathlib import Path
 from PyQt6.QtWidgets import QTextEdit
 from PyQt6.QtCore import QObject, pyqtSignal
@@ -22,14 +20,31 @@ def detail(self, message, *args, **kwargs):
 logging.Logger.detail = detail  # Add to Logger class
 
 
-# --- Determine base path where .exe lives or script runs ---
-if getattr(sys, 'frozen', False):
-    base_path = Path(sys.executable).parent
-else:
-    base_path = Path(__file__).parent
+def user_log_dir() -> Path:
+    app_name = "Vector Vario Analyzer"
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Logs" / app_name
+    if sys.platform.startswith("win"):
+        return Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / app_name / "Logs"
+    return Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state")) / "vector-vario-analyzer"
 
-log_file = base_path / "log.log"
+log_dir = user_log_dir()
+try:
+    log_dir.mkdir(parents=True, exist_ok=True)
+except OSError:
+    log_dir = Path(tempfile.gettempdir()) / "Vector Vario Analyzer" / "Logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+log_file = log_dir / "log.log"
 
+
+def create_file_handler(path: Path):
+    try:
+        handler = logging.FileHandler(path, encoding='utf-8')
+    except OSError:
+        fallback_dir = Path(tempfile.gettempdir()) / "Vector Vario Analyzer" / "Logs"
+        fallback_dir.mkdir(parents=True, exist_ok=True)
+        handler = logging.FileHandler(fallback_dir / "log.log", encoding='utf-8')
+    return handler
 
 
 
@@ -39,7 +54,7 @@ logger.setLevel(logging.DEBUG)  # Capture everything
 
 if not logger.handlers: #Used to prevent multiple instance of logger
     # --- File Handler ---
-    file_handler = logging.FileHandler(log_file, encoding='utf-8')
+    file_handler = create_file_handler(log_file)
     file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter(
         '[%(asctime)s] %(levelname)s: %(message)s',

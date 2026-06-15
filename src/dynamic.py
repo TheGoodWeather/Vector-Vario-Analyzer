@@ -681,6 +681,8 @@ class DynamicTab(QtCore.QObject):
         
        
     def _on_space_pressed(self):
+        if self._flight is None:
+            return
         if self._play_timer.isActive():
             self.pause()
         else:

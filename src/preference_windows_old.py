@@ -3,8 +3,9 @@ import webbrowser
 from PyQt6 import QtWidgets, uic, QtGui
 from PyQt6.QtWidgets import QDialog, QMessageBox, QScrollArea, QTextBrowser, QVBoxLayout, QTextEdit, QPushButton, QTableWidget, QTableWidgetItem, QLabel
 from PyQt6.QtCore import Qt, pyqtSignal, QSettings
+import sys
+from pathlib  import Path 
 from constants import SOFTWARE_VERSION
-from paths import resource_path, project_root_resource_path
 import requests
 from packaging.version import Version
 
@@ -21,6 +22,13 @@ class UnitDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.parent = parent
         self.settings = QSettings("Vector Vario", "VVA")
+   
+        def resource_path(relative_path):
+            #Get absolute path to resource (for PyInstaller and development) , I don't really understand but it seems useful for lauching as a onefile exe
+            if hasattr(sys, '_MEIPASS'):
+                return Path(sys._MEIPASS) / relative_path
+            return Path(__file__).parent / relative_path
+
 
         uic.loadUi(resource_path("gui/unitwindow.ui"), self)  # Load the .ui file directly
         self.read_settings()
@@ -111,6 +119,12 @@ class ColorDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.parent = parent
 
+        def resource_path(relative_path):
+            #Get absolute path to resource (for PyInstaller and development) , I don't really understand but it seems useful for lauching as a onefile exe
+            if hasattr(sys, '_MEIPASS'):
+                return Path(sys._MEIPASS) / relative_path
+            return Path(__file__).parent / relative_path
+
         uic.loadUi(resource_path("gui/colorwindow.ui"), self)  # Load the .ui file directly
         self.settings = QSettings("Vector Vario", "VVA")
 
@@ -185,7 +199,7 @@ class LicenseDialog(QtWidgets.QDialog):
 
     def load_license_text(self):
         try:
-            return project_root_resource_path("LICENSE.txt").read_text(encoding="utf-8")
+            return resource_path("LICENSE.txt").read_text(encoding="utf-8")
         except Exception as e:
             return f"Erreur chargement licence : {e}"
 
@@ -211,7 +225,7 @@ class RequirementsDialog(QtWidgets.QDialog):
 
     def load_requirements(self):
         try:
-            content = project_root_resource_path("requirements.txt").read_text(encoding="utf-8")
+            content = resource_path("requirements.txt").read_text(encoding="utf-8")
             lines = [l.strip() for l in content.splitlines() if l.strip() and not l.startswith("#")]
             self.table.setRowCount(len(lines))
             for row, line in enumerate(lines):
@@ -423,7 +437,7 @@ def check_version(parent = None):
 
 def show_changelog(parent=None):
     try:
-        changelog_path = project_root_resource_path("CHANGELOG.md")
+        changelog_path = resource_path("CHANGELOG.md")
 
         with open(changelog_path, "r", encoding="utf-8") as f:
             markdown_content = f.read()
@@ -452,3 +466,14 @@ def show_changelog(parent=None):
     layout.addWidget(close_btn)
 
     dialog.exec()
+
+def resource_path(relative_path: str) -> Path:
+    """Retourne le chemin absolu, compatible dev et PyInstaller."""
+    if hasattr(sys, '_MEIPASS'):
+        # Mode PyInstaller : ressources extraites dans un dossier temp
+        base = Path(sys._MEIPASS)
+    else:
+        # Mode développement
+        base = Path(__file__).parent.parent # remonte à src/
+
+    return base / relative_path

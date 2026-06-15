@@ -1,6 +1,8 @@
 import sys
+import os
 import shutil
 from pathlib import Path
+import tempfile
 
 # PyQt6 
 from PyQt6 import QtWidgets, uic, QtCore
@@ -13,7 +15,6 @@ import numpy as np
 import pyqtgraph as pg
 
 # Modules internes
-from paths import resource_path, flight_dir
 from dynamic import DynamicTab
 from constants import SOFTWARE_VERSION
 from utils import get_label, is_all_nan
@@ -642,10 +643,14 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.new_file_path[0]:
             self.new_file_path = Path(self.new_file_path[0]) 
             new_file_path_copy_name = Path(self.new_file_path).name
-            new_file_path_copy = flight_dir() / new_file_path_copy_name
+            new_file_path_copy = Path(os.path.join('./flight/',new_file_path_copy_name))
         else:
             return
         
+        if not os.path.exists('./flight/'):
+            logger.info("No directory 'flight' existing yet, creating it")
+            os.makedirs('./flight/')
+            
         if new_file_path_copy.exists():
             logger.info(f"The file « {new_file_path_copy.name} » has already been uploaded")
             reply =  QMessageBox.question(
@@ -704,8 +709,12 @@ class MainWindow(QtWidgets.QMainWindow):
     
         new_file_path = Path(filepath) 
         new_file_path_copy_name = Path(new_file_path).name
-        new_file_path_copy = flight_dir() / new_file_path_copy_name
-
+        new_file_path_copy = Path(os.path.join('./flight/',new_file_path_copy_name))
+      
+        
+        if not os.path.exists('./flight/'):
+            logger.info("No directory 'flight' existing yet, creating it")
+            os.makedirs('./flight/')
         if new_file_path_copy.exists():
             logger.info(f"The file « {new_file_path_copy.name} » has already been uploaded")
             reply =  QMessageBox.question(
@@ -1471,6 +1480,52 @@ class MainWindow(QtWidgets.QMainWindow):
                 
     def on_button_windbarbs(self, toggle, widget_wind):
         widget_wind.setEnabled(toggle)
+        
+        
+
+    
+        
+#RESSOURCE PATH FOR PYINSTALLER
+def resource_path(relative_path: str) -> Path:
+    """Retourne le chemin absolu, compatible dev et PyInstaller."""
+    if hasattr(sys, '_MEIPASS'):
+        # Mode PyInstaller : ressources extraites dans un dossier temp
+        base = Path(sys._MEIPASS)
+    else:
+        # Mode développement
+        base = Path(__file__).parent  # remonte à src/
+
+    return base / relative_path
+
+#RESSOURCE PATH FOR NUITKA
+# def resource_path(relative_path: str) -> Path:
+#     if getattr(sys, 'frozen', False):
+#         base = Path(sys.argv[0]).parent
+#     else:
+#         base = Path(__file__).parent
+
+#     return base / relative_path
+
+def flight_data_path() -> Path:
+    """Retourne le chemin du dossier 'flight'."""
+    if hasattr(sys, '_MEIPASS'):
+        if sys.platform == "darwin":
+            base_dir = Path.home() / "Library" / "Application Support" / "Vector Vario Analyzer"
+        elif sys.platform.startswith("win"):
+            base_dir = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")) / "Vector Vario Analyzer"
+        else:
+            base_dir = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "vector-vario-analyzer"
+    else:
+        sample_dir = Path(__file__).parent / "flight"
+        base_dir = sample_dir.parent if sample_dir.exists() else Path(__file__).parent.parent
+    
+    path = base_dir / "flight"
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        path = Path(tempfile.gettempdir()) / "Vector Vario Analyzer" / "flight"
+        path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 if __name__ == "__main__":

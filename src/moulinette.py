@@ -66,6 +66,8 @@ def fetch_raw_csv(flight_dic , progress_callback):
     
     with open(flight_dic["origin_file_path"], 'r') as txtfile:
         for line in txtfile:
+            # if not line.strip():
+            #     continue
             if header_line_pattern.match(line):
             #Read the column names from the metadata line of the file
                 columns = line.rstrip().split(';')

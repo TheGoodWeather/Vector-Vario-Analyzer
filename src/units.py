@@ -3,13 +3,18 @@ import numpy as np
 
 units_coeff_dic = {
     "rad" : 0.0174533, #deg to rad
+    "radian" : 0.0174533, #legacy setting
     "°" : 1.0, #deg to deg
+    "degree" : 1.0, #legacy setting
     "m/s" : 1.0, #m/s to m/s
     "knt" : 1.94384, #m/s to knot
+    "knot" : 1.94384, #legacy setting
     "km/h" : 3.6 , #m/s to km/h
     "mph" : 2.23694, #m/s to mph
     "m" : 1.0, #meters to meters
+    "meters" : 1.0, #legacy setting
     "ft" : 3.28084, #meters to feet
+    "feet" : 3.28084, #legacy setting
     "Pa" : 1.0, #Pa to Pa
     "hPa" : 0.01, #Pa to hPa
     "atm" : 9.86923e-6, #Pa to atm
@@ -17,12 +22,12 @@ units_coeff_dic = {
     }
 
 default_unit = {
-    "heading": "degree",
+    "heading": "°",
     "speed": "km/h",
     "vertical_speed": "m/s",
-    "altitude": "meters",
+    "altitude": "m",
     "temperature": "°C",
-    "angle": "degree",
+    "angle": "°",
     "pressure": "hPa",
     "coordinates": "Decimal degrees"
 }
@@ -39,7 +44,7 @@ var_to_unit_group_dic = {
 
 unit_group = {
     "heading" : ["°", "rad"],
-    "speed" : ["m/s", "knot", "km/h", "mph"],
+    "speed" : ["m/s", "knt", "km/h", "mph"],
     "vertical_speed" : ["m/s", "knt", "km/h", "mph"],
     "altitude": ["m", "ft"],
     "temperature": ["°C", "°K", "°F"],
