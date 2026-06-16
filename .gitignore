@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .idea/
 venv/
+.venv14/
 src/build/
 src/dist/
 src/installer/

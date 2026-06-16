@@ -169,7 +169,7 @@ chmod +x launch.sh
 
 Standalone builds can be created using PyInstaller.
 
-PyInstaller is installed automatically through the `requirements.txt` file.
+Warning, PyInstaller is not installed automatically. You will have to do it manually.
 
 ## Important
 
@@ -188,7 +188,7 @@ Activate the virtual environment:
 Build the executable:
 
 ```bash
-pyinstaller VVA.spec --clean
+python -m PyInstaller --noconfirm --clean VVA.spec
 ```
 
 ---
@@ -204,8 +204,26 @@ source .venv/bin/activate
 Build the executable:
 
 ```bash
-pyinstaller VVA.spec --clean
+python -m PyInstaller --noconfirm --clean VVA.spec
 ```
+# macOS DMG Build
+
+Build the macOS app bundle:
+
+```bash
+cd src
+python -m PyInstaller --noconfirm --clean VVA.spec
+```
+
+Create the DMG installer:
+
+```bash
+cd ..
+packaging/build_dmg.sh
+```
+
+The DMG is written to `dist/Vector Vario Analyzer-0.03.dmg`.
+The DMG file and mounted installer volume both use the Vector Vario Analyzer logo icon.
 
 ---
 
