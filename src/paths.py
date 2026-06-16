@@ -28,21 +28,26 @@ import sys
 import tempfile
 from pathlib import Path
 
+APP_NAME = "Vector Vario Analyzer"
 
 # ---------------------------------------------------------------------------
 # App root : utilisé pour les dossiers "flight", "log", etc.
 # ---------------------------------------------------------------------------
 def get_app_root() -> Path:
     """
-    Dossier contenant l'exécutable (build PyInstaller) ou main.py (dev).
-    A utiliser comme base pour tout ce qui doit être ÉCRIT par l'app
-    (flight/, log/, ...).
+    Base à utiliser pour tout ce qui doit être ÉCRIT par l'app
+    (flight/, log/, ...). Dépend de la plateforme en mode frozen.
     """
     if getattr(sys, "frozen", False):
-        # sys.executable = .../Vector Vario Analyzer/Vector Vario Analyzer.exe
+        if sys.platform == "darwin":
+            # Ne JAMAIS écrire dans le bundle .app (Contents/MacOS/...).
+            return Path.home() / "Library" / "Application Support" / APP_NAME
+        # Windows / Linux : sys.executable = .../Vector Vario Analyzer/VVA.exe
         return Path(sys.executable).resolve().parent
     # __file__ = .../src/paths.py -> .parent = .../src/  (== dossier de main.py)
     return Path(__file__).resolve().parent
+ 
+
 
 
 # ---------------------------------------------------------------------------
