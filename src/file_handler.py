@@ -8,6 +8,8 @@ from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtGui import QColor
 import csv
 
+from paths import flight_dir
+
 def generate_vva(filepath, metadata):
     FUNCTION_VERSION = 1.0
     vva_path = filepath.with_suffix(filepath.suffix + ".vva")
@@ -57,7 +59,8 @@ def igc2vva(igc_filepath):
     with open(igc_filepath, "r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
-
+            if not line:
+                continue
             if line.startswith("AXVV"):
                 metadata["vv_sn"] = line[4:]  
             if line.startswith("HFRHWHARDWAREVERSION"):
@@ -82,6 +85,13 @@ def igc2vva(igc_filepath):
             if line.startswith("B"):
                 gps_altitude.append(int(line[-5:]))
                 lxvv_line = next(file, None)
+                if lxvv_line is None:
+                    continue
+                lxvv_line = lxvv_line.strip()
+                if not lxvv_line:
+                    continue
+                if "W" not in lxvv_line:
+                    continue
                 wind_index = lxvv_line.index('W')
                 hour.append(str(line[1:6]))
                 windspeed.append(int(str(lxvv_line[wind_index+1 : wind_index+3])))
@@ -142,10 +152,11 @@ def csv2vva(csv_filepath):
         "alias": ""
         }
 
-    
     with open(csv_filepath, "r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
+            if not line:
+                continue
             if line.startswith("# [VV] "):
                 sn_match = re.search(r"SN:([^\s]+)", line)
                 hw_match = re.search(r"HW:([^\s]+)", line)
@@ -174,11 +185,21 @@ def csv2vva(csv_filepath):
     
     with open(csv_filepath, "r", encoding="utf-8") as file:
        # Sauter les lignes de commentaires
-        lines = (line for line in file if not line.startswith("#"))
+        lines = (
+            line
+            for line in file
+            if line.strip() and not line.startswith("#")
+        ) 
         
         reader = csv.DictReader(lines, delimiter=";")
         
         for row in reader:
+            if not row:
+                continue
+
+            if not row.get("GNSS_fix"):
+                continue
+
             if int(row["GNSS_fix"]) == 1:
                 gps_altitude.append(float(row["GNSS_alt"]))
                 windspeed.append(float(row["wind_vel"]))
@@ -266,8 +287,10 @@ def read_vva_metadata(vva_filepath):
     file.close()
     return metadata
 
-def load_vva_files(flight_dir="flight"):
-    vva_files = Path(flight_dir).glob("*.vva")
+def load_vva_files(flight_directory=None):
+    if flight_directory is None:
+        flight_directory = flight_dir()
+    vva_files = Path(flight_directory).glob("*.vva")
 
     data = []  #List of dictionnaries
     for file in vva_files:

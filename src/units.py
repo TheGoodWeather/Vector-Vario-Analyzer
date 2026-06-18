@@ -2,19 +2,35 @@ from PyQt6.QtCore import QSettings
 import numpy as np
 
 units_coeff_dic = {
-    "radian" : 0.0174533, #deg to rad
-    "degree" : 1.0, #deg to deg
+    "rad" : 0.0174533, #deg to rad
+    "radian" : 0.0174533, #legacy setting
+    "°" : 1.0, #deg to deg
+    "degree" : 1.0, #legacy setting
     "m/s" : 1.0, #m/s to m/s
-    "knot" : 1.94384, #m/s to knot
+    "knt" : 1.94384, #m/s to knot
+    "knot" : 1.94384, #legacy setting
     "km/h" : 3.6 , #m/s to km/h
     "mph" : 2.23694, #m/s to mph
-    "meters" : 1.0, #meters to meters
-    "feet" : 3.28084, #meters to feet
+    "m" : 1.0, #meters to meters
+    "meters" : 1.0, #legacy setting
+    "ft" : 3.28084, #meters to feet
+    "feet" : 3.28084, #legacy setting
     "Pa" : 1.0, #Pa to Pa
     "hPa" : 0.01, #Pa to hPa
     "atm" : 9.86923e-6, #Pa to atm
     "mbar" : 0.01, #Pa to mbar
     }
+
+default_unit = {
+    "heading": "°",
+    "speed": "km/h",
+    "vertical_speed": "m/s",
+    "altitude": "m",
+    "temperature": "°C",
+    "angle": "°",
+    "pressure": "hPa",
+    "coordinates": "Decimal degrees"
+}
 
 var_to_unit_group_dic = {
     "heading" : ["compass_head", "GNSS_head" , "wind_origin"],
@@ -27,12 +43,12 @@ var_to_unit_group_dic = {
     "pressure" : ["DP" , "P_stat" , "AirES" , "AirE"]}
 
 unit_group = {
-    "heading" : ["degree", "radian"],
-    "speed" : ["m/s", "knot", "km/h", "mph"],
-    "vertical_speed" : ["m/s", "knot", "km/h", "mph"],
-    "altitude": ["meters", "feet"],
+    "heading" : ["°", "rad"],
+    "speed" : ["m/s", "knt", "km/h", "mph"],
+    "vertical_speed" : ["m/s", "knt", "km/h", "mph"],
+    "altitude": ["m", "ft"],
     "temperature": ["°C", "°K", "°F"],
-    "angle": ["degree", "radian"],
+    "angle": ["°", "rad"],
     "pressure": ["Pa", "hPa", "atm", "mbar"]}
 
 def get_unit(variable):
@@ -42,7 +58,9 @@ def get_unit(variable):
     unit = None
     for group, variables in var_to_unit_group_dic.items():
         if variable in variables:
-            unit = settings.value(group)    
+            default = default_unit[group]
+            unit = settings.value(group, defaultValue=default)
+        
     settings.endGroup()
     return unit
 

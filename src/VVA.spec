@@ -1,26 +1,81 @@
-# MonApp.spec
+# -*- mode: python ; coding: utf-8 -*-
+
 import sys
 from pathlib import Path
-from PyInstaller.building.splash import Splash
-sys.path.insert(0, '.')   # ajoute src/ au path pour trouver constants.py
+from PyInstaller.utils.hooks import (
+    collect_data_files,
+    collect_dynamic_libs,
+    collect_submodules,
+    copy_metadata,
+)
+
+sys.path.insert(0, '.')
 from constants import SOFTWARE_VERSION
 
 block_cipher = None
 
+
+def safe_copy_metadata(package):
+    try:
+        return copy_metadata(package)
+    except Exception:
+        return []
+
+
+scipy_hiddenimports = (
+    collect_submodules('scipy._lib')
+    + collect_submodules('scipy.interpolate')
+    + collect_submodules('scipy.linalg')
+    + collect_submodules('scipy.sparse')
+    + collect_submodules('scipy.special')
+)
+dynamic_hiddenimports = (
+    collect_submodules('pyqtgraph.opengl')
+    + collect_submodules('trimesh')
+)
+scipy_datas = collect_data_files('scipy', excludes=['**/tests/**', '**/test/**'])
+scipy_binaries = collect_dynamic_libs('scipy')
+package_metadata = (
+    safe_copy_metadata('numpy')
+    + safe_copy_metadata('scipy')
+    + safe_copy_metadata('trimesh')
+    + safe_copy_metadata('PyOpenGL')
+    + safe_copy_metadata('packaging')
+)
+
 a = Analysis(
-    ['main.py'],                          # point d'entrée
-    pathex=['src'],                           # PyInstaller cherche aussi dans src/
-    binaries=[],
-    datas=[
-        ('gui/*.ui', 'gui'),              # fichiers .ui
-        ('gui/icons/*', 'gui/icons'),
-        ('gui/models/*', 'gui/models'),
-		('../requirements.txt', '.'),      # ← à la racine du bundle
-		('../LICENSE.txt', '.'),               # ← à la racine du bundl# icônes
+    ['main.py'],
+    pathex=[],
+    binaries=[
+        *scipy_binaries,
     ],
-    hiddenimports=[],
+    datas=[
+        ('gui', 'gui'),
+        ('../requirements.txt', '.'),
+        ('../LICENSE.txt', '.'),
+        ('../CHANGELOG.md', '.'),
+        *scipy_datas,
+        *package_metadata,
+    ],
+    hiddenimports=[
+        'pyqtgraph',
+        'PyQt6.QtOpenGL',
+        'PyQt6.QtOpenGLWidgets',
+        'OpenGL',
+        'scipy',
+        'scipy.interpolate',
+        'scipy._lib.messagestream',
+        'trimesh',
+        *scipy_hiddenimports,
+        *dynamic_hiddenimports,
+    ],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
     excludes=[
+        'tkinter',
         'IPython',
+        'jupyter',
         'pytest',
         'sphinx',
         'matplotlib',
@@ -30,30 +85,30 @@ a = Analysis(
         'numba',
     ],
     cipher=block_cipher,
+    noarchive=False,
+    optimize=0,
 )
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-
-
-splash = Splash(
-    'gui/icons/logo.png',
-    binaries=a.binaries,
-    datas=a.datas,
-    text_pos=None,
-)
 
 exe = EXE(
     pyz,
     a.scripts,
     [],
     exclude_binaries=True,
-    name=f'Vector Vario Analyzer v{SOFTWARE_VERSION}',
+    name='Vector Vario Analyzer',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,                            # pas de console (app GUI)
-    icon='gui/icons/app_icon.ico',        # icône .ico obligatoire sur Windows
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon='gui/icons/app_icon.ico',
+    manifest='app.manifest',
 )
 
 coll = COLLECT(
@@ -63,5 +118,14 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=True,
-    name=f'Vector Vario Analyzer v{SOFTWARE_VERSION}',
+    upx_exclude=[],
+    name='Vector Vario Analyzer',
 )
+
+if sys.platform == 'darwin':
+    app = BUNDLE(
+        coll,
+        name='Vector Vario Analyzer.app',
+        icon='gui/icons/app_icon.icns',
+        bundle_identifier=f'com.vectorvario.vectorvarioanalyzer.{SOFTWARE_VERSION}',
+    )

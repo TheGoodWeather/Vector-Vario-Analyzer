@@ -1,11 +1,10 @@
 import webbrowser
 
 from PyQt6 import QtWidgets, uic, QtGui
-from PyQt6.QtWidgets import QMessageBox, QScrollArea, QVBoxLayout, QTextEdit, QPushButton, QTableWidget, QTableWidgetItem, QLabel
+from PyQt6.QtWidgets import QDialog, QMessageBox, QScrollArea, QTextBrowser, QVBoxLayout, QTextEdit, QPushButton, QTableWidget, QTableWidgetItem, QLabel
 from PyQt6.QtCore import Qt, pyqtSignal, QSettings
-import sys
-from pathlib  import Path 
 from constants import SOFTWARE_VERSION
+from paths import resource_path, project_root_resource_path
 import requests
 from packaging.version import Version
 
@@ -22,13 +21,6 @@ class UnitDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.parent = parent
         self.settings = QSettings("Vector Vario", "VVA")
-   
-        def resource_path(relative_path):
-            #Get absolute path to resource (for PyInstaller and development) , I don't really understand but it seems useful for lauching as a onefile exe
-            if hasattr(sys, '_MEIPASS'):
-                return Path(sys._MEIPASS) / relative_path
-            return Path(__file__).parent / relative_path
-
 
         uic.loadUi(resource_path("gui/unitwindow.ui"), self)  # Load the .ui file directly
         self.read_settings()
@@ -73,6 +65,7 @@ class ColorButton(QtWidgets.QPushButton):
 
     def __init__(self, *args, color=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setFixedSize(24, 24)
         self._color = None
         self._default = color
         self.pressed.connect(self.onColorPicker)
@@ -112,37 +105,51 @@ class ColorDialog(QtWidgets.QDialog):
     
     colorWindBarbsChanged = pyqtSignal()
     colorPlotChanged = pyqtSignal()
+    colorDynaChanged = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
 
-        def resource_path(relative_path):
-            #Get absolute path to resource (for PyInstaller and development) , I don't really understand but it seems useful for lauching as a onefile exe
-            if hasattr(sys, '_MEIPASS'):
-                return Path(sys._MEIPASS) / relative_path
-            return Path(__file__).parent / relative_path
-
         uic.loadUi(resource_path("gui/colorwindow.ui"), self)  # Load the .ui file directly
         self.settings = QSettings("Vector Vario", "VVA")
+
+        # Map explorer
         self.color_button_windbarb = ColorButton(color="#000000")  # Start with black as default
         self.color_button_plot = ColorButton(color="#ff0000") #Start with red as default
         self.windbarbs_color_widget.layout().addWidget(self.color_button_windbarb)
         self.plot_color_widget.layout().addWidget(self.color_button_plot)
 
+        # Dyna tab
+
+        self.color_button_grid = ColorButton(color="#FFFFFF")  
+        self.color_button_dynaplot = ColorButton(color="#ff0000") 
+        self.color_button_background = ColorButton(color="#a29c9c") 
+        self.color_button_model = ColorButton(color="#FF1717")
         
-        self.read_settings()
+        self.grid_color_widget.layout().addWidget(self.color_button_grid)
+        self.dynaplot_color_widget.layout().addWidget(self.color_button_dynaplot)
+        self.background_color_widget.layout().addWidget(self.color_button_background)
+        self.model_color_widget.layout().addWidget(self.color_button_model)
+        
         self.buttonBox.accepted.connect(self.write_settings)    
-        
+        self.read_settings()
+
 
         
     def write_settings(self):
         self.settings.beginGroup("colors")
         self.settings.setValue("windbarbs", self.color_button_windbarb.color())
         self.settings.setValue("plot", self.color_button_plot.color())
+        self.settings.setValue("grid", self.color_button_grid.color())
+        self.settings.setValue("dynaplot", self.color_button_dynaplot.color())
+        self.settings.setValue("background", self.color_button_background.color())
+        self.settings.setValue("model", self.color_button_model.color())
         self.settings.endGroup()
+        
         self.colorWindBarbsChanged.emit()
         self.colorPlotChanged.emit()
+        self.colorDynaChanged.emit()
         self.close()
         
     def read_settings(self):
@@ -151,7 +158,10 @@ class ColorDialog(QtWidgets.QDialog):
         self.settings.beginGroup("colors")
         self.color_button_windbarb.setColor(self.settings.value("windbarbs" , "#000000"))
         self.color_button_plot.setColor(self.settings.value("plot" , "#ff0000"))
-
+        self.color_button_grid.setColor(self.settings.value("grid" , "#FFFFFF"))
+        self.color_button_dynaplot.setColor(self.settings.value("dynaplot" , "#ff0000"))
+        self.color_button_background.setColor(self.settings.value("background" , "#a29c9c"))
+        self.color_button_model.setColor(self.settings.value("model" , "#FF1717"))
         self.settings.endGroup()
 
 
@@ -175,7 +185,7 @@ class LicenseDialog(QtWidgets.QDialog):
 
     def load_license_text(self):
         try:
-            return resource_path("LICENSE.txt").read_text(encoding="utf-8")
+            return project_root_resource_path("LICENSE.txt").read_text(encoding="utf-8")
         except Exception as e:
             return f"Erreur chargement licence : {e}"
 
@@ -201,7 +211,7 @@ class RequirementsDialog(QtWidgets.QDialog):
 
     def load_requirements(self):
         try:
-            content = resource_path("requirements.txt").read_text(encoding="utf-8")
+            content = project_root_resource_path("requirements.txt").read_text(encoding="utf-8")
             lines = [l.strip() for l in content.splitlines() if l.strip() and not l.startswith("#")]
             self.table.setRowCount(len(lines))
             for row, line in enumerate(lines):
@@ -315,7 +325,44 @@ class AboutDialog(QtWidgets.QDialog):
         btn_close.clicked.connect(self.close)
         layout.addWidget(btn_close)
 
+def version_dialog(
+    parent,
+    title,
+    text,
+    icon=QMessageBox.Icon.Information,
+    show_download=False
+):
+    msg = QMessageBox(parent)
+    msg.setWindowTitle(title)
+    msg.setText(text)
+    msg.setIcon(icon)
 
+    download_btn = None
+
+    if show_download:
+        download_btn = msg.addButton(
+            "Download",
+            QMessageBox.AcceptRole
+        )
+
+    changelog_btn = msg.addButton(
+        "Display Changelog",
+        QMessageBox.ActionRole
+    )
+
+    close_btn = msg.addButton(
+        QMessageBox.Close
+    )
+
+    msg.exec()
+
+    clicked = msg.clickedButton()
+
+    if clicked == download_btn:
+        webbrowser.open(DOWNLOAD_URL)
+
+    elif clicked == changelog_btn:
+        show_changelog(parent)
 
 def check_version(parent = None):
 
@@ -334,61 +381,74 @@ def check_version(parent = None):
 
     latest = get_latest_version()  
     if latest is None:
-        QMessageBox.warning(
+        version_dialog(
             parent,
             "Version",
-            "Impossible to reach GitHub repository"
-            f"Current : v{SOFTWARE_VERSION}"
+            "Impossible to reach GitHub repository\n"
+            f"Current: v{SOFTWARE_VERSION}",
+            QMessageBox.Warning
         )
         return
 
     if Version(latest) > Version(SOFTWARE_VERSION):
-        msg = QMessageBox(parent)
-        msg.setWindowTitle("Update Available")
-        msg.setIcon(QMessageBox.Information)
 
-        msg.setText(
+        version_dialog(
+            parent,
+            "Update Available",
             f"A new version is available: {latest}\n\n"
-            f"Current version: v{SOFTWARE_VERSION}"
+            f"Current version: v{SOFTWARE_VERSION}",
+            QMessageBox.Information,
+            show_download=True
         )
-
-        download_btn = msg.addButton(
-            "Download",
-            QMessageBox.AcceptRole
-        )
-
-        msg.addButton(
-            QMessageBox.Close
-        )
-
-        msg.exec()
-
-        if msg.clickedButton() == download_btn:
-            webbrowser.open(DOWNLOAD_URL)
-
 
     elif Version(latest) == Version(SOFTWARE_VERSION):
-        QMessageBox.information(
+
+        version_dialog(
             parent,
             "Version",
-            f"You are using the latest version : v{SOFTWARE_VERSION}."
+            f"You are using the latest version: v{SOFTWARE_VERSION}.",
+            QMessageBox.Information
         )
-    elif Version(latest) < Version(SOFTWARE_VERSION):
-        QMessageBox.warning(
+
+    else:
+
+        version_dialog(
             parent,
             "Version",
             f"You are not using a stable version.\n"
-            f"Current : v{SOFTWARE_VERSION}\n"
-            f"Latest stable : {latest}"
+            f"Current: v{SOFTWARE_VERSION}\n"
+            f"Latest stable: {latest}",
+            QMessageBox.Warning
         )
 
-def resource_path(relative_path: str) -> Path:
-    """Retourne le chemin absolu, compatible dev et PyInstaller."""
-    if hasattr(sys, '_MEIPASS'):
-        # Mode PyInstaller : ressources extraites dans un dossier temp
-        base = Path(sys._MEIPASS)
-    else:
-        # Mode développement
-        base = Path(__file__).parent.parent # remonte à src/
+def show_changelog(parent=None):
+    try:
+        changelog_path = project_root_resource_path("CHANGELOG.md")
 
-    return base / relative_path
+        with open(changelog_path, "r", encoding="utf-8") as f:
+            markdown_content = f.read()
+
+    except Exception as e:
+        QMessageBox.warning(
+            parent,
+            "Changelog",
+            f"Unable to load CHANGELOG.md\n\n{e}"
+        )
+        return
+
+    dialog = QDialog(parent)
+    dialog.setWindowTitle("Changelog")
+    dialog.resize(800, 600)
+
+    layout = QVBoxLayout(dialog)
+
+    browser = QTextBrowser()
+    browser.setMarkdown(markdown_content)
+
+    close_btn = QPushButton("Close")
+    close_btn.clicked.connect(dialog.accept)
+
+    layout.addWidget(browser)
+    layout.addWidget(close_btn)
+
+    dialog.exec()

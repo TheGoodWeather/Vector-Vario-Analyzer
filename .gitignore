@@ -2,8 +2,9 @@ __pycache__/
 *.pyc
 .idea/
 venv/
-src/build
-src/dist
-src/installer
+.venv14/
+src/build/
+src/dist/
+src/installer/
 test.txt
 ressources/

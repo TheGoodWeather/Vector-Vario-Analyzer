@@ -1,5 +1,4 @@
 import sys
-import os
 import shutil
 from pathlib import Path
 
@@ -14,6 +13,7 @@ import numpy as np
 import pyqtgraph as pg
 
 # Modules internes
+from paths import resource_path, flight_dir
 from dynamic import DynamicTab
 from constants import SOFTWARE_VERSION
 from utils import get_label, is_all_nan
@@ -61,7 +61,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.color_dialog = ColorDialog(parent = self)  
         self.color_dialog.colorWindBarbsChanged.connect(lambda: plot.update_wind_barbs_2D(self.flight, self.tableWidget_flights_plot2D, self.graph_tab2D, self.radioButton_windbarbs, self.horizontalSlider_density_barbs, self.horizontalSlider_size_barbs))
         self.color_dialog.colorPlotChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar, self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap ))
-
+        
         self.settings = QSettings("Vector Vario", "VVA") #Initialize settings
         self.threadpool = QThreadPool() #initialize thread
         # To manage export threads sequentially 
@@ -110,7 +110,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         #Table ------------------------------------
         headers = ["","Flight Name", "Flight date", "Start altitude","Max altitude", "Pilot", "Comment", "Alias"]
-        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab]
+        self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab, self.dyna_tab]
         for tab in self.tab_list:
             index = self.tabWidget.indexOf(tab)
             self.tabWidget.setTabEnabled(index, True)
@@ -517,10 +517,12 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.pushButton_pause = QtWidgets.QPushButton(qta.icon('mdi6.pause'), '')
         self.pushButton_pause.setFixedSize(25, 25)
+        self.pushButton_pause.setCheckable(True)
         self.widget_control_buttons.layout().addWidget(self.pushButton_pause)
         
         self.pushButton_play = QtWidgets.QPushButton(qta.icon('mdi6.play'), '')
         self.pushButton_play.setFixedSize(25, 25)
+        self.pushButton_play.setCheckable(True)
         self.widget_control_buttons.layout().addWidget(self.pushButton_play)
         
         
@@ -566,10 +568,18 @@ class MainWindow(QtWidgets.QMainWindow):
             self.checkbox_wind_vector_dyna,
             self.checkbox_north_vector_dyna,
             self.checkbox_tas_vector_dyna,
-            self.checkbox_bearing_vector_dyna,
-            str(resource_path("gui/models/para_v3.obj")))
+            # self.checkbox_bearing_vector_dyna,
+            self.checkbox_vertical_vector_dyna,
+            self.radioButton_interpolated_dyna,
+            self.radioButton_raw_dyna,
+
+            self.checkBox_show_grid,
+            self.comboBox_colormap_dyna,
+            str(resource_path("gui/models/para_v4.obj")))
         
         self.unit_dialog.unitsChanged.connect(self.dynamic.update_units)
+        self.color_dialog.colorDynaChanged.connect(self.dynamic.apply_color_change)
+
     
     def write_settings_main(self):
         """
@@ -634,14 +644,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.new_file_path[0]:
             self.new_file_path = Path(self.new_file_path[0]) 
             new_file_path_copy_name = Path(self.new_file_path).name
-            new_file_path_copy = Path(os.path.join('./flight/',new_file_path_copy_name))
+            new_file_path_copy = flight_dir() / new_file_path_copy_name
         else:
             return
         
-        if not os.path.exists('./flight/'):
-            logger.info("No directory 'flight' existing yet, creating it")
-            os.makedirs('./flight/')
-            
         if new_file_path_copy.exists():
             logger.info(f"The file « {new_file_path_copy.name} » has already been uploaded")
             reply =  QMessageBox.question(
@@ -700,13 +706,8 @@ class MainWindow(QtWidgets.QMainWindow):
     
         new_file_path = Path(filepath) 
         new_file_path_copy_name = Path(new_file_path).name
-        new_file_path_copy = Path(os.path.join('./flight/',new_file_path_copy_name))
-      
-        
-        if not os.path.exists('./flight/'):
-            logger.info("No directory 'flight' existing yet, creating it")
-            os.makedirs('./flight/')
-            
+        new_file_path_copy = flight_dir() / new_file_path_copy_name
+
         if new_file_path_copy.exists():
             logger.info(f"The file « {new_file_path_copy.name} » has already been uploaded")
             reply =  QMessageBox.question(
@@ -812,6 +813,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
             self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
             self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
+            self.dynamic.update_data_set(self.flight)
             self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D )
             return
         
@@ -988,7 +990,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def populate_combobox_variable(self, flight_dic, combobox_var, choice, tab):
         """
         This function populate the variable according to the flight selected in the combobox in selected tab
-        It also set a prioritarization of the variable IAS in the polar tab, and GNSS_alt for the emagram tab
+        It also set a 
+        oritarization of the variable IAS in the polar tab, and GNSS_alt for the emagram tab
         """
         combobox_var.clear()
         
@@ -1469,69 +1472,31 @@ class MainWindow(QtWidgets.QMainWindow):
                 
     def on_button_windbarbs(self, toggle, widget_wind):
         widget_wind.setEnabled(toggle)
-        
-        
 
-    
-        
-#RESSOURCE PATH FOR PYINSTALLER
-def resource_path(relative_path: str) -> Path:
-    """Retourne le chemin absolu, compatible dev et PyInstaller."""
-    if hasattr(sys, '_MEIPASS'):
-        # Mode PyInstaller : ressources extraites dans un dossier temp
-        base = Path(sys._MEIPASS)
-    else:
-        # Mode développement
-        base = Path(__file__).parent  # remonte à src/
-
-    return base / relative_path
-
-#RESSOURCE PATH FOR NUITKA
-# def resource_path(relative_path: str) -> Path:
-#     if getattr(sys, 'frozen', False):
-#         base = Path(sys.argv[0]).parent
-#     else:
-#         base = Path(__file__).parent
-
-#     return base / relative_path
-
-def flight_data_path() -> Path:
-    """Retourne le chemin du dossier 'flight' à côté de l'executable."""
-    if hasattr(sys, '_MEIPASS'):
-        exe_dir = Path(sys.executable).parent
-    else:
-        exe_dir = Path(__file__).parent.parent
-    
-    path = exe_dir / "flight"
-    path.mkdir(exist_ok=True)
-    return path
 
 if __name__ == "__main__":
     # try:
-    
-        
+       
     app = QtWidgets.QApplication.instance()
 
     if app is None:
-        app = QtWidgets.QApplication(sys.argv)
-        
-        
+        app = QtWidgets.QApplication([sys.argv[0]])
+    
+    
     #splash screen
     pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
     splash = QSplashScreen(pixmap)
     splash.show()
-    
+
     app.processEvents()
     app.setStyle("Fusion")
     app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
     window = MainWindow()
-    
+
     window.show()
     splash.finish(window)
-    # sys.exit(app.exec())
-    app.exec()
-    window.close()
-        
+    sys.exit(app.exec())
     # except Exception as e:
     #     logger.exception(f"Fatal error occurred during startup {e}")
+        
         

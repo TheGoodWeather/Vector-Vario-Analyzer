@@ -1,10 +1,15 @@
-# Flight Data Analyzer v0.02
+# Vector Vario Analyzer v0.03
+
+![vector vario software logo](src/gui/icons/logo.png)
 
 ## Overview
 
-Flight Data Analyzer is a Python application for flight data analysis and visualization.
 
-Please refer to the user manual for detailed usage instructions.
+This software was developed to fully explore the data recorded by the Vector Vario in its enriched files (IGC+ format).
+
+It enables a high level of scientific flight analysis, as well as in-depth discussions about the data and its interpretation.
+
+Please refer to the user manual for detailed usage instructions, or visit [Vector Vario website](https://vectorvario.com/softwares/)
 
 ---
 
@@ -12,7 +17,7 @@ Please refer to the user manual for detailed usage instructions.
 
 Before running the application, make sure the following are installed on your system:
 
-- Python 3.12.7
+- Python >= 3.12.7
 - pip
 
 Python packages and dependencies are listed in:
@@ -29,9 +34,11 @@ requirements.txt
 
 Using Git:
 
+Go the a specific location where you want the app to be cloned :
+
 ```bash
-git clone <YOUR_GITHUB_URL>
-cd FlightDataAnalyzer
+git clone https://github.com/TheGoodWeather/vector_software
+cd vector_software
 ```
 
 Or download the ZIP archive from GitHub and extract it.
@@ -42,7 +49,7 @@ Or download the ZIP archive from GitHub and extract it.
 
 ## Create a Virtual Environment
 
-Create a Virtual Environment in the extracted folder :
+In the folder vector_software where the files are extracted : 
 
 ```bash
 python -m venv .venv
@@ -50,15 +57,13 @@ python -m venv .venv
 
 ## Activate the Virtual Environment
 
-Before installing dependancies, you should activate the venv : 
+The virtual Environment must be activated before installing dependencies :
 
 ```bash
-source .venv\Scripts\activate
+.venv\Scripts\activate
 ```
 
 ## Install Dependencies
-
-Now run this command in order to download the required dependencies :
 
 ```bash
 pip install -r requirements.txt
@@ -66,7 +71,7 @@ pip install -r requirements.txt
 
 ## Launch the Application
 
-To manually launch the app, run the following command : 
+You can manualy launch the app : 
 
 ```bash
 python src/main.py
@@ -75,7 +80,7 @@ python src/main.py
 Or you can also use the provided launcher:
 
 ```bash
-launch.bat
+src/launch.bat
 ```
 
 ---
@@ -109,7 +114,7 @@ python src/main.py
 Or use the launcher:
 
 ```bash
-./launch.command
+src/launch.command
 ```
 
 If needed, make the launcher executable:
@@ -149,7 +154,7 @@ python src/main.py
 Or use:
 
 ```bash
-./launch.sh
+src/launch.sh
 ```
 
 If needed, make the launcher executable:
@@ -164,7 +169,7 @@ chmod +x launch.sh
 
 Standalone builds can be created using PyInstaller.
 
-PyInstaller is installed automatically through the `requirements.txt` file.
+Warning, PyInstaller is not installed automatically. You will have to do it manually.
 
 ## Important
 
@@ -183,7 +188,7 @@ Activate the virtual environment:
 Build the executable:
 
 ```bash
-pyinstaller VVA.spec --clean
+python -m PyInstaller --noconfirm --clean VVA.spec
 ```
 
 ---
@@ -199,8 +204,26 @@ source .venv/bin/activate
 Build the executable:
 
 ```bash
-pyinstaller VVA.spec --clean
+python -m PyInstaller --noconfirm --clean VVA.spec
 ```
+# macOS DMG Build
+
+Build the macOS app bundle:
+
+```bash
+cd src
+python -m PyInstaller --noconfirm --clean VVA.spec
+```
+
+Create the DMG installer:
+
+```bash
+cd ..
+packaging/build_dmg.sh
+```
+
+The DMG is written to `dist/Vector Vario Analyzer-0.03.dmg`.
+The DMG file and mounted installer volume both use the Vector Vario Analyzer logo icon.
 
 ---
 
