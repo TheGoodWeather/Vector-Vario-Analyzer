@@ -224,32 +224,32 @@ def populate_table_1D_variable(flight_dic, table1, table2, choice):
             if flight['is_data_processed'] and flight['data']:
 
                 for variable in flight['data']:
-                    if variable != 'GNSS_time':                       
-                        data = flight['data'][variable]
+                                       
+                    data = flight['data'][variable]
 
-                        if len(data) > 0 and not np.all(np.isnan(data)):
+                    if len(data) > 0 and not np.all(np.isnan(data)):
 
-                            table1.insertRow(row)
-                            table2.insertRow(row)
+                        table1.insertRow(row)
+                        table2.insertRow(row)
 
-                            # TABLE 1
-                            item1 = QTableWidgetItem(get_label(variable))
-                            item1.setData(Qt.ItemDataRole.UserRole, variable)
-                            item1.setFlags(item1.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-                            item1.setFlags(item1.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                            item1.setCheckState(Qt.CheckState.Unchecked)
+                        # TABLE 1
+                        item1 = QTableWidgetItem(get_label(variable))
+                        item1.setData(Qt.ItemDataRole.UserRole, variable)
+                        item1.setFlags(item1.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                        item1.setFlags(item1.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                        item1.setCheckState(Qt.CheckState.Unchecked)
 
-                            # TABLE 2
-                            item2 = QTableWidgetItem(get_label(variable))
-                            item2.setData(Qt.ItemDataRole.UserRole, variable)
-                            item2.setFlags(item2.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-                            item2.setFlags(item2.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                            item2.setCheckState(Qt.CheckState.Unchecked)
+                        # TABLE 2
+                        item2 = QTableWidgetItem(get_label(variable))
+                        item2.setData(Qt.ItemDataRole.UserRole, variable)
+                        item2.setFlags(item2.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                        item2.setFlags(item2.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                        item2.setCheckState(Qt.CheckState.Unchecked)
 
-                            table1.setItem(row, 0, item1)
-                            table2.setItem(row, 0, item2)
+                        table1.setItem(row, 0, item1)
+                        table2.setItem(row, 0, item2)
 
-                            row += 1            
+                        row += 1            
     table1.sortItems(0, Qt.AscendingOrder)
     table2.sortItems(0, Qt.AscendingOrder)
 
