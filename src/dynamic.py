@@ -105,7 +105,7 @@ class DynamicTab(QtCore.QObject):
         self._y_interp = None
         self._z_interp = None
         self._speed_interp = None
-        self._netto_interp = None
+        self._vario_interp = None
         self._alt_interp = None
         self._wind_dir_interp = None
         self._wind_tilt_interp = None
@@ -711,7 +711,7 @@ class DynamicTab(QtCore.QObject):
             f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         )
         
-        self.hud_widget.set_netto(round(vario,2))
+        self.hud_widget.set_vario(round(vario,2))
         self.hud_widget.set_altitude(round(altitude,2))
         self.hud_widget.set_ground_speed(round(ground_speed,2))
         self.hud_widget.set_time(formatted_time)
@@ -870,7 +870,7 @@ class HUDWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.netto = 0.0
+        self.vario = 0.0
         self.ground_speed = 0
         self.time = 0
         self.duration = 0
@@ -878,7 +878,7 @@ class HUDWidget(QWidget):
         self.roll = 0.0
         self.pitch = 0.0 
         
-        self._unit_netto = get_unit("netto")
+        self._unit_vario = get_unit("vario")
         self._unit_alt = get_unit("GNSS_alt")
         self._unit_ground_speed = get_unit("GNSS_speed")
         self._unit_angle = get_unit("roll")
@@ -892,8 +892,8 @@ class HUDWidget(QWidget):
         )
    
     
-    def set_netto(self, value):
-        self.netto = round(value,1)
+    def set_vario(self, value):
+        self.vario = round(value,1)
         self.update()
     
     def set_altitude(self, value):
@@ -922,168 +922,12 @@ class HUDWidget(QWidget):
 
 
     def update_units(self):
-        self._unit_netto = get_unit("netto")
+        self._unit_vario = get_unit("vario")
         self._unit_alt = get_unit("GNSS_alt")
         self._unit_ground_speed = get_unit("GNSS_speed")
         self._unit_angle = get_unit("roll")
 
-    # def paintEvent(self, event):
 
-    #     painter = QPainter(self)
-    #     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
-    
-    #     # -------------------------------------------------
-    #     # TEXTE
-    #     # -------------------------------------------------
-
-    #     painter.setPen(QPen(QColor(0, 0, 0, 180)))
-    #     font = QFont()
-    #     font.setPointSize(10)
-    #     font.setBold(True)
-    #     painter.setFont(font)
-
-
-
-    #     painter.drawText(
-    #         421,
-    #         41,
-    #         f"Time : {self.time}"
-    #     )
-        
-    #     painter.drawText(
-    #         421,
-    #         81,
-    #         f"Duration : {self.duration}"
-    #     )
-        
-    #     painter.drawText(
-    #         21,
-    #         41,
-    #         f"Altitude : {self.altitude} {self._unit_alt}"
-    #     )
-        
-    #     painter.drawText(
-    #         21,
-    #         81,
-    #         f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
-    #     )
-
-    #     painter.drawText(
-    #         221,
-    #         41,
-    #         f"Roll : {self.roll} {self._unit_angle}"
-    #     )
-
-    #     painter.drawText(
-    #         221,
-    #         81,
-    #         f"Pitch : {self.pitch} {self._unit_angle}"
-    #     )
-
-    #     if self.netto > 0 :
-    #         painter.drawText(
-    #             self.width() - 80 - 19,
-    #             41,
-    #             f"+{self.netto} {self._unit_netto} "
-    #         )
-    #     else:
-    #         painter.drawText(
-    #             self.width() - 80 - 19,
-    #             41,
-    #             f"{self.netto} {self._unit_netto} "
-    #         )
-    #     painter.drawText(
-    #         self.width() - 80 - 9,
-    #         26,
-    #         f"Vario"
-    #     )
-        
-    #     painter.setPen(QPen(QColor(255, 255, 255)))
-
-
-    #     painter.drawText(
-    #         420,
-    #         40,
-    #         f"Time : {self.time}"
-    #     )
-        
-    #     painter.drawText(
-    #         420,
-    #         80,
-    #         f"Duration : {self.duration}"
-    #     )
-        
-    #     painter.drawText(
-    #         20,
-    #         40,
-    #         f"Altitude : {self.altitude} {self._unit_alt}"
-    #     )
-        
-    #     painter.drawText(
-    #         20,
-    #         80,
-    #         f"Ground Speed  : {self.ground_speed} {self._unit_ground_speed}"
-    #     )
-
-    #     painter.drawText(
-    #         220,
-    #         40,
-    #         f"Roll : {self.roll} {self._unit_angle}"
-    #     )
-
-    #     painter.drawText(
-    #         220,
-    #         80,
-    #         f"Pitch : {self.pitch} {self._unit_angle}"
-    #     )
-        
-    #     painter.drawText(
-    #         self.width() - 80 - 10,
-    #         25,
-    #         f"Vario"
-    #     )
-        
-    #     if self.netto > 0 :
-    #         painter.drawText(
-    #             self.width() - 80 - 20,
-    #             40,
-    #             f"+{self.netto} {self._unit_netto} "
-    #         )
-    #     else:
-    #         painter.drawText(
-    #             self.width() - 80 - 20,
-    #             40,
-    #             f"{self.netto} {self._unit_netto} "
-    #         )
-    #     # -------------------------------------------------
-    #     # JAUGE SIMPLE
-    #     # -------------------------------------------------
-
-    #     gauge_x = self.width() - 80
-    #     gauge_y = 50
-    #     gauge_h = 200
-    #     gauge_w = 20
-
-    #     # fond
-    #     painter.setBrush(QColor(40, 40, 40, 180))
-    #     painter.drawRect(gauge_x, gauge_y, gauge_w, gauge_h)
-
-    #     # valeur
-    #     value = max(-6, min(6, convert_array_to_unit(self.netto, "netto")))
-
-    #     #normalized = (value + 5) / 10.0
-
-    #     fill_h = int(mapping(value, -6, 6,0, gauge_h))
-        
-    #     x = gauge_x
-    #     y = int(gauge_y + gauge_h - fill_h)
-    #     w = gauge_w
-    #     h = fill_h
-    #     painter.setBrush(QColor(0, 255, 0, 200))
-    #     painter.drawRect(x, y, w, h)
-
-    #     painter.end()
 
     def paintEvent(self, event):
 
@@ -1101,7 +945,7 @@ class HUDWidget(QWidget):
         # DONNÉES
         # -------------------------------------------------
 
-        sign = "+" if self.netto > 0 else ""
+        sign = "+" if self.vario > 0 else ""
         fields = [
             ("Altitude",     f"{self.altitude} {self._unit_alt}"),
             ("Ground Speed", f"{self.ground_speed} {self._unit_ground_speed}"),
@@ -1172,7 +1016,7 @@ class HUDWidget(QWidget):
         painter.drawRect(gauge_x, gauge_y, gauge_w, gauge_h)
 
         # valeur
-        value = max(-6, min(6, convert_array_to_unit(self.netto, "netto")))
+        value = max(-6, min(6, convert_array_to_unit(self.vario, "vario")))
 
         #normalized = (value + 5) / 10.0
 
@@ -1186,8 +1030,8 @@ class HUDWidget(QWidget):
         painter.drawRect(x, y, w, h)
 
         # Label Vario — ombre + blanc
-        sign = "+" if self.netto > 0 else ""
-        vario_text = f"{sign}{self.netto} {self._unit_netto}"
+        sign = "+" if self.vario > 0 else ""
+        vario_text = f"{sign}{self.vario} {self._unit_vario}"
 
         for label, tx, ty in [("Vario", gauge_x - 7, gauge_y - 25),
                             (vario_text, gauge_x - 9, gauge_y - 10)]:
