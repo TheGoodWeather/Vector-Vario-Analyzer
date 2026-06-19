@@ -16,7 +16,7 @@ import pyqtgraph as pg
 from paths import resource_path, flight_dir
 from dynamic import DynamicTab
 from constants import SOFTWARE_VERSION
-from utils import get_label, is_all_nan
+from utils import get_label, highlight_row, is_all_nan
 from units import get_unit, convert_array_to_unit
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
@@ -690,6 +690,16 @@ class MainWindow(QtWidgets.QMainWindow):
         
         self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
+
+        #Fetching the new flight imported to make it blink
+        new_flight_name = self.new_file_path.stem
+        for row in range(self.tableWidget_database.rowCount()):
+            item = self.tableWidget_database.item(row, 1)
+            if item.text() == new_flight_name:
+                highlight_row(self.tableWidget_database, row)
+                self.tableWidget_database.scrollToItem(item)
+                break
+
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
 
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D )
@@ -750,6 +760,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
         
+        #Fetching the new flight imported to make it blink
+        new_flight_name = new_file_path.stem
+        for row in range(self.tableWidget_database.rowCount()):
+            item = self.tableWidget_database.item(row, 1)
+            if item.text() == new_flight_name:
+                highlight_row(self.tableWidget_database, row)
+                self.tableWidget_database.scrollToItem(item)
+                break
+
         update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
 
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D , self.combobox_variable_2D)

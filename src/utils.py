@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.interpolate import CubicSpline , interp1d
-
+from PyQt6.QtCore import QTimer
+from PyQt6.QtGui import QColor
 
 
 VARIABLE_LABELS = {
@@ -197,3 +198,54 @@ def hex_to_rgba(hex_color: str) -> tuple[float, float, float, float]:
         raise ValueError(f"Format hex invalide : '{hex_color}' (attendu #RRGGBB ou #RRGGBBAA)")
 
     return r / 255.0, g / 255.0, b / 255.0, a / 255.0
+
+
+
+def highlight_row(table, row, duration_ms=4000):
+    """
+    Makes a row blink in yellow during duration_ms.
+    """
+
+    yellow = QColor(255, 255, 120)
+
+    original_colors = {}
+
+    for col in range(table.columnCount()):
+        item = table.item(row, col)
+
+        if item is not None:
+            original_colors[col] = item.background()
+            item.setBackground(yellow)
+
+    blink_count = 0
+
+    def blink():
+        nonlocal blink_count
+
+        visible = blink_count % 2 == 0
+
+        for col in range(table.columnCount()):
+            item = table.item(row, col)
+
+            if item is None:
+                continue
+
+            if visible:
+                item.setBackground(yellow)
+            else:
+                item.setBackground(original_colors[col])
+
+        blink_count += 1
+
+    timer = QTimer(table)
+    timer.timeout.connect(blink)
+    timer.start(300)  # 300 ms
+
+    QTimer.singleShot(duration_ms, lambda: (
+        timer.stop(),
+        [
+            table.item(row, col).setBackground(original_colors[col])
+            for col in original_colors
+            if table.item(row, col)
+        ]
+    ))

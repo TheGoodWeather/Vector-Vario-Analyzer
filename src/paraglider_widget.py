@@ -114,6 +114,7 @@ def load_obj_mesh(obj_path: str) -> gl.GLMeshItem:
     from pathlib import Path
 
     mesh = trimesh.load(Path(obj_path), force='mesh')
+    mesh.invert()
     verts = np.array(mesh.vertices, dtype=float)
     faces = np.array(mesh.faces, dtype=int)
 
@@ -138,7 +139,7 @@ def load_arrow_mesh(
     from pathlib import Path
 
     mesh = trimesh.load(Path(obj_path), force='mesh')
-
+    mesh.invert()
     verts = np.array(mesh.vertices, dtype=float)
     faces = np.array(mesh.faces, dtype=int)
 
@@ -148,7 +149,7 @@ def load_arrow_mesh(
         color=color,
         smooth=True,
         drawEdges=False,
-        shader='balloon'
+        shader='shaded'
     )
 
     return item
