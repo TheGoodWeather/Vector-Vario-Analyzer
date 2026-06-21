@@ -157,17 +157,81 @@ class WindBarbs:
             self.plot_widget.removeItem(item)
         self._items = []
 
+    # def _redraw(self):
+    #     """Redessine toutes les barbules avec la taille courante de la viewbox"""
+    #     if self._P is None:
+    #         return
+    #     barb_length_x, barb_length_y = self._get_barb_length()
+        
+    #     indices = np.linspace(0, len(self._P) - 1, self._n_barbs, dtype=int)
+        
+    #     for i, idx in enumerate(indices):
+    #         x = self._Xgraph
+    #         self._update_barb(i, x, self._P[idx], self._wind_vel[idx], self._wind_origin[idx], barb_length_x, barb_length_y)
+
+    def _get_visible_index_bounds(self):
+        """
+        Calcule les bornes d'indices de self._P correspondant à la portion
+        de courbe actuellement visible sur l'axe Y du graphique.
+ 
+        Si la vue dépasse l'étendue réelle des données (l'utilisateur a trop
+        dézoomé), on se limite à l'étendue des données elle-même, pour ne
+        pas répartir les windbarbs sur une zone vide du graphique.
+        """
+        vb = self.plot_widget.getViewBox()
+        _, (y_min, y_max) = vb.viewRange()
+ 
+        data_min = float(np.min(self._P))
+        data_max = float(np.max(self._P))
+ 
+        visible_min = max(y_min, data_min)
+        visible_max = min(y_max, data_max)
+ 
+        if visible_min >= visible_max:
+            # Aucune intersection entre la vue et les données (zoom hors
+            # plage, ou vue pas encore initialisée) -> on retombe sur toute
+            # l'étendue des données.
+            visible_min, visible_max = data_min, data_max
+ 
+        mask = (self._P >= visible_min) & (self._P <= visible_max)
+        indices_in_range = np.nonzero(mask)[0]
+ 
+        if len(indices_in_range) == 0:
+            # Cas limite : aucun point pile dans l'intervalle visible (trou
+            # dans les données) -> on prend le point le plus proche du
+            # centre de la plage visible.
+            idx_closest = int(np.argmin(np.abs(self._P - (visible_min + visible_max) / 2)))
+            return idx_closest, idx_closest
+ 
+        return int(indices_in_range[0]), int(indices_in_range[-1])
+
     def _redraw(self):
-        """Redessine toutes les barbules avec la taille courante de la viewbox"""
+        """
+        Redessine toutes les barbules avec la taille courante de la viewbox.
+ 
+        Les self._n_barbs barbules sont toujours réparties de façon égale
+        sur la portion de courbe actuellement visible à l'écran (axe Y),
+        et non plus sur l'ensemble du profil : la densité affichée reste
+        donc constante quel que soit le niveau de zoom.
+        """
         if self._P is None:
             return
         barb_length_x, barb_length_y = self._get_barb_length()
-        
-        indices = np.linspace(0, len(self._P) - 1, self._n_barbs, dtype=int)
-        
+ 
+        idx_start, idx_end = self._get_visible_index_bounds()
+        indices = np.unique(np.linspace(idx_start, idx_end, self._n_barbs, dtype=int))
+ 
         for i, idx in enumerate(indices):
             x = self._Xgraph
             self._update_barb(i, x, self._P[idx], self._wind_vel[idx], self._wind_origin[idx], barb_length_x, barb_length_y)
+ 
+        # Si la portion visible contient moins de points que de barbules
+        # disponibles (zoom très serré), on masque les barbules excédentaires
+        # restées de l'état précédent.
+        for i in range(len(indices), self._n_barbs):
+            self._hampes[i].setData([], [])
+            for seg in self._barbes[i]:
+                seg.setData([], [])
 
     def _on_range_changed(self):
         """Redessine quand le zoom/pan change pour adapter la taille des barbules"""
