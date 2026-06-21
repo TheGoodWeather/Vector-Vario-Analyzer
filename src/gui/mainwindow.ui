@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>5</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="inexport_tab">
        <attribute name="title">
@@ -516,15 +516,33 @@
             </sizepolicy>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_11">
+            <property name="spacing">
+             <number>0</number>
+            </property>
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
             <item>
              <widget class="QWidget" name="widget_table" native="true">
               <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_10">
+               <property name="spacing">
+                <number>3</number>
+               </property>
                <item>
                 <widget class="QLabel" name="label_8">
                  <property name="sizePolicy">
@@ -541,10 +559,16 @@
                <item>
                 <widget class="QTableWidget" name="tableWidget_flights_plot2D">
                  <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                    <horstretch>0</horstretch>
                    <verstretch>0</verstretch>
                   </sizepolicy>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>89</height>
+                  </size>
                  </property>
                  <property name="frameShape">
                   <enum>QFrame::Box</enum>
@@ -563,6 +587,9 @@
                </sizepolicy>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_23">
+               <property name="spacing">
+                <number>3</number>
+               </property>
                <item>
                 <widget class="QLabel" name="label_table_data">
                  <property name="text">
@@ -589,6 +616,21 @@
             <item>
              <widget class="QWidget" name="widget_levels_map" native="true">
               <layout class="QGridLayout" name="gridLayout_3">
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>6</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>6</number>
+               </property>
+               <property name="spacing">
+                <number>0</number>
+               </property>
                <item row="0" column="2">
                 <widget class="QComboBox" name="combobox_variable_2D">
                  <property name="sizePolicy">
@@ -713,6 +755,21 @@
                </sizepolicy>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_20">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QRadioButton" name="radioButton_windbarbs">
                  <property name="text">
@@ -787,6 +844,21 @@
                </sizepolicy>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_24">
+               <property name="spacing">
+                <number>0</number>
+               </property>
+               <property name="leftMargin">
+                <number>0</number>
+               </property>
+               <property name="topMargin">
+                <number>0</number>
+               </property>
+               <property name="rightMargin">
+                <number>0</number>
+               </property>
+               <property name="bottomMargin">
+                <number>0</number>
+               </property>
                <item>
                 <widget class="QRadioButton" name="radioButton_background_map">
                  <property name="text">
@@ -1764,6 +1836,18 @@
          <widget class="QWidget" name="widget_33" native="true">
           <layout class="QVBoxLayout" name="verticalLayout_27">
            <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
             <number>0</number>
            </property>
            <item>

@@ -15,6 +15,7 @@ import pyqtgraph as pg
 # Modules internes
 from paths import resource_path, flight_dir
 from dynamic import DynamicTab
+from TimeSerie import TimeSerie
 from constants import SOFTWARE_VERSION
 from utils import get_label, highlight_row, is_all_nan
 from units import get_unit, convert_array_to_unit
@@ -46,8 +47,6 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi(resource_path("gui/mainwindow.ui"), self)  # Load the .ui file directly
         
         self.unit_dialog = UnitDialog(parent = self)  
-        self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.graph1_tab1D, self.curve_1D_11,self.curve_1D_12))
-        self.unit_dialog.unitsChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2, self.graph2_tab1D, self.curve_1D_21, self.curve_1D_22))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_sample_serie_plot(self.flight, self.comboBox_flight_select_polartab, self.comboBox_variable_select_polartab, self.graph_tabpolar_timeserie))
         self.unit_dialog.unitsChanged.connect(lambda : create_polar_table(self.flight, self.tableView_polar_points, self.comboBox_flight_select_polartab))
         self.unit_dialog.unitsChanged.connect(lambda : plot.update_polar_values(self.flight, self.graph_tabpolar_vxvz, self.tableView_polar_points, self.comboBox_flight_select_polartab, self.graph_tabpolar_legend_vxvz, self.horizontalSlider_ias_comp ))
@@ -156,69 +155,19 @@ class MainWindow(QtWidgets.QMainWindow):
         """
         Widgets tab 1D plot
         """
-        #Initializing curves
-        self.graph1_tab1D.setBackground("w")
-        self.graph1_tab1D.setLabel('left', 'No variable selected')
-        self.graph1_tab1D.setLabel('bottom', 'GNSS Time (s)')
-        self.graph1_tab1D.setTitle("Select a variable to plot in time")
-        self.graph1_tab1D.showGrid(x=True, y=True, alpha=0.3)
-        self.graph1_tab1D.setEnabled(True)
-        self.graph1_tab1D.crosshair_id = "1"
-        
-        self.graph2_tab1D.setBackground("w")
-        self.graph2_tab1D.setLabel('left', 'No variable selected')
-        self.graph2_tab1D.setLabel('bottom', 'GNSS Time (s)')
-        self.graph2_tab1D.setTitle("Select a variable to plot in time")
-        self.graph2_tab1D.showGrid(x=True, y=True, alpha=0.3)
-        self.graph2_tab1D.setEnabled(True)
-        self.graph2_tab1D.crosshair_id = "2"
-        
-        self.graph1_tab1D.enableAutoRange(True)
-        self.graph2_tab1D.enableAutoRange(True)
-        
-        date_axis_1 = pg.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-        date_axis_2 = pg.graphicsItems.DateAxisItem.DateAxisItem(orientation='bottom')
-        
-        self.graph1_tab1D.setAxisItems({'bottom': date_axis_1})
-        self.graph2_tab1D.setAxisItems({'bottom': date_axis_2})
-        
-        self.curve_1D_11 = self.graph1_tab1D.plot([], [])
-        self.curve_1D_12 = self.graph1_tab1D.plot([], [])
-        self.curve_1D_21 = self.graph2_tab1D.plot([], [])
-        self.curve_1D_22 = self.graph2_tab1D.plot([], [])
-        
 
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda choice: populate_table_1D_variable(self.flight, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2, choice))
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.restore_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2))
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.graph1_tab1D, self.curve_1D_11,self.curve_1D_12))
-        self.comboBox_flight_tab1D.currentTextChanged.connect(lambda: plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2, self.graph2_tab1D, self.curve_1D_21,self.curve_1D_22))
+        self.timeserie = TimeSerie(
+            self.flight,
+            self.graph1_tab1D,
+            self.graph2_tab1D,
+            self.comboBox_flight_tab1D,
+            self.tableWidget_variable_plot1,
+            self.tableWidget_variable_plot2,
+            self.checkBox_x_axis_link)
+        
+        self.unit_dialog.unitsChanged.connect(self.timeserie.update_unit_timeserie)
 
-        
- 
-        self.tableWidget_variable_plot1.itemChanged.connect(lambda item: self.on_item_table_1D_changed(item))
-        self.tableWidget_variable_plot2.itemChanged.connect(lambda item: self.on_item_table_1D_changed(item))
-        
-        self.checkBox_x_axis_link.stateChanged.connect(lambda: plot.toggle_x_link(self.graph1_tab1D, self.graph2_tab1D, self.checkBox_x_axis_link))
-        
-        #Table ------------------------------------
-        header_table_1D2 = ["Variable", "Value", "Unit"]
-        self.tableWidget_variable_plot2.setColumnCount(len(header_table_1D2))
-        self.tableWidget_variable_plot2.setHorizontalHeaderLabels(header_table_1D2)
-        header_table_1D2 = self.tableWidget_variable_plot2.horizontalHeader()
-        header_table_1D2.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.tableWidget_variable_plot2.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tableWidget_variable_plot2.resizeColumnsToContents()
-        
-        header_table_1D1 = ["Variable", "Value", "Unit"]
-        self.tableWidget_variable_plot1.setColumnCount(len(header_table_1D1))
-        self.tableWidget_variable_plot1.setHorizontalHeaderLabels(header_table_1D1)
-        header_table_1D1 = self.tableWidget_variable_plot1.horizontalHeader()
-        header_table_1D1.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        self.tableWidget_variable_plot1.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        self.tableWidget_variable_plot1.resizeColumnsToContents()
-        
-        self.graph1_tab1D.scene().sigMouseClicked.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph1_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1))
-        self.graph2_tab1D.scene().sigMouseClicked.connect(lambda event: self.on_1D_point_clicked(event, self.flight, self.graph2_tab1D, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2))
+
         """
         Widgets tab 2D plot
         """
@@ -1345,6 +1294,7 @@ class MainWindow(QtWidgets.QMainWindow):
     
                 row += 1  
         table_data.sortItems( 0 ,Qt.AscendingOrder)
+
     def on_1D_point_clicked(self, event, flight_dic, plot_widget, combobox_flight, table_data):
         """
         This function displays crosshair to the closest point where the user clicked
@@ -1459,24 +1409,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 plot_widget.removeItem(flight_selected_dic['plot'][f'crosshair_h_time_{crosshair_id}'])
                 flight_selected_dic['plot'][f'crosshair_v_time_{crosshair_id}'] = None
                 flight_selected_dic['plot'][f'crosshair_h_time_{crosshair_id}'] = None
-                        
-    def on_item_table_1D_changed(self, item):
-        """
-        This function is here to filter which item has been changed from the table 1D 
-        if it is a checkbox, then there will be an update of the graph
-        otherwise, we do nothing to minimize computing each time a cell is changed
-        """
-        if item.column() != 0:
-            return
-    
-        if not (item.flags() & Qt.ItemFlag.ItemIsUserCheckable):
-            return
-        
-        plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.graph1_tab1D, self.curve_1D_11,self.curve_1D_12)
-        plot.update_1D_plot(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot2, self.graph2_tab1D, self.curve_1D_21,self.curve_1D_22)
-        plot.save_checked_variables_1D(self.flight, self.comboBox_flight_tab1D, self.tableWidget_variable_plot1, self.tableWidget_variable_plot2)
-        self.handle_checkboxes_on_table_1D(self.tableWidget_variable_plot2)
-        self.handle_checkboxes_on_table_1D(self.tableWidget_variable_plot1)
+                                
         
     def get_alias(self, flight_name):
         for flight in self.flight:

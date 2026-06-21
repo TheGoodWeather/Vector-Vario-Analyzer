@@ -211,11 +211,7 @@ def clear_plots_1D(plot1, plot2):
         return
 
 
-def toggle_x_link(plot1, plot2, checkbox):
-    if checkbox.isChecked():
-        plot2.setXLink(plot1)
-    else:
-        plot2.setXLink(None)
+
 
 
 
