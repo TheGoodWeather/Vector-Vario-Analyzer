@@ -241,7 +241,7 @@ class ParaGliderWidget(gl.GLViewWidget):
 
         self.settings = QSettings("Vector Vario", "VVA")
 
-        self.setBackgroundColor(QColor(self.settings.value("colors/background" , "#b5b5b5")))   
+        self.setBackgroundColor(QColor(self.settings.value("colors/background" , "#616060")))   
         self.setCameraPosition(distance=14, elevation=20, azimuth=45)
         self._view = "free"
         self._cam_azimuth = 45
@@ -276,7 +276,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         # self._model = load_glb_mesh("gui/models/para2.glb")
         self._model = load_obj_mesh(resource_path("gui/models/para_v4.obj"))
         self.addItem(self._model)
-        self._model.setColor(QColor("#FF1717"))
+        self._model.setColor(QColor("#FFFFFF"))
         self._items.append(self._model)
         # Building arrow 
         self._wind_arrow = load_arrow_mesh(resource_path("gui/models/arrow1.obj"), (0.3, 0.6, 1.0, 0.8))
@@ -287,7 +287,8 @@ class ParaGliderWidget(gl.GLViewWidget):
         self.addItem(self._north_arrow)
         self._items.append(self._north_arrow)
 
-        self._tas_arrow = load_arrow_mesh(resource_path("gui/models/arrow1.obj"), (0.2, 0.8, 1.0, 0.8))
+        # self._tas_arrow = load_arrow_mesh(resource_path("gui/models/arrow1.obj"), (0.2, 0.8, 1.0, 0.8))
+        self._tas_arrow = load_arrow_mesh(resource_path("gui/models/arrow1.obj"), (0.3, 1.0, 0.5, 0.8))
         self.addItem(self._tas_arrow)
         self._items.append(self._tas_arrow)
 
@@ -455,6 +456,7 @@ class ParaGliderWidget(gl.GLViewWidget):
           # TAS vector 
         self._tas_arrow.resetTransform()
         self._tas_arrow.rotate(-self._yaw + 90, 0 , 0 , 1, True)
+        self._tas_arrow.rotate(- self._pitch, 0, 1,0 , True)
         self._tas_arrow.translate(
             self._x,
             self._y,

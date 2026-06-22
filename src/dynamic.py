@@ -106,6 +106,7 @@ class DynamicTab(QtCore.QObject):
         self._z_interp = None
         self._speed_interp = None
         self._vario_interp = None
+        self._netto_interp = None
         self._alt_interp = None
         self._wind_dir_interp = None
         self._wind_tilt_interp = None
@@ -164,7 +165,7 @@ class DynamicTab(QtCore.QObject):
         self.checkbox_north_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_north_vector_dyna, rgba_to_hex(1.0, 0.2, 0.2, 0.8)))
         self.checkbox_north_vector_dyna.setChecked(False)
         self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_tas_vector(state))
-        self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_tas_vector_dyna, rgba_to_hex(0.2, 0.8, 1.0, 0.8)))
+        self.checkbox_tas_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_tas_vector_dyna, rgba_to_hex(0.3, 1.0, 0.5, 0.8)))
         self.checkbox_tas_vector_dyna.setChecked(False)
         # self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self.model_widget.set_visibility_bearing_vector(state))
         # self.checkbox_bearing_vector_dyna.stateChanged.connect(lambda state: self._change_checkbox_color(state, checkbox_bearing_vector_dyna, rgba_to_hex(0.3, 1.0, 0.5, 0.8)))
@@ -186,7 +187,6 @@ class DynamicTab(QtCore.QObject):
         self._playback_speed = 1.0   # 0.5 / 1 / 2
         self._play_elapsed = 0.0     # temps simulé écoulé
         
-
         self._setup_keyboard_shortcuts()
 
     def _setup_keyboard_shortcuts(self):
@@ -265,7 +265,12 @@ class DynamicTab(QtCore.QObject):
             self.comboBox_var_2_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("pitch"))
             self.comboBox_var_3_dyntab.setCurrentIndex(self.comboBox_var_1_dyntab.findData("roll"))
 
-            self.model_widget.set_color_trajectory(self._alt_interp)
+            #set by default the color mapping with g_force
+            index = self.comboBox_colormap_dyna.findData("G_force")
+            if index >= 0:
+                self.comboBox_colormap_dyna.setCurrentIndex(index)
+            
+            # self.model_widget.set_color_trajectory(self._alt_interp)
 
     def _set_color_trajectory(self, combobox):
         """
@@ -447,7 +452,11 @@ class DynamicTab(QtCore.QObject):
             t_seconds,
             self._flight['data']['vario']
         )
-
+        self._G_force_interp =  interp(
+            self._time_interp,
+            t_seconds,
+            self._flight['data']['G_force']
+        )
 
         # REMOVED FOR V0.03 BECAUSE NOT WORKING WHEN GNSS IS NAN 
 
@@ -476,6 +485,9 @@ class DynamicTab(QtCore.QObject):
                     variable_to_sort.append(get_label(variable))
             for variable in sorted(variable_to_sort):
                 combobox.addItem(variable, userData=get_variable(variable))
+
+  
+     
 
     def _update_plot(self, plot_widget, curve, combobox_var, label_widget_unit):
         
@@ -702,6 +714,7 @@ class DynamicTab(QtCore.QObject):
         ground_speed = convert_array_to_unit(self._speed_interp[y], "GNSS_speed")
         duration = self._flight['data']['GNSS_time'][i] - self._flight['data']['GNSS_time'][0]
         total_seconds = int(duration.total_seconds())
+        G_force = self._G_force_interp[y];
 
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
@@ -712,12 +725,13 @@ class DynamicTab(QtCore.QObject):
         )
         
         self.hud_widget.set_vario(round(vario,2))
+        self.hud_widget.set_G_force(round(G_force,1))
         self.hud_widget.set_altitude(round(altitude,2))
         self.hud_widget.set_ground_speed(round(ground_speed,2))
         self.hud_widget.set_time(formatted_time)
         self.hud_widget.set_duration(formatted_duration)
-        self.hud_widget.set_pitch(pitch)
-        self.hud_widget.set_roll(roll)
+        self.hud_widget.set_pitch(round(pitch,0))
+        self.hud_widget.set_roll(round(roll,0))
         
     def _update_lcds(self):
         i = self._raw_index
@@ -877,7 +891,7 @@ class HUDWidget(QWidget):
         self.altitude = 0
         self.roll = 0.0
         self.pitch = 0.0 
-        
+        self.G_force = 0.0        
         self._unit_vario = get_unit("vario")
         self._unit_alt = get_unit("GNSS_alt")
         self._unit_ground_speed = get_unit("GNSS_speed")
@@ -891,7 +905,9 @@ class HUDWidget(QWidget):
             Qt.WidgetAttribute.WA_TransparentForMouseEvents
         )
    
-    
+    def set_G_force(self, value):
+            self.G_force = round(value,1)
+            self.update()    
     def set_vario(self, value):
         self.vario = round(value,1)
         self.update()
@@ -909,15 +925,15 @@ class HUDWidget(QWidget):
         self.update()
         
     def set_ground_speed(self, value):
-        self.ground_speed = round(value,1)
+        self.ground_speed = round(value,0)
         self.update()
 
     def set_roll(self, value):
-        self.roll = round(value,1)
+        self.roll = round(value,0)
         self.update()
 
     def set_pitch(self, value):
-        self.pitch = round(value,1)
+        self.pitch = round(value,0)
         self.update()
 
 
@@ -935,7 +951,7 @@ class HUDWidget(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         font = QFont()
-        font.setPointSize(10)
+        font.setPointSize(12)
         font.setBold(True)
         painter.setFont(font)
         
@@ -951,6 +967,7 @@ class HUDWidget(QWidget):
             ("Ground Speed", f"{self.ground_speed} {self._unit_ground_speed}"),
             ("Roll",         f"{self.roll} {self._unit_angle}"),
             ("Pitch",        f"{self.pitch} {self._unit_angle}"),
+            ("G_force",      f"{self.G_force}"),
             ("Time",         f"{self.time}"),
             ("Duration",     f"{self.duration}"),
         ]
@@ -1016,17 +1033,20 @@ class HUDWidget(QWidget):
         painter.drawRect(gauge_x, gauge_y, gauge_w, gauge_h)
 
         # valeur
-        value = max(-6, min(6, convert_array_to_unit(self.vario, "vario")))
+        value = max(-10, min(10, convert_array_to_unit(self.vario, "vario")))
 
         #normalized = (value + 5) / 10.0
 
-        fill_h = int(mapping(value, -6, 6,0, gauge_h))
+        fill_h = int(mapping(value, -10, 10,0, gauge_h))
         
         x = gauge_x
         y = int(gauge_y + gauge_h - fill_h)
         w = gauge_w
         h = fill_h
-        painter.setBrush(QColor(0, 255, 0, 200))
+        if self.vario >= 0 :
+            painter.setBrush(QColor(0, 255, 0, 200))
+        else :
+            painter.setBrush(QColor(255, 0, 0, 200))
         painter.drawRect(x, y, w, h)
 
         # Label Vario — ombre + blanc

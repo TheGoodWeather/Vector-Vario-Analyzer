@@ -31,7 +31,8 @@ raw_data_model = {  #available for both csv and igc file
     "wind_origin" : [],
     "wind_vel" : [],
     "netto" : [],
-    "IAS" : []
+    "IAS" : [],
+    "turb" : []
     }
     
 
@@ -138,7 +139,8 @@ def fetch_raw_igc(flight_dic, progress_callback):
         "N": "Netto",
         "W": "Wind",
         "D": "Attitude",
-        "G": "G-Force"
+        "G": "G-Force",
+        "X": "Turbulence"
     }
     
     
@@ -238,6 +240,7 @@ def fetch_raw_igc(flight_dic, progress_callback):
                 wind_index = lxvv_line.index('W')
                 atti_index = lxvv_line.index('D')
                 g_index = lxvv_line.index('G')
+                
            
                 raw_data["air_T"].append(float(str(lxvv_line[temp_index+1 : temp_index+5]))/10)
                 raw_data["air_RH"].append(float(str(lxvv_line[hum_index+1 : hum_index+4]))/10)
@@ -249,6 +252,14 @@ def fetch_raw_igc(flight_dic, progress_callback):
                 raw_data["pitch"].append(int(str(lxvv_line[atti_index+4 : atti_index+8])))
                 raw_data["roll"].append(int(str(lxvv_line[atti_index+8 : atti_index+12])))
                 raw_data["G_force"].append(float(str(lxvv_line[g_index+1 : g_index+4]))/10)
+
+                if lxvv_line.count('X') >= 2:
+                    turb_index = lxvv_line.find('X', lxvv_line.find('X') + 1)
+                    raw_data["turb"].append(float(str(lxvv_line[turb_index+1 : turb_index+3]))/10)
+                else:
+                    continue
+
+                
 
         timestamps = np.array([t.timestamp() for t in raw_data["GNSS_time"]])
         dt = np.mean(np.diff(timestamps))

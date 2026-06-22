@@ -23,7 +23,7 @@ units_coeff_dic = {
 
 default_unit = {
     "heading": "°",
-    "speed": "km/h",
+    "speed": "m/s",
     "vertical_speed": "m/s",
     "altitude": "m",
     "temperature": "°C",
@@ -34,7 +34,7 @@ default_unit = {
 
 var_to_unit_group_dic = {
     "heading" : ["compass_head", "GNSS_head" , "wind_origin"],
-    "speed" : ["GNSS_speed", "wind_vel", "IAS", "TAS","GNSS_velD"],
+    "speed" : ["GNSS_speed", "wind_vel", "IAS", "TAS","GNSS_velD", "turb"],
     "vertical_speed" : ["vario", "VarioIAS", "netto"],
     "coordinates" : ["GNSS_lat","GNSS_lon" ],
     "altitude" : ["GNSS_alt", "QNS_alt" , "LCL"], 

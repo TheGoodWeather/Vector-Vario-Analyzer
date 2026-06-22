@@ -38,6 +38,7 @@ VARIABLE_LABELS = {
     "AirRho"        : "Air Density",
     "VarioIAS"        : "Vario IAS ",
     "TAS"        : "True Air Speed",
+    "turb"          : "Turbulence",
     
 }
 

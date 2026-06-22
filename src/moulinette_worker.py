@@ -17,21 +17,21 @@ class MoulinetteWorker(QRunnable):
         self.signals = WorkerSignals()
 
     def run(self):
-        try:
-            if self.flight_dic["is_data_processed"]: #If the flight is already processed, return 
-                self.signals.finished.emit(self.flight_dic)
-                logger.info(f"Flight already analyzed {self.flight_dic['file_name']}")
-                return
-            suffix = self.flight_dic["origin_file_path"].suffix.lower()
-            if suffix == ".csv":
-                logger.info(f"Analyzing {self.flight_dic['file_name']}")
-                self.flight_dic['data'] = fetch_raw_csv(self.flight_dic, self.signals.progress)
-    
-            elif suffix == ".igc":
-                logger.info(f"Analyzing {self.flight_dic['file_name']}")
-                self.flight_dic['data'] = fetch_raw_igc(self.flight_dic, self.signals.progress)
-        
+        # try:
+        if self.flight_dic["is_data_processed"]: #If the flight is already processed, return 
             self.signals.finished.emit(self.flight_dic)
-        except Exception as e:
-            self.flight_dic['is_data_processed'] = False
-            self.signals.error.emit(str(e))
+            logger.info(f"Flight already analyzed {self.flight_dic['file_name']}")
+            return
+        suffix = self.flight_dic["origin_file_path"].suffix.lower()
+        if suffix == ".csv":
+            logger.info(f"Analyzing {self.flight_dic['file_name']}")
+            self.flight_dic['data'] = fetch_raw_csv(self.flight_dic, self.signals.progress)
+
+        elif suffix == ".igc":
+            logger.info(f"Analyzing {self.flight_dic['file_name']}")
+            self.flight_dic['data'] = fetch_raw_igc(self.flight_dic, self.signals.progress)
+    
+        self.signals.finished.emit(self.flight_dic)
+        # except Exception as e:
+        #     self.flight_dic['is_data_processed'] = False
+        #     self.signals.error.emit(str(e))
