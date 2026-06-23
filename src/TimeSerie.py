@@ -320,7 +320,9 @@ class TimeSerie:
         self.tableWidget_variable_plot2.setRowCount(0)
 
         flight = self._find_flight(choice)
-        if flight is not None and flight['is_data_processed'] and flight['data']:
+        if not flight:
+            return
+        if flight['is_data_processed'] and flight['data']:
             row = 0
             for variable, data in flight['data'].items():
                 if variable == 'GNSS_time':
@@ -340,7 +342,9 @@ class TimeSerie:
                     table.setItem(row, 0, item)
 
                 row += 1
-
+        else:
+            return
+        
         self.tableWidget_variable_plot1.sortItems(0, Qt.SortOrder.AscendingOrder)
         self.tableWidget_variable_plot2.sortItems(0, Qt.SortOrder.AscendingOrder)
 
@@ -609,4 +613,16 @@ class TimeSerie:
                               self.curve_1D_21, self.curve_1D_22)
         
         self._update_unit_table_variable(self.comboBox_flight_tab1D.currentText())
+
+    def update_flight_list(self, flight):
+        """
+        Met à jour la référence à la liste des vols.
+ 
+        À appeler depuis main.py à chaque fois que self.flight est réassigné
+        (i.e. après chaque `self.flight = load_vva_files()`), sinon TimeSerie
+        continue de chercher dans l'ancienne liste → _find_flight ne trouve
+        rien → les tables restent vides après un import.
+        """
+        self.flight = flight
+        self._gnss_ts_cache.clear()
         

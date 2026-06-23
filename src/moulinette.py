@@ -145,6 +145,8 @@ def fetch_raw_igc(flight_dic, progress_callback):
     
     
     total_lines = 0 
+    raw_data_turb = []
+
     raw_data = copy.deepcopy(raw_data_model) #initializing the dic that will be returned
     #Remove spaces and blank lines
     with open(flight_dic["origin_file_path"], 'r') as file:
@@ -252,14 +254,17 @@ def fetch_raw_igc(flight_dic, progress_callback):
                 raw_data["pitch"].append(int(str(lxvv_line[atti_index+4 : atti_index+8])))
                 raw_data["roll"].append(int(str(lxvv_line[atti_index+8 : atti_index+12])))
                 raw_data["G_force"].append(float(str(lxvv_line[g_index+1 : g_index+4]))/10)
+        
 
                 if lxvv_line.count('X') >= 2:
                     turb_index = lxvv_line.find('X', lxvv_line.find('X') + 1)
-                    raw_data["turb"].append(float(str(lxvv_line[turb_index+1 : turb_index+3]))/10)
+                    raw_data_turb.append(float(str(lxvv_line[turb_index+1 : turb_index+3]))/10)
+                  
                 else:
                     continue
-
-                
+        
+        if len(raw_data_turb) > 0:
+            raw_data["turb"] = sma_filter(raw_data_turb, 10)
 
         timestamps = np.array([t.timestamp() for t in raw_data["GNSS_time"]])
         dt = np.mean(np.diff(timestamps))
@@ -394,3 +399,7 @@ def emit_progress(callback, start, span, step, total_steps):
     """
     progress = start + int(span * step / total_steps)
     callback.emit(progress)
+
+
+def zero_to_nan(value):
+    return np.nan if value == 0.0 else value

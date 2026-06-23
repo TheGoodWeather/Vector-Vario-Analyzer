@@ -636,9 +636,10 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         
         self.flight = load_vva_files()
-        
         self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
+        self.timeserie.update_flight_list(self.flight)
+
 
         #Fetching the new flight imported to make it blink
         new_flight_name = self.new_file_path.stem
@@ -708,7 +709,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.flight = load_vva_files()
         self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
-        
+        self.timeserie.update_flight_list(self.flight)
+
         #Fetching the new flight imported to make it blink
         new_flight_name = new_file_path.stem
         for row in range(self.tableWidget_database.rowCount()):
