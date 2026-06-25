@@ -1057,6 +1057,12 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="maximumSize">
+               <size>
+                <width>354</width>
+                <height>16777215</height>
+               </size>
+              </property>
               <layout class="QVBoxLayout" name="verticalLayout_13">
                <item>
                 <widget class="QTableWidget" name="tableView_polar_points">
@@ -1070,6 +1076,12 @@
                   <size>
                    <width>8</width>
                    <height>0</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>350</width>
+                   <height>16777215</height>
                   </size>
                  </property>
                  <property name="baseSize">
@@ -1091,7 +1103,28 @@
                    <verstretch>0</verstretch>
                   </sizepolicy>
                  </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>36</height>
+                  </size>
+                 </property>
                  <layout class="QHBoxLayout" name="horizontalLayout_11">
+                  <property name="spacing">
+                   <number>2</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
                   <item>
                    <widget class="QPushButton" name="pushButton_add_polar_point">
                     <property name="sizePolicy">
@@ -1150,6 +1183,12 @@
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>300</width>
+                <height>16777215</height>
+               </size>
               </property>
               <layout class="QVBoxLayout" name="verticalLayout_18">
                <item>

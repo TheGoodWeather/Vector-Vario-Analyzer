@@ -300,7 +300,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graph_tabpolar_vxvz.setBackground("w")
         self.graph_tabpolar_vxvz.setXRange(0, 30, padding=0)
         self.graph_tabpolar_vxvz.setYRange(-10, 2, padding=0)
-        self.graph_tabpolar_vxvz.setTitle("IAS vs Vz") # was previously Vx vs Vz but changed on  24-06-2026
+        self.graph_tabpolar_vxvz.setTitle("Vx vs Vz") 
         self.graph_tabpolar_vxvz.showGrid(x=True, y=True, alpha=0.3)
         self.graph_tabpolar_vxvz.setEnabled(True)
 
