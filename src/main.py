@@ -373,8 +373,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.spinBox_auw.setRange(40, 250)
         self.horizontalSlider_ar.setRange(30,80)
         self.spinBox_ar.setRange(3,8)
-        self.horizontalSlider_ias_comp.setRange(-15,15)
-        self.spinBox_ias_comp.setRange(-15,15)
+        self.horizontalSlider_ias_comp.setRange(-25,25)
+        self.spinBox_ias_comp.setRange(-25,25)
         
         self.horizontalSlider_sproj.setSingleStep(1)
         self.horizontalSlider_auw.setSingleStep(1)

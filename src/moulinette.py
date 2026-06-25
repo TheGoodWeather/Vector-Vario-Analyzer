@@ -264,7 +264,7 @@ def fetch_raw_igc(flight_dic, progress_callback):
                     continue
         
         if len(raw_data_turb) > 0:
-            raw_data["turb"] = sma_filter(raw_data_turb, 10)
+            raw_data["turb"] = sma_filter(raw_data_turb, 20)
 
         timestamps = np.array([t.timestamp() for t in raw_data["GNSS_time"]])
         dt = np.mean(np.diff(timestamps))
