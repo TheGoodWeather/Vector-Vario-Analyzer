@@ -12,3 +12,5 @@ avg_windspeed:20.96
 avg_winddir:58.89
 comment:
 alias:
+roi_polar_0:993.0,1265.0
+roi_polar_1:1445.0,1626.0

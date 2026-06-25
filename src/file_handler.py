@@ -350,6 +350,8 @@ def read_vva_section(vva_filepath, section_type):
                 x_max = line.split(':')[1].split(',')[1]
                 if len(line.split(':')[1].split(',')) >= 3:
                     comment = line.split(':')[1].split(',')[2]
+                else:
+                    comment=""
         
                 roi = pg.LinearRegionItem((float(x_min), float(x_max)))
                 roi.setMovable(True)
