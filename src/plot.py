@@ -774,6 +774,7 @@ def remove_roi(flight_dic, plot_widget_time, plot_widget_vxvz,table_polar_widget
 
 
 def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight, legend_vxvz, ias_comp_widget):
+    print("update_polar_values")
     ias_comp_coeff = ias_comp_widget.value()
     for row, flight in enumerate(flight_dic):
         if flight['is_data_processed'] and flight['is_flight_selected']:
@@ -795,7 +796,7 @@ def update_polar_values(flight_dic , plot_widget, table_widget, combobox_flight,
                             vario_avg = round(np.nanmean(vario_ias[int(x_min):int(x_max)]),2)
                             glide_ratio_avg = round(np.divide(vx_avg, vario_avg ), 2)
                             
-                            roi_data[1] = ias_avg #m/s
+                            roi_data[1] = convert_array_to_unit(ias_avg,"IAS") #m/s
                             roi_data[2] = convert_array_to_unit(vx_avg,"IAS") #m/s
                             roi_data[3] = vario_avg #m/s
                             roi_data[4] = glide_ratio_avg 
@@ -840,20 +841,20 @@ def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
     
     legend_vxvz.clear()  
     plot_widget.enableAutoRange(True)
-    plot_widget.setLabel("top", f"Vx {get_unit('IAS')}")
+    plot_widget.setLabel("top", f"IAS {get_unit('IAS')}")
     plot_widget.setLabel("left","Vz m/s")
     
     for flight in flight_dic:
         if flight['is_data_processed'] and len(flight['plot']['roi_polar']) > 0 and  flight['is_flight_selected']:
             if not flight['plot']['scatter_vxvz']: #if no scatter exists yet
-                scatter_polar_vx = []
+                scatter_polar_ias = []
                 scatter_polar_vz = []
                 for roi_data in flight['plot']['roi_polar']:
-                    scatter_polar_vx.append(roi_data[2])
+                    scatter_polar_ias.append(roi_data[1])
                     scatter_polar_vz.append(roi_data[3])
                 pen = pg.mkPen(flight['plot']['plot_color'], width=4)
                 scatter = pg.ScatterPlotItem(
-                    x=scatter_polar_vx,
+                    x=scatter_polar_ias,
                     y=scatter_polar_vz,
                     size=6,
                     pen=pen,
@@ -864,13 +865,13 @@ def update_vxvz_graph(flight_dic, plot_widget, legend_vxvz):
                 flight['plot']['scatter_vxvz'] = scatter
             
             else:
-                scatter_polar_vx = []
+                scatter_polar_ias = []
                 scatter_polar_vz = []
                 for roi_data in flight['plot']['roi_polar']:
-                    scatter_polar_vx.append(roi_data[2])
+                    scatter_polar_ias.append(roi_data[1])
                     scatter_polar_vz.append(roi_data[3])
                 scatter = flight['plot']['scatter_vxvz']
-                scatter.setData(scatter_polar_vx, scatter_polar_vz)
+                scatter.setData(scatter_polar_ias, scatter_polar_vz)
         
             
             label = flight['file_name'].split(".")[0]

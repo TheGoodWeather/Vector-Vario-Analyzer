@@ -346,12 +346,16 @@ def read_vva_section(vva_filepath, section_type):
             line = line.strip()
 
             if line.startswith(f"{section_type}"): #Fetch the x_min and x_max and create the roi accordingly
-                x_min, x_max = line.split(':')[1].split(',')
+                x_min= line.split(':')[1].split(',')[0]
+                x_max = line.split(':')[1].split(',')[1]
+                if len(line.split(':')[1].split(',')) >= 3:
+                    comment = line.split(':')[1].split(',')[2]
+        
                 roi = pg.LinearRegionItem((float(x_min), float(x_max)))
                 roi.setMovable(True)
                 roi.setBrush(QColor(100, 100, 100, 25)) 
                 roi.setZValue(10)
-                roi_polar_list.append([roi, None, None, None, None])
+                roi_polar_list.append([roi, None, None, None, None, comment])
     file.close()
     return roi_polar_list
 
@@ -371,7 +375,11 @@ def save_section_to_vva(flight_dic, section_type):
                 
                     for i, roi in enumerate(flight['plot'][section_type]):
                         x_min, x_max = roi[0].getRegion()
-                        file.write(f"{section_type}_{i}:{x_min},{x_max}\n")
+                        if not roi[5]:
+                            comment =""
+                        else:
+                            comment = roi[5]
+                        file.write(f"{section_type}_{i}:{x_min},{x_max},{comment}\n")
                 file.close()
 
     QMessageBox.information(
@@ -416,3 +424,5 @@ def save_alias_comment_to_vva(vva_file_path, comment="", alias=""):
     #     "Saved",
     #     "The modifications have been saved successfully."
     # )
+
+

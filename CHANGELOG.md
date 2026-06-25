@@ -1,6 +1,15 @@
 # Changelog
 
----
+## Unreleased 
+
+### Added
+- Refresh button for database
+- Right click to copy content from any table
+- 
+### Changed
+
+### Fixed
+
 
 ## [0.03] - 2026-06-09
 

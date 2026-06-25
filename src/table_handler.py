@@ -163,30 +163,51 @@ def create_polar_table(flight_dic, table_widget, combobox_flight):
     """
     Display and create the table when a flight is selected into the polar tab
     The rows display Vx, Vz , Glide and IAS 
+    Also it is used for updating. Not great, but it works
     """
     table_widget.setRowCount(0)  # Clear the table
-    table_widget.setHorizontalHeaderLabels([f"Vx {get_unit('IAS')}", f"Vz m/s", "Glide"])
+    table_widget.setHorizontalHeaderLabels([f"Vx {get_unit('IAS')}", f"Vz m/s", "Glide", f"IAS {get_unit('IAS')}", "Comment"])
     for i, flight in enumerate(flight_dic):
         if flight['file_name'].split(".")[0] == combobox_flight.currentText() or flight['metadata']['alias'] == combobox_flight.currentText() :
-            for row, roi_data in enumerate(flight['plot']['roi_polar']):
-                table_widget.insertRow(row)
-                
-                vx_value_avg = round(roi_data[2],2)
-                vz_value_avg = roi_data[3] #Forcing Vz values to m/s 
+            if len(flight['plot']['roi_polar']) > 0:
+                for row, roi_data in enumerate(flight['plot']['roi_polar']):
+                    if not flight['plot']['roi_polar'][row][2]: #Security to prevent updating the table without data yet
+                        return 
+                    table_widget.insertRow(row)
+                    
+                    vx_value_avg = round(roi_data[2],2)
+                    vz_value_avg = roi_data[3] #Forcing Vz values to m/s 
+                    ias_value_avg = round(roi_data[1],2)
+                    comment = str(roi_data[5])
 
-                vx_item = QTableWidgetItem(str(vx_value_avg))
-                vx_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
-                table_widget.setItem(row, 0, vx_item)
-                
-                vz_item = QTableWidgetItem(str(vz_value_avg))
-                vz_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
-                table_widget.setItem(row, 1, vz_item)
-                
-                glide_item = QTableWidgetItem(str(roi_data[4]))
-                glide_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
-                table_widget.setItem(row, 2, glide_item)
-                
-                
+                    vx_item = QTableWidgetItem(str(vx_value_avg))
+                    vx_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+                    vx_item.setFlags(vx_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                    table_widget.setItem(row, 0, vx_item)
+                    
+                    vz_item = QTableWidgetItem(str(vz_value_avg))
+                    vz_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+                    vz_item.setFlags(vz_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                    table_widget.setItem(row, 1, vz_item)
+                    
+                    glide_item = QTableWidgetItem(str(roi_data[4]))
+                    glide_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+                    glide_item.setFlags(glide_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                    table_widget.setItem(row, 2, glide_item)
+
+                    ias_item = QTableWidgetItem(str(ias_value_avg))
+                    ias_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+                    ias_item.setFlags(ias_item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                    table_widget.setItem(row, 3, ias_item)
+
+                    comment_item = QTableWidgetItem(comment)
+                    comment_item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+                    comment_item.setFlags(comment_item.flags() | Qt.ItemFlag.ItemIsEditable)
+                    table_widget.setItem(row, 4, comment_item)
+            else:
+                continue
+                    
+                    
                 
     
 def save_comment_alias(item, flight_dic, table_widget):
@@ -208,7 +229,28 @@ def save_comment_alias(item, flight_dic, table_widget):
             
             save_alias_comment_to_vva(flight['file_path'], flight["metadata"]["comment"], flight["metadata"]["alias"])
             return
+        
+def save_comment_polar(item, flight_dic, combobox_flight):
+    """
+    Save the comment from the polar table into the dic 
+    """
+    
+    if item.column() != 4:
+       return
+    
+    flight_selected = combobox_flight.currentText()
+    for flight in flight_dic:
+        if flight['file_name'].split(".")[0] == flight_selected or flight['metadata']['alias'] == flight_selected :
             
+            # new_value = item(item.row(), 4).text()
+            new_value = item.text()
+
+            if len(flight['plot']['roi_polar']) > 0:
+                flight['plot']['roi_polar'][item.row()][5] = new_value
+            return
+
+
+
         
 def populate_table_1D_variable(flight_dic, table1, table2, choice):
     table1.blockSignals(True)

@@ -308,7 +308,7 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._trajectory = gl.GLLinePlotItem(
             pos=np.zeros((1,3)),
             color= gl_color,
-            width=4,
+            width=3,
             antialias=False,
             mode='line_strip'
         )

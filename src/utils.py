@@ -2,6 +2,9 @@ import numpy as np
 from scipy.interpolate import CubicSpline , interp1d
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QColor
+from PyQt6.QtWidgets import QTableWidget, QMenu, QApplication
+from PyQt6.QtGui import QAction
+from PyQt6.QtCore import Qt
 
 
 VARIABLE_LABELS = {
@@ -250,3 +253,108 @@ def highlight_row(table, row, duration_ms=4000):
             if table.item(row, col)
         ]
     ))
+
+
+
+### COPY TABLE TO MARKDOWN
+
+# ---------------------------------------------------------------------------
+# Internal conversion
+# ---------------------------------------------------------------------------
+
+def _table_to_markdown(table: QTableWidget, rows: list[int]) -> str:
+ 
+    if not rows:
+        return ""
+
+    col_count = table.columnCount()
+
+    # Colonnes à inclure : celles avec un header non vide
+    visible_cols = []
+    headers = []
+    for col in range(col_count):
+        header_item = table.horizontalHeaderItem(col)
+        header_text = header_item.text().strip() if header_item else ""
+        if header_text:
+            visible_cols.append(col)
+            headers.append(header_text)
+
+    if not visible_cols:
+        # Fallback : toutes les colonnes, numérotées
+        visible_cols = list(range(col_count))
+        headers = [str(c + 1) for c in visible_cols]
+
+    # Collecte des cellules
+    cell_rows: list[list[str]] = []
+    for row in rows:
+        if table.isRowHidden(row):
+            continue
+        cells = []
+        for col in visible_cols:
+            item = table.item(row, col)
+            widget = table.cellWidget(row, col)
+            if item is not None:
+                cells.append(item.text().strip())
+            elif widget is not None:
+                # Cas d'un widget inséré dans la cellule (ex: QLabel, QComboBox)
+                text = getattr(widget, "text", None) or getattr(widget, "currentText", None)
+                cells.append(text().strip() if callable(text) else "")
+            else:
+                cells.append("")
+        cell_rows.append(cells)
+
+    if not cell_rows:
+        return ""
+
+    # Calcul des largeurs de colonnes pour l'alignement
+    col_widths = [len(h) for h in headers]
+    for cells in cell_rows:
+        for i, cell in enumerate(cells):
+            col_widths[i] = max(col_widths[i], len(cell))
+
+    def _row_str(cells: list[str]) -> str:
+        padded = [cell.ljust(col_widths[i]) for i, cell in enumerate(cells)]
+        return "| " + " | ".join(padded) + " |"
+
+    def _separator() -> str:
+        return "| " + " | ".join("-" * w for w in col_widths) + " |"
+
+    lines = [_row_str(headers), _separator()]
+    lines += [_row_str(cells) for cells in cell_rows]
+    return "\n".join(lines)
+
+
+def _copy_to_clipboard(text: str) -> None:
+    QApplication.clipboard().setText(text)
+
+
+# ---------------------------------------------------------------------------
+# Installation du menu contextuel
+# ---------------------------------------------------------------------------
+
+def install_markdown_copy(table: QTableWidget) -> None:
+    """
+    Installe un menu contextuel sur `table` pour copier le contenu en Markdown.
+
+    Appelle cette fonction une seule fois par table, typiquement dans
+    __init__ après uic.loadUi(). Aucune modification du .ui n'est nécessaire.
+    """
+    table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+
+    def _show_context_menu(pos):
+        selected_rows = sorted({idx.row() for idx in table.selectedIndexes()})
+        all_rows = list(range(table.rowCount()))
+
+        menu = QMenu(table)
+
+        # --- Action : copy all ---
+        action_all = QAction("Copy content", table)
+        action_all.setEnabled(bool(all_rows))
+        action_all.triggered.connect(
+            lambda: _copy_to_clipboard(_table_to_markdown(table, all_rows))
+        )
+        menu.addAction(action_all)
+
+        menu.exec(table.viewport().mapToGlobal(pos))
+
+    table.customContextMenuRequested.connect(_show_context_menu)

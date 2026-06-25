@@ -138,6 +138,29 @@ class DynamicTab(QtCore.QObject):
         layout.addWidget(self.gl_container)
    
         self._setup_widget()
+
+
+        #COLOR BAR
+        self._colorbar_plot = pg.PlotWidget(parent=self.gl_container)
+        self._colorbar_plot.setFixedSize(220, 60)
+        self._colorbar_plot.hideAxis('left')
+        self._colorbar_plot.hideAxis('bottom')
+        self._colorbar_plot.setBackground((20, 20, 20, 180))
+        self._colorbar_plot.getViewBox().setDefaultPadding(0)
+        self._colorbar_plot.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+
+        self._colorbar_3d = pg.ColorBarItem(
+            values=(0, 1),
+            colorMap=pg.colormap.get('turbo'),
+            interactive=True,
+            orientation='horizontal',
+        )
+        self._colorbar_plot.addItem(self._colorbar_3d)
+        self._colorbar_3d.setOpacity(0)
+
+        # # Repositionner en bas à gauche quand le container est redimensionné
+        self.gl_container.resizeEvent = self._on_gl_container_resize
+        self._reposition_colorbar()
         
         self.comboBox_select_flight_dyntab.currentTextChanged.connect(lambda flight_text : self._fetch_flight(flight_text))
         self.comboBox_var_1_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_1_dyntab, self._curve1 , self.comboBox_var_1_dyntab, self.label_unit_var1_dyna ))
@@ -846,7 +869,26 @@ class DynamicTab(QtCore.QObject):
         """)
 
         
+    def _reposition_colorbar(self):
+        """Positionne la colorbar en bas à gauche du gl_container."""
+        h = self.gl_container.height()
+        self._colorbar_plot.move(10, h - 70)
 
+    def _on_gl_container_resize(self, event):
+        self._reposition_colorbar()
+        # Appeler le resizeEvent original du QWidget
+        QWidget.resizeEvent(self.gl_container, event)
+
+    def _update_colorbar_3d(self, z_min: float, z_max: float, variable: str, cmap_name: str = 'turbo'):
+        """Met à jour la colorbar — même logique que update_colorbar() en 2D."""
+        cmap = pg.colormap.get(cmap_name)
+        self._colorbar_3d.setOpacity(1)
+        self._colorbar_3d.setLevels((z_min, z_max))
+        self._colorbar_3d.setColorMap(cmap)
+        self._colorbar_plot.setTitle(get_label(variable), size='9pt')
+
+    def _hide_colorbar_3d(self):
+        self._colorbar_3d.setOpacity(0)
 
         
     def cleanup(self):

@@ -13,15 +13,15 @@ import numpy as np
 import pyqtgraph as pg
 
 # Modules internes
-from paths import resource_path, flight_dir
+from paths import resource_path, flight_dir, open_flight_folder
 from dynamic import DynamicTab
 from TimeSerie import TimeSerie
 from constants import SOFTWARE_VERSION
-from utils import get_label, highlight_row, is_all_nan
+from utils import get_label, highlight_row, is_all_nan, install_markdown_copy
 from units import get_unit, convert_array_to_unit
 from logging_handler import QTextEditLogger, logger
 from file_handler import igc2vva, csv2vva, generate_vva, load_vva_files, save_section_to_vva
-from table_handler import (update_flight_state, update_vva_table, delete_table_entries,
+from table_handler import (save_comment_polar, update_flight_state, update_vva_table, delete_table_entries,
                            update_table_button_state, return_selected_row,
                            create_polar_table, save_comment_alias, populate_table_1D_variable)
 from moulinette_worker import MoulinetteWorker
@@ -90,6 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionDependancies.triggered.connect(self.display_requirements_window)
         self.actionAbout.triggered.connect(self.display_about_window)
         self.actionVersion.triggered.connect(lambda: check_version(self))
+        self.actionOpen_database_folder.triggered.connect(open_flight_folder)
         """
         Widgets tab import  / export
         """
@@ -120,6 +121,7 @@ class MainWindow(QtWidgets.QMainWindow):
         header.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableWidget_database.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableWidget_database.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.NoEditTriggers)
+        install_markdown_copy(self.tableWidget_database)
 
         # Autoriser l'édition uniquement sur double-clic pour les colonnes Comment et Alias
         self.tableWidget_database.itemDoubleClicked.connect(
@@ -139,7 +141,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab))
         self.tableWidget_database.itemChanged.connect(lambda : self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D ))
         
-        
+        #Refresh button
+        self.refresh_database_button = QtWidgets.QPushButton(qta.icon('ei.refresh'), '')
+        self.refresh_database_button.setFixedSize(20, 20)
+        self.widget_36.layout().addWidget(self.refresh_database_button)
+        self.refresh_database_button.clicked.connect(self.on_refresh_button)
         
         
         self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
@@ -166,8 +172,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.checkBox_x_axis_link)
         
         self.unit_dialog.unitsChanged.connect(self.timeserie.update_unit_timeserie)
-
-
+        install_markdown_copy(self.tableWidget_variable_plot1)
+        install_markdown_copy(self.tableWidget_variable_plot2)
+        install_markdown_copy(self.comboBox_flight_tab1D)
         """
         Widgets tab 2D plot
         """
@@ -215,6 +222,7 @@ class MainWindow(QtWidgets.QMainWindow):
         header_table_map.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableWidget_flights_plot2D.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableWidget_flights_plot2D.resizeColumnsToContents()
+        install_markdown_copy(self.tableWidget_flights_plot2D)
         
         headers_table_map_variable = ["Variable","Value", "Unit"]
         self.tableWidget_data_point_tab2D.setColumnCount(len(headers_table_map_variable))
@@ -223,6 +231,7 @@ class MainWindow(QtWidgets.QMainWindow):
         header_table_map_variable.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableWidget_data_point_tab2D.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableWidget_data_point_tab2D.resizeColumnsToContents()
+        install_markdown_copy(self.tableWidget_data_point_tab2D)
         
         #signals
         self.tableWidget_flights_plot2D.itemChanged.connect(lambda: plot.update_2D_plot(self.flight, self.tableWidget_flights_plot2D , self.graph_tab2D, self.combobox_variable_2D, self.colorbar,self.doubleSpinBox_colorbar_min, self.doubleSpinBox_colorbar_max, self.label_unit_cmap))
@@ -274,20 +283,24 @@ class MainWindow(QtWidgets.QMainWindow):
         
         
         #Table ------------------------------------
-        headers_table_polar = ["Vx", "Vz", "Glide Ratio"]
+        headers_table_polar = ["Vx", "Vz", "Glide Ratio", "IAS", "Comment"]
         self.tableView_polar_points.setColumnCount(len(headers_table_polar))
-        self.tableView_polar_points.setHorizontalHeaderLabels(headers_table_map)
+        self.tableView_polar_points.setHorizontalHeaderLabels(headers_table_polar)
         header_table_polar = self.tableView_polar_points.horizontalHeader()
         header_table_polar.setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.tableView_polar_points.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
         self.tableView_polar_points.resizeColumnsToContents()
         self.tableView_polar_points.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.SingleSelection)
-        self.tableView_polar_points.cellClicked.connect(lambda row, column: self.on_table_cell_clicked(row, self.flight, self.comboBox_flight_select_polartab, self.tableView_polar_points, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.pushButton_remove_polar_point))
+        self.tableView_polar_points.setEditTriggers(QtWidgets.QAbstractItemView.EditTrigger.DoubleClicked)
         
+        self.tableView_polar_points.cellClicked.connect(lambda row, column: self.on_table_cell_clicked(row, self.flight, self.comboBox_flight_select_polartab, self.tableView_polar_points, self.graph_tabpolar_timeserie, self.graph_tabpolar_vxvz, self.pushButton_remove_polar_point))
+        self.tableView_polar_points.itemChanged.connect(lambda item: save_comment_polar(item, self.flight, self.comboBox_flight_select_polartab))
+        install_markdown_copy(self.tableView_polar_points)
+
         self.graph_tabpolar_vxvz.setBackground("w")
         self.graph_tabpolar_vxvz.setXRange(0, 30, padding=0)
         self.graph_tabpolar_vxvz.setYRange(-10, 2, padding=0)
-        self.graph_tabpolar_vxvz.setTitle("Vx vs Vz")
+        self.graph_tabpolar_vxvz.setTitle("IAS vs Vz") # was previously Vx vs Vz but changed on  24-06-2026
         self.graph_tabpolar_vxvz.showGrid(x=True, y=True, alpha=0.3)
         self.graph_tabpolar_vxvz.setEnabled(True)
 
@@ -726,7 +739,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
         
-        
+    def on_refresh_button(self):
+        self.flight = load_vva_files()
+        self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
+        update_vva_table(self.flight, self.tableWidget_database)
+        self.timeserie.update_flight_list(self.flight)
+        update_table_button_state(self.tableWidget_database,self.flight, self.pushButton_export_entry_csv, self.pushButton_delete_entry, self.pushButton_analyze_entry, self.pushButton_export_entry_kml, self.tab_list, self.tabWidget)
+        self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D , self.combobox_variable_2D)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_tab1D)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_polartab)
+        self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
+        self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
+        self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D)
         
     def on_button_clear_log(self):
         self.textEdit_log.clear()

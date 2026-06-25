@@ -24,6 +24,8 @@ Deux notions différentes :
        - PyInstaller -> dossier contenant VVA.exe (sys.executable.parent)
 """
 
+import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -105,3 +107,18 @@ def flight_dir() -> Path:
         path = Path(tempfile.gettempdir()) / "Vector Vario Analyzer" / "flight"
         path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def open_flight_folder():
+    """
+    Ouvre le dossier flight dans l'explorateur de fichiers.
+    """
+    folder = flight_dir()
+    if sys.platform.startswith("win"):
+        os.startfile(folder)
+
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", str(folder)])
+
+    else:  # Linux
+        subprocess.Popen(["xdg-open", str(folder)])
