@@ -526,11 +526,15 @@ class ParaGliderWidget(gl.GLViewWidget):
 
     
 
-    def _apply_colormap(self, variable: np.ndarray, cmap_name: str = 'turbo') -> np.ndarray:
+    def _apply_colormap(self, variable: np.ndarray, min : float = None, max : float = None, cmap_name: str = 'turbo') -> np.ndarray:
         cmap = pg.colormap.get(cmap_name)
 
         v = np.asarray(variable, dtype=np.float64)
-        v_min, v_max = np.nanmin(v), np.nanmax(v)
+        if min and max:
+            v_min = min
+            v_max = max
+        else:
+            v_min, v_max = np.nanmin(v), np.nanmax(v)
 
         if v_max == v_min:
             norm = np.zeros_like(v)
@@ -677,11 +681,11 @@ class ParaGliderWidget(gl.GLViewWidget):
     def show_grid(self, state):
         self._grid.setVisible(state)
 
-    def set_color_trajectory(self, variable: np.ndarray = None, to_mapped: bool = False, cmap_name: str = 'turbo'):
+    def set_color_trajectory(self, variable: np.ndarray = None, to_mapped: bool = False, v_min: float = None, v_max : float = None, cmap_name: str = 'turbo'):
         
         if to_mapped:
             if variable is not None :
-                colors = self._apply_colormap(variable, cmap_name)
+                colors = self._apply_colormap(variable, v_min, v_max, cmap_name)
 
             self._trajectory.setData(color=colors)
         

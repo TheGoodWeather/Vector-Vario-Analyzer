@@ -1,12 +1,13 @@
+from PyQt6 import QtWidgets
 import pyqtgraph as pg
 import numpy as np
 from PyQt6 import QtCore , QtGui
 from utils import mapping, rgba_to_hex, hex_to_rgba
 from paraglider_widget import ParaGliderWidget
-from PyQt6.QtWidgets import QVBoxLayout, QWidget, QStackedLayout
+from PyQt6.QtWidgets import QDoubleSpinBox, QHBoxLayout, QLabel, QMenu, QPushButton, QVBoxLayout, QWidget, QStackedLayout
 from units import convert_array_to_unit, get_unit, convert_gps_to_local_xy
 from utils import get_label, get_variable, interp_spline, interp_nearest
-from PyQt6.QtGui import QFontMetrics, QPainter, QColor, QPen, QFont
+from PyQt6.QtGui import QAction, QFontMetrics, QPainter, QColor, QPen, QFont
 from PyQt6.QtCore import QSettings, Qt
 
 fps = 30
@@ -140,33 +141,26 @@ class DynamicTab(QtCore.QObject):
         self._setup_widget()
 
 
-        #COLOR BAR
-        self._colorbar_plot = pg.PlotWidget(parent=self.gl_container)
-        self._colorbar_plot.setFixedSize(220, 60)
-        self._colorbar_plot.hideAxis('left')
-        self._colorbar_plot.hideAxis('bottom')
-        self._colorbar_plot.setBackground((20, 20, 20, 180))
-        self._colorbar_plot.getViewBox().setDefaultPadding(0)
-        self._colorbar_plot.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+        #COLOR BAR DIALOG
 
-        self._colorbar_3d = pg.ColorBarItem(
-            values=(0, 1),
-            colorMap=pg.colormap.get('turbo'),
-            interactive=True,
-            orientation='horizontal',
-        )
-        self._colorbar_plot.addItem(self._colorbar_3d)
-        self._colorbar_3d.setOpacity(0)
+        self.model_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.model_widget.customContextMenuRequested.connect(self._show_context_menu)
 
-        # # Repositionner en bas à gauche quand le container est redimensionné
-        self.gl_container.resizeEvent = self._on_gl_container_resize
-        self._reposition_colorbar()
+        # self.dlg = ColorMapLimits(
+        #     np.nanmin(0),
+        #     np.nanmax(0),
+        #     cmap_name="turbo",
+        #     parent=self,
+        # )
+
+
+      
         
         self.comboBox_select_flight_dyntab.currentTextChanged.connect(lambda flight_text : self._fetch_flight(flight_text))
         self.comboBox_var_1_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_1_dyntab, self._curve1 , self.comboBox_var_1_dyntab, self.label_unit_var1_dyna ))
         self.comboBox_var_2_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab, self.label_unit_var2_dyna))
         self.comboBox_var_3_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_3_dyntab, self._curve3 , self.comboBox_var_3_dyntab ,self.label_unit_var3_dyna))
-        self.comboBox_colormap_dyna.currentIndexChanged.connect(lambda: self._set_color_trajectory(self.comboBox_colormap_dyna))
+        self.comboBox_colormap_dyna.currentIndexChanged.connect(lambda: self._set_color_trajectory())
 
         self.pushButton_play.clicked.connect(self.play)
         self.pushButton_pause.clicked.connect(self.pause)
@@ -295,11 +289,11 @@ class DynamicTab(QtCore.QObject):
             
             # self.model_widget.set_color_trajectory(self._alt_interp)
 
-    def _set_color_trajectory(self, combobox):
+    def set_color_trajectory(self, v_min : float = None, v_max : float = None):
         """
         Choose a variable and send it to paraglider_widget to plot it colormapped
         """
-        variable = combobox.currentData()
+        variable = self.comboBox_colormap_dyna.currentData()
         if variable is not None:
             z = self._flight['data'][variable]
             if self.radioButton_interpolated_dyna.isChecked():
@@ -310,7 +304,7 @@ class DynamicTab(QtCore.QObject):
         else:
             z_interp = None
             to_mapped = False
-        self.model_widget.set_color_trajectory(z_interp, to_mapped)
+        self.model_widget.set_color_trajectory(z_interp, to_mapped, v_min, v_max)
 
     def _interpolate_data(self, method = 'spline'):
         """
@@ -868,28 +862,23 @@ class DynamicTab(QtCore.QObject):
         }}
         """)
 
+    def _show_context_menu(self, pos):
+
+        menu = QMenu(self.model_widget)
+        print('here')
+        # --- Action : set color map limit ---
+        action_all = QAction("Set color mapping limits",self.model_widget )
+        action_all.setEnabled(True)
+        action_all.triggered.connect(self._show_color_limits_dialog)
         
-    def _reposition_colorbar(self):
-        """Positionne la colorbar en bas à gauche du gl_container."""
-        h = self.gl_container.height()
-        self._colorbar_plot.move(10, h - 70)
+        menu.addAction(action_all)
+        menu.exec(self.model_widget.mapToGlobal(pos))
 
-    def _on_gl_container_resize(self, event):
-        self._reposition_colorbar()
-        # Appeler le resizeEvent original du QWidget
-        QWidget.resizeEvent(self.gl_container, event)
+    def _show_color_limits_dialog(self):
+        self.dlg.exec()
 
-    def _update_colorbar_3d(self, z_min: float, z_max: float, variable: str, cmap_name: str = 'turbo'):
-        """Met à jour la colorbar — même logique que update_colorbar() en 2D."""
-        cmap = pg.colormap.get(cmap_name)
-        self._colorbar_3d.setOpacity(1)
-        self._colorbar_3d.setLevels((z_min, z_max))
-        self._colorbar_3d.setColorMap(cmap)
-        self._colorbar_plot.setTitle(get_label(variable), size='9pt')
-
-    def _hide_colorbar_3d(self):
-        self._colorbar_3d.setOpacity(0)
-
+        vmin, vmax = self.dlg.limits()
+        self._update_colorbar_3d
         
     def cleanup(self):
         """
@@ -1103,3 +1092,92 @@ class HUDWidget(QWidget):
             painter.drawText(tx, ty, label)
 
         painter.end()
+
+
+class ColorMapLimits(QtWidgets.QDialog):
+    def __init__(
+        self,
+        vmin,
+        vmax,
+        cmap_name="turbo",
+        parent=None,
+    ):
+        super().__init__()
+
+        self.setWindowTitle("Color mapping limits")
+        self.resize(450, 220)
+
+        layout = QVBoxLayout(self)
+
+        # --------------------------
+        # Color bar
+        # --------------------------
+
+        self.graphics = pg.GraphicsLayoutWidget()
+
+        self.cmap = pg.colormap.get(cmap_name)
+
+        self.colorbar = pg.ColorBarItem(
+            values=(vmin, vmax),
+            colorMap=self.cmap,
+            interactive=False,
+            orientation="horizontal",
+        )
+
+        self.colorbar.setImageItem(None)
+
+        self.graphics.addItem(self.colorbar)
+
+        layout.addWidget(self.graphics)
+
+        # --------------------------
+        # Spinboxes
+        # --------------------------
+
+        spin_layout = QHBoxLayout()
+
+        spin_layout.addWidget(QLabel("Min"))
+
+        self.spin_min = QDoubleSpinBox()
+        self.spin_min.setDecimals(2)
+        self.spin_min.setRange(-1e9, 1e9)
+        self.spin_min.setValue(vmin)
+
+        spin_layout.addWidget(self.spin_min)
+
+        spin_layout.addSpacing(20)
+
+        spin_layout.addWidget(QLabel("Max"))
+
+        self.spin_max = QDoubleSpinBox()
+        self.spin_max.setDecimals(2)
+        self.spin_max.setRange(-1e9, 1e9)
+        self.spin_max.setValue(vmax)
+
+        spin_layout.addWidget(self.spin_max)
+
+        layout.addLayout(spin_layout)
+
+
+        # --------------------------
+        # Connections
+        # --------------------------
+
+        self.spin_min.valueChanged.connect(self._update_colorbar)
+        self.spin_max.valueChanged.connect(self._update_colorbar)
+
+    def _update_colorbar(self):
+
+        vmin = self.spin_min.value()
+        vmax = self.spin_max.value()
+
+        if vmin >= vmax:
+            return
+
+        self.colorbar.setLevels((vmin, vmax))
+
+    def limits(self):
+        return (
+            self.spin_min.value(),
+            self.spin_max.value(),
+        )

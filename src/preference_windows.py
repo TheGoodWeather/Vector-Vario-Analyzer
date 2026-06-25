@@ -203,7 +203,7 @@ class RequirementsDialog(QtWidgets.QDialog):
         self.table.horizontalHeader().setStretchLastSection(True)
         layout.addWidget(self.table)
 
-        btn_close = QPushButton("Fermer")
+        btn_close = QPushButton("Close")
         btn_close.clicked.connect(self.close)
         layout.addWidget(btn_close)
 
