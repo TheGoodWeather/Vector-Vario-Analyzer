@@ -146,12 +146,12 @@ class DynamicTab(QtCore.QObject):
         self.model_widget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.model_widget.customContextMenuRequested.connect(self._show_context_menu)
 
-        # self.dlg = ColorMapLimits(
-        #     np.nanmin(0),
-        #     np.nanmax(0),
-        #     cmap_name="turbo",
-        #     parent=self,
-        # )
+        self.dlg = ColorMapLimits(
+            np.nanmin(0),
+            np.nanmax(0),
+            cmap_name="turbo",
+            parent=self,
+        )
 
 
       
@@ -160,7 +160,7 @@ class DynamicTab(QtCore.QObject):
         self.comboBox_var_1_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_1_dyntab, self._curve1 , self.comboBox_var_1_dyntab, self.label_unit_var1_dyna ))
         self.comboBox_var_2_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab, self.label_unit_var2_dyna))
         self.comboBox_var_3_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_3_dyntab, self._curve3 , self.comboBox_var_3_dyntab ,self.label_unit_var3_dyna))
-        self.comboBox_colormap_dyna.currentIndexChanged.connect(lambda: self._set_color_trajectory())
+        self.comboBox_colormap_dyna.currentIndexChanged.connect(lambda: self.set_color_trajectory())
 
         self.pushButton_play.clicked.connect(self.play)
         self.pushButton_pause.clicked.connect(self.pause)
@@ -305,6 +305,8 @@ class DynamicTab(QtCore.QObject):
             z_interp = None
             to_mapped = False
         self.model_widget.set_color_trajectory(z_interp, to_mapped, v_min, v_max)
+        v_min, v_max = self.model_widget.color_map_limits()
+        self.dlg.update_colorbar_from_outside(v_min, v_max)
 
     def _interpolate_data(self, method = 'spline'):
         """
@@ -875,10 +877,13 @@ class DynamicTab(QtCore.QObject):
         menu.exec(self.model_widget.mapToGlobal(pos))
 
     def _show_color_limits_dialog(self):
-        self.dlg.exec()
+        self.dlg.show()
 
         vmin, vmax = self.dlg.limits()
-        self._update_colorbar_3d
+    
+    def fetch_color_map_limits_from_3D(self):
+        v_min, v_max = self.hud_widget.color_map_limits
+        self.dlg.update_colorbar_from_outside(v_min, v_max)
         
     def cleanup(self):
         """
@@ -1124,7 +1129,11 @@ class ColorMapLimits(QtWidgets.QDialog):
             orientation="horizontal",
         )
 
-        self.colorbar.setImageItem(None)
+        axis = self.colorbar.axis
+        axis.setTextPen(pg.mkPen('k'))
+        axis.setTickPen(pg.mkPen('k'))
+
+        # self.colorbar.setImageItem(None)
 
         self.graphics.addItem(self.colorbar)
 
@@ -1181,3 +1190,7 @@ class ColorMapLimits(QtWidgets.QDialog):
             self.spin_min.value(),
             self.spin_max.value(),
         )
+    
+    def update_colorbar_from_outside(self, v_min, v_max):
+        self.spin_min.setValue(v_min)
+        self.spin_max.setValue(v_max)

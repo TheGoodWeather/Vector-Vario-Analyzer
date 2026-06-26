@@ -333,6 +333,10 @@ class ParaGliderWidget(gl.GLViewWidget):
         self._gnss_speed = 0.0
         # self._bearing = 0.0
 
+        #color map limits
+        self.v_min = 0
+        self.v_max = 0 
+
         self._min_radius_skybox = 0.0
         
         self.set_attitude(0,0,0)
@@ -531,17 +535,18 @@ class ParaGliderWidget(gl.GLViewWidget):
 
         v = np.asarray(variable, dtype=np.float64)
         if min and max:
-            v_min = min
-            v_max = max
+            self.v_min = min
+            self.v_max = max
         else:
-            v_min, v_max = np.nanmin(v), np.nanmax(v)
+            self.v_min, self.v_max = np.nanmin(v), np.nanmax(v)
+        
 
-        if v_max == v_min:
+
+        if self.v_max == self.v_min:
             norm = np.zeros_like(v)
         else:
-            norm = np.clip((v - v_min) / (v_max - v_min), 0, 1)
+            norm = np.clip((v - self.v_min) / (self.v_max - self.v_min), 0, 1)
 
-        # mode='float' retourne un array (N, 4) float dans [0, 1] → parfait pour GLLinePlotItem
         return cmap.map(norm, mode='float').astype(np.float32)
 
     # ------------------------------------------------------------------
@@ -695,6 +700,9 @@ class ParaGliderWidget(gl.GLViewWidget):
             r, g, b, a = qcolor_trajectory.getRgbF()
             gl_color = (r, g, b, a)
             self._trajectory.setData(color = gl_color) 
+
+    def color_map_limits(self):
+        return self.v_min, self.v_max
  
     
 
