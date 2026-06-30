@@ -5,7 +5,9 @@
 ### Added
 - Refresh button for database
 - Right click to copy content from any table
-- 
+- Open database folder from menu
+- Add dialog window to live change color mapping limits
+
 ### Changed
 
 ### Fixed
