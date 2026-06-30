@@ -3,7 +3,7 @@ import math
 from PyQt6 import QtWidgets
 import numpy as np
 import pyqtgraph as pg
-
+from PyQt6 import QtCore
 
 class VerticalWindDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
@@ -12,9 +12,18 @@ class VerticalWindDialog(QtWidgets.QDialog):
         self.setWindowTitle("Hodograph")
         self.resize(350, 350)
 
+        self.setModal(False)
+        self.setWindowFlags(
+            self.windowFlags()
+            | QtCore.Qt.WindowType.Tool
+            | QtCore.Qt.WindowType.WindowStaysOnTopHint
+        )
+
         self.plot_widget = pg.PlotWidget()
         self.plot_widget.setBackground("w")
         self.plot_widget.setAspectLocked(True)
+        self.plot_widget.scene().sigMouseMoved.connect(self._on_mouse_moved)
+      
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(self.plot_widget)
@@ -28,8 +37,23 @@ class VerticalWindDialog(QtWidgets.QDialog):
         self._circle_list = []
         self._label_speed_list = []
         self._label_angle_list = []
+
+        self.data_x= []
+        self.data_y = []
+        self.data_windspeed = []
+        self.data_winddir = []
         self.wind_speed_max = 30 # m/s
         self.wind_speed_min = 0 # m/s
+
+        self.cursor_circle = self._make_circle(0)
+        self.cursor_line = self._make_line(0, 0)
+        self.cursor_circle.setData(pen =pg.mkPen('b', width=0.5))
+        self.cursor_circle.setOpacity(50)
+        self.cursor_line.setData(pen =pg.mkPen('b', width=0.5))
+        self.cursor_line.setOpacity(50)
+
+        self.plot_widget.addItem(self.cursor_circle)
+        self.plot_widget.addItem(self.cursor_line)
 
         self.draw_diagram()
     
@@ -128,8 +152,7 @@ class VerticalWindDialog(QtWidgets.QDialog):
             self._label_angle_list
         ):
 
-            # ⭐ transformation clé (NORD = 0°, sens horaire)
-            theta = np.radians(90 - theta_deg)
+            theta = self._angle_to_rad(theta_deg)
 
             x_end = length * np.cos(theta)
             y_end = length * np.sin(theta)
@@ -143,11 +166,79 @@ class VerticalWindDialog(QtWidgets.QDialog):
             y = length * np.sin(theta) * 1.05
             label_angle.setPos(x, y)
 
+            ax = 0.5
+            ay = 0.5
+            cos_t = np.cos(theta)
+            sin_t = np.sin(theta)
+
+            if cos_t > 0.3:
+                ax = 0
+            elif cos_t < -0.3:
+                ax = 1
+
+            if sin_t > 0.3:
+                ay = 1
+            elif sin_t < -0.3:
+                ay = 0
+
+            label_angle.setAnchor((ax, ay))
+            label_angle.setPos(x, y)
+
 
     def _convert_data_to_hodo(self, r, theta_deg):
-        theta = np.radians(np.add(theta_deg, 90))
-        return r * np.cos(theta), r * np.sin(theta)
+        theta_rad = self._angle_to_rad(theta_deg)
+        return r * np.cos(theta_rad), r * np.sin(theta_rad)
+    
+    def _convert_hodo_to_data(self, x, y):
+        radius = np.sqrt(np.square(x) + np.square(y))
+        theta_rad = np.arccos(x/radius)
+        return radius, theta_rad
+    
 
+    def _on_mouse_moved(self, pos):
+        """
+        """
+        vb = self.plot_widget.getViewBox()
+        if not self.plot_widget.sceneBoundingRect().contains(pos):
+            return
+    
+        mouse_point = vb.mapSceneToView(pos)
+        x_mouse = mouse_point.x()   
+        y_mouse = mouse_point.y()
+
+        dx = self.data_x - x_mouse
+        dy = self.data_y - y_mouse
+
+        dist2 = dx * dx + dy * dy
+
+        index = np.argmin(dist2)
+
+        closest_windspeed = self.data_windspeed[index]
+        closest_winddir = self.data_winddir[index]
+
+        self._set_cursor(closest_windspeed, closest_winddir)
+
+
+    def _set_cursor(self, radius, angle):
+        angle_rad = self._angle_to_rad(angle)
+        theta = np.linspace(0, 2 * np.pi, 1000, endpoint=True)
+        self.cursor_circle.setData(
+                    radius * np.cos(theta),
+                    radius * np.sin(theta)
+                )
+        
+        x_end = radius * np.cos(angle_rad)
+        y_end = radius * np.sin(angle_rad)
+
+        self.cursor_line.setData([0, x_end], [0, y_end])
+       
+
+    def _angle_to_rad(self, theta_deg):
+        return np.deg2rad(np.subtract(90, theta_deg))
+    
+    def _angle_to_deg(self, theta_rad):
+        return np.rad2deg(np.subtract(90, theta_rad))
+    
     # API 
 
     def update_hodograph(self, data_windspeed, data_wind_dir):
@@ -156,9 +247,19 @@ class VerticalWindDialog(QtWidgets.QDialog):
         self._update_circle()
         self._update_lines()
         
-        x, y = self._convert_data_to_hodo(data_windspeed, data_wind_dir)
-        self.curve.setData(x,y)
+        self.data_x, self.data_y = self._convert_data_to_hodo(data_windspeed, data_wind_dir)
+        self.curve.setData(self.data_x,self.data_y)
+        self.plot_widget.setLimits(
+            xMin=- (math.ceil(self.wind_speed_max / 3) * 3 *1.3),
+            xMax= (math.ceil(self.wind_speed_max / 3) * 3 *1.3),
+            yMin=- (math.ceil(self.wind_speed_max / 3) * 3 *1.3),
+            yMax= (math.ceil(self.wind_speed_max / 3) * 3 *1.3)
+
+        )
         self.plot_widget.autoRange()
+        self.data_windspeed = data_windspeed
+        self.data_winddir = data_wind_dir
+
 
 
 

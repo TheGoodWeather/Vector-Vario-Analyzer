@@ -280,7 +280,7 @@ class SkewTWidget:
         self.plot_widget.setYRange(y_range_max, y_range_min)
         self.plot_widget.setXRange(x_range_min, x_range_max)   
         self.plot_widget.setLimits(
-            xMin=x_range_min - (x_range_max - x_range_min)*0.5,
+            xMin=-x_range_min - (x_range_max - x_range_min)*0.5,
             xMax=x_range_max + (x_range_max - x_range_min)*0.5,
             yMin=y_range_min - (y_range_max - y_range_min)*0.2,
             yMax=y_range_max + (y_range_max - y_range_min)*0.2
@@ -323,8 +323,8 @@ class SkewTWidget:
         self._calculate_linreg(self._P_data, self._Tdry_data)
         
         # Updating the hodograph
-        if self.vertical_wind_dialog.isVisible():
-            self.vertical_wind_dialog.update_hodograph(speed, angle)
+
+        self.vertical_wind_dialog.update_hodograph(speed, angle)
     
     def _update_windbarbs_display(self):
         vb = self.plot_widget.getViewBox()
