@@ -1,3 +1,4 @@
+from PyQt6.QtCore import pyqtSignal as Signal
 from PyQt6 import QtWidgets
 import pyqtgraph as pg
 import numpy as np
@@ -153,9 +154,11 @@ class DynamicTab(QtCore.QObject):
             parent=self,
         )
 
+        # Signals 
 
-      
-        
+        self.dlg.limitsChanged.connect(self.on_colormap_limits_changed)      
+
+
         self.comboBox_select_flight_dyntab.currentTextChanged.connect(lambda flight_text : self._fetch_flight(flight_text))
         self.comboBox_var_1_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_1_dyntab, self._curve1 , self.comboBox_var_1_dyntab, self.label_unit_var1_dyna ))
         self.comboBox_var_2_dyntab.currentIndexChanged.connect(lambda: self._update_plot(self.plotwidget_2_dyntab,self._curve2 , self.comboBox_var_2_dyntab, self.label_unit_var2_dyna))
@@ -305,8 +308,9 @@ class DynamicTab(QtCore.QObject):
             z_interp = None
             to_mapped = False
         self.model_widget.set_color_trajectory(z_interp, to_mapped, v_min, v_max)
-        v_min, v_max = self.model_widget.color_map_limits()
-        self.dlg.update_colorbar_from_outside(v_min, v_max)
+        self.fetch_color_map_limits_from_3D()
+
+
 
     def _interpolate_data(self, method = 'spline'):
         """
@@ -867,7 +871,6 @@ class DynamicTab(QtCore.QObject):
     def _show_context_menu(self, pos):
 
         menu = QMenu(self.model_widget)
-        print('here')
         # --- Action : set color map limit ---
         action_all = QAction("Set color mapping limits",self.model_widget )
         action_all.setEnabled(True)
@@ -878,18 +881,25 @@ class DynamicTab(QtCore.QObject):
 
     def _show_color_limits_dialog(self):
         self.dlg.show()
+        self.fetch_color_map_limits_from_3D()
 
-        vmin, vmax = self.dlg.limits()
     
     def fetch_color_map_limits_from_3D(self):
-        v_min, v_max = self.hud_widget.color_map_limits
-        self.dlg.update_colorbar_from_outside(v_min, v_max)
+        v_min, v_max = self.model_widget.color_map_limits()
+        variable = self.comboBox_colormap_dyna.currentData()
+        self.dlg.update_colorbar_from_outside(v_min, v_max, variable)
+
+    def on_colormap_limits_changed(self, vmin, vmax):
+        self.set_color_trajectory(vmin,vmax)
         
     def cleanup(self):
         """
         Close correctly the GL widget
         """
         self.model_widget.cleanup()
+
+    def close_colorbar_window(self):
+        self.dlg.close()
         
     
 
@@ -1100,6 +1110,9 @@ class HUDWidget(QWidget):
 
 
 class ColorMapLimits(QtWidgets.QDialog):
+    
+    limitsChanged = Signal(float, float)
+
     def __init__(
         self,
         vmin,
@@ -1108,9 +1121,15 @@ class ColorMapLimits(QtWidgets.QDialog):
         parent=None,
     ):
         super().__init__()
-
+    
         self.setWindowTitle("Color mapping limits")
-        self.resize(450, 220)
+        self.resize(450, 100)
+        self.setModal(False)
+        self.setWindowFlags(
+            self.windowFlags()
+            | QtCore.Qt.WindowType.Tool
+            | QtCore.Qt.WindowType.WindowStaysOnTopHint
+        )
 
         layout = QVBoxLayout(self)
 
@@ -1119,6 +1138,7 @@ class ColorMapLimits(QtWidgets.QDialog):
         # --------------------------
 
         self.graphics = pg.GraphicsLayoutWidget()
+        self.graphics.setBackground(None)
 
         self.cmap = pg.colormap.get(cmap_name)
 
@@ -1132,8 +1152,6 @@ class ColorMapLimits(QtWidgets.QDialog):
         axis = self.colorbar.axis
         axis.setTextPen(pg.mkPen('k'))
         axis.setTickPen(pg.mkPen('k'))
-
-        # self.colorbar.setImageItem(None)
 
         self.graphics.addItem(self.colorbar)
 
@@ -1154,8 +1172,10 @@ class ColorMapLimits(QtWidgets.QDialog):
 
         spin_layout.addWidget(self.spin_min)
 
-        spin_layout.addSpacing(20)
-
+        self.unit_min = QLabel()
+        self.unit_min.setText("Unit")
+        spin_layout.addWidget(self.unit_min)
+        spin_layout.addStretch(1)
         spin_layout.addWidget(QLabel("Max"))
 
         self.spin_max = QDoubleSpinBox()
@@ -1164,7 +1184,9 @@ class ColorMapLimits(QtWidgets.QDialog):
         self.spin_max.setValue(vmax)
 
         spin_layout.addWidget(self.spin_max)
-
+        self.unit_max = QLabel()
+        self.unit_max.setText("Unit")
+        spin_layout.addWidget(self.unit_max)
         layout.addLayout(spin_layout)
 
 
@@ -1172,10 +1194,11 @@ class ColorMapLimits(QtWidgets.QDialog):
         # Connections
         # --------------------------
 
-        self.spin_min.valueChanged.connect(self._update_colorbar)
-        self.spin_max.valueChanged.connect(self._update_colorbar)
+      
+        self.spin_min.valueChanged.connect(self._emit_limits)
+        self.spin_max.valueChanged.connect(self._emit_limits)
 
-    def _update_colorbar(self):
+    def _emit_limits(self):
 
         vmin = self.spin_min.value()
         vmax = self.spin_max.value()
@@ -1184,6 +1207,8 @@ class ColorMapLimits(QtWidgets.QDialog):
             return
 
         self.colorbar.setLevels((vmin, vmax))
+        self.limitsChanged.emit(vmin, vmax)
+
 
     def limits(self):
         return (
@@ -1191,6 +1216,13 @@ class ColorMapLimits(QtWidgets.QDialog):
             self.spin_max.value(),
         )
     
-    def update_colorbar_from_outside(self, v_min, v_max):
+    def update_colorbar_from_outside(self, v_min, v_max, variable):
+        self.variable = variable
+        self.unit_max.setText(get_unit(self.variable))
+        self.unit_min.setText(get_unit(self.variable))
+        self.setWindowTitle(f"Color mapping limits : {get_label(variable)}")
         self.spin_min.setValue(v_min)
         self.spin_max.setValue(v_max)
+
+    
+

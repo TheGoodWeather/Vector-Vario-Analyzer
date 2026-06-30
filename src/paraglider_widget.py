@@ -702,7 +702,14 @@ class ParaGliderWidget(gl.GLViewWidget):
             self._trajectory.setData(color = gl_color) 
 
     def color_map_limits(self):
-        return self.v_min, self.v_max
+        """
+        Returns the parameters used for the color mapping in order to update the colorbar 
+        """
+        return self.v_min, self.v_max 
+    
+
+
+    
  
     
 

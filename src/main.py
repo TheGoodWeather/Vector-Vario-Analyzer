@@ -590,6 +590,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def closeEvent(self, event):
         self.write_settings_main()
         self.dynamic.cleanup() 
+        self.dynamic.close_colorbar_window()
         super().closeEvent(event)
         event.accept()
         
