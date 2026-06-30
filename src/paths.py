@@ -109,11 +109,11 @@ def flight_dir() -> Path:
     return path
 
 
-def open_flight_folder():
+def open_flight_folder(path):
     """
     Ouvre le dossier flight dans l'explorateur de fichiers.
     """
-    folder = flight_dir()
+    folder = Path(path)
     if sys.platform.startswith("win"):
         os.startfile(folder)
 

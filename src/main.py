@@ -4,7 +4,7 @@ from pathlib import Path
 
 # PyQt6 
 from PyQt6 import QtWidgets, uic, QtCore
-from PyQt6.QtWidgets import QRadioButton, QTableWidgetItem, QMessageBox, QHeaderView, QSplashScreen
+from PyQt6.QtWidgets import QLabel, QRadioButton, QTableWidgetItem, QMessageBox, QHeaderView, QSplashScreen, QPushButton
 from PyQt6.QtCore import Qt, QPoint, QSize, QThreadPool, QSettings  # ← fusionné
 from PyQt6.QtGui import QColor, QBrush, QIcon, QPixmap
 
@@ -76,7 +76,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.read_settings_main()
         
         self.new_file_path = None 
-        
+
+        self.current_working_dir = self.settings.value("WorkingDir" , str(flight_dir()))
         
         
         """
@@ -90,7 +91,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionDependancies.triggered.connect(self.display_requirements_window)
         self.actionAbout.triggered.connect(self.display_about_window)
         self.actionVersion.triggered.connect(lambda: check_version(self))
-        self.actionOpen_database_folder.triggered.connect(open_flight_folder)
+        self.actionOpen_database_folder.triggered.connect(lambda : open_flight_folder(self.current_working_dir))
         """
         Widgets tab import  / export
         """
@@ -141,6 +142,22 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tableWidget_database.itemChanged.connect(lambda :self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab))
         self.tableWidget_database.itemChanged.connect(lambda : self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D ))
         
+
+        
+        # Working directory 
+        self.widget_36.layout().addSpacing(20)
+        self.label_workdir = QLabel()
+        self.widget_36.layout().addWidget(self.label_workdir)
+        self.widget_36.layout().addSpacing(20)
+        self.label_workdir.setText(f"Working directory : {str(self.settings.value("WorkingDir", str(flight_dir())))}")
+        self.change_current_dir = QPushButton(text="Change", parent=self)
+        self.change_current_dir.setFixedSize(50, 20)
+        self.widget_36.layout().addWidget(self.change_current_dir)
+        self.widget_36.layout().addStretch(1)
+
+        self.change_current_dir.clicked.connect(self.on_change_directory)
+
+
         #Refresh button
         self.refresh_database_button = QtWidgets.QPushButton(qta.icon('ei.refresh'), '')
         self.refresh_database_button.setFixedSize(20, 20)
@@ -148,12 +165,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.refresh_database_button.clicked.connect(self.on_refresh_button)
         
         
-        self.flight = load_vva_files()  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
+        self.flight = load_vva_files(self.current_working_dir)  #scan and load data from flight dir  # This variable contains all the data and metadata from flights 
         
         
         self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
         
+
+
         self.drop_zone = DropZone()
         self.drag_and_drop_layout.layout().insertWidget(0, self.drop_zone)
         self.drop_zone.fileDropped.connect(lambda filepath : self.on_drop_load_file(filepath))
@@ -605,7 +624,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.new_file_path[0]:
             self.new_file_path = Path(self.new_file_path[0]) 
             new_file_path_copy_name = Path(self.new_file_path).name
-            new_file_path_copy = flight_dir() / new_file_path_copy_name
+            # new_file_path_copy = flight_dir() / new_file_path_copy_name
+            new_file_path_copy = self.current_working_dir / new_file_path_copy_name
         else:
             return
         
@@ -649,7 +669,7 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info(f"{self.new_file_path.suffix} files are not supported on version {SOFTWARE_VERSION}")
             return
         
-        self.flight = load_vva_files()
+        self.flight = load_vva_files(self.current_working_dir)
         self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
         self.timeserie.update_flight_list(self.flight)
@@ -678,7 +698,8 @@ class MainWindow(QtWidgets.QMainWindow):
     
         new_file_path = Path(filepath) 
         new_file_path_copy_name = Path(new_file_path).name
-        new_file_path_copy = flight_dir() / new_file_path_copy_name
+        # new_file_path_copy = flight_dir() / new_file_path_copy_name
+        new_file_path_copy = self.current_working_dir / new_file_path_copy_name
 
         if new_file_path_copy.exists():
             logger.info(f"The file « {new_file_path_copy.name} » has already been uploaded")
@@ -720,7 +741,7 @@ class MainWindow(QtWidgets.QMainWindow):
             logger.info(f"{new_file_path.suffix} files are not supported on version {SOFTWARE_VERSION}")
             return
         
-        self.flight = load_vva_files()
+        self.flight = load_vva_files(self.current_working_dir)
         self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
         self.timeserie.update_flight_list(self.flight)
@@ -741,7 +762,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         
     def on_refresh_button(self):
-        self.flight = load_vva_files()
+        self.flight = load_vva_files(self.current_working_dir)
         self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)  #sorting the flight dic according to the date
         update_vva_table(self.flight, self.tableWidget_database)
         self.timeserie.update_flight_list(self.flight)
@@ -752,7 +773,55 @@ class MainWindow(QtWidgets.QMainWindow):
         self.populate_combobox_flight(self.flight, self.comboBox_flight_select_atmtab)
         self.populate_combobox_flight(self.flight, self.comboBox_select_flight_dyntab)
         self.populate_flight_table_tab_2D(self.flight, self.tableWidget_flights_plot2D,self.graph_tab2D, self.combobox_variable_2D)
-        
+    
+
+    def on_change_directory(self):
+        """
+        Allow the user to change its current directory by selecting a directory in the flight folder
+        """
+        root = flight_dir()
+
+        while True:
+            selected = QtWidgets.QFileDialog.getExistingDirectory(
+                self,
+                "Select a new working directory",
+                str(root),
+                QtWidgets.QFileDialog.Option.ShowDirsOnly,
+            )
+
+            if not selected:  # annulé
+                return
+
+            selected_path = Path(selected).resolve()
+
+            try:
+                is_inside = selected_path == root.resolve() or selected_path.is_relative_to(root.resolve())
+            except AttributeError:
+                # Python < 3.9 : pas de is_relative_to
+                try:
+                    selected_path.relative_to(root.resolve())
+                    is_inside = True
+                except ValueError:
+                    is_inside = False
+
+            if not is_inside:
+                QMessageBox.warning(
+                    self,
+                    "Permission denied",
+                    f"The working directory must be inside :\n{root}",
+                )
+                continue  
+
+            break
+        self.current_working_dir = selected_path
+        self.settings.setValue("WorkingDir", self.current_working_dir)
+        self.flight = load_vva_files(self.current_working_dir)
+        self.flight.sort(key=lambda f: f["metadata"]["date"], reverse=True)
+        update_vva_table(self.flight, self.tableWidget_database)
+        self.timeserie.update_flight_list(self.flight)
+        self.label_workdir.setText(f"Working directory : {str(selected_path)}")
+
+
     def on_button_clear_log(self):
         self.textEdit_log.clear()
         return

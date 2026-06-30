@@ -7,6 +7,7 @@
 - Right click to copy content from any table
 - Open database folder from menu
 - Add dialog window to live change color mapping limits
+- Support multi-directories on database for a better file management
 
 ### Changed
 

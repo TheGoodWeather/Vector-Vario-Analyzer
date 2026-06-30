@@ -12,6 +12,8 @@ from packaging.version import Version
 GITHUB_OWNER = "TheGoodWeather"
 GITHUB_REPO = "Vector-Vario-Analyzer"
 DOWNLOAD_URL = "https://vectorvario.com/en/analyzer/"
+
+
 class UnitDialog(QtWidgets.QDialog):
     
     

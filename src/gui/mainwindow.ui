@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>5</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="inexport_tab">
        <attribute name="title">
@@ -1053,11 +1053,21 @@
            </property>
            <widget class="QWidget" name="widget_polar_controls" native="true">
             <layout class="QHBoxLayout" name="horizontalLayout_6">
-             <property name="spacing"><number>2</number></property>
-             <property name="leftMargin"><number>0</number></property>
-             <property name="topMargin"><number>0</number></property>
-             <property name="rightMargin"><number>0</number></property>
-             <property name="bottomMargin"><number>0</number></property>
+             <property name="spacing">
+              <number>2</number>
+             </property>
+             <property name="leftMargin">
+              <number>0</number>
+             </property>
+             <property name="topMargin">
+              <number>0</number>
+             </property>
+             <property name="rightMargin">
+              <number>0</number>
+             </property>
+             <property name="bottomMargin">
+              <number>0</number>
+             </property>
              <item>
               <widget class="QWidget" name="widget_14" native="true">
                <property name="sizePolicy">
@@ -1085,12 +1095,6 @@
                    <size>
                     <width>0</width>
                     <height>0</height>
-                   </size>
-                  </property>
-                  <property name="maximumSize">
-                   <size>
-                    <width>200</width>
-                    <height>16777215</height>
                    </size>
                   </property>
                   <property name="maximumSize">
@@ -2614,7 +2618,7 @@
   </action>
   <action name="actionOpen_database_folder">
    <property name="text">
-    <string>Open database folder</string>
+    <string>Open current directory</string>
    </property>
   </action>
  </widget>
