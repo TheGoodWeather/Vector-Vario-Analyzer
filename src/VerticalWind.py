@@ -4,10 +4,12 @@ from PyQt6 import QtWidgets
 import numpy as np
 import pyqtgraph as pg
 from PyQt6 import QtCore, QtGui
+from PyQt6.QtCore import pyqtSignal
 
 from units import get_unit
 
 class VerticalWindDialog(QtWidgets.QDialog):
+    cursorIndexChanged = QtCore.pyqtSignal(int)
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -30,6 +32,8 @@ class VerticalWindDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(self.plot_widget)
 
+        self.cmap = pg.colormap.get('turbo')
+        
 
         # ------------------------------------------------------------------
         # HUD
@@ -61,12 +65,15 @@ class VerticalWindDialog(QtWidgets.QDialog):
         self.info_widget.raise_()
 
 
-
-        self.curve = self.plot_widget.plot(
-            [],
-            [],
-            pen=pg.mkPen((0, 100, 255), width=2)
+        self.scatter_color = pg.ScatterPlotItem(
+            x=[],
+            y=[],
+            size=3,
+            pen=None
         )
+
+        self.plot_widget.addItem(self.scatter_color)
+
         self._line_angle_list = [] #the list that contains all the drawed lined
         self._circle_list = []
         self._label_speed_list = []
@@ -247,16 +254,18 @@ class VerticalWindDialog(QtWidgets.QDialog):
         dist2 = dx * dx + dy * dy
 
         index = np.argmin(dist2)
-
+        self.cursorIndexChanged.emit(int(index))
+        
         closest_windspeed = self.data_windspeed[index]
         closest_winddir = self.data_winddir[index]
 
         self._set_cursor(closest_windspeed, closest_winddir)
-
-        self.label_direction.setText(f"Dir : {closest_windspeed:.0f} {get_unit("heading")}")
-        self.label_speed.setText(f"Speed : {closest_winddir:.1f} {get_unit("speed")}")
-        self.label_altitude.setText(f"Alt : {self.data_alti[index]:.0f} {get_unit("altitude")}")
+    
+        self.label_direction.setText(f"Dir : {round(closest_winddir)} {get_unit("wind_origin")}")
+        self.label_speed.setText(f"Speed : {round(closest_windspeed,1)} {get_unit("wind_vel")}")
+        self.label_altitude.setText(f"Alt : {round(self.data_alti[index])} {get_unit("QNS_alt")}")
         self.info_widget.resize(self.info_widget.sizeHint())
+
 
 
     def _set_cursor(self, radius, angle):
@@ -288,7 +297,6 @@ class VerticalWindDialog(QtWidgets.QDialog):
         self._update_lines()
         
         self.data_x, self.data_y = self._convert_data_to_hodo(data_windspeed, data_wind_dir)
-        self.curve.setData(self.data_x,self.data_y)
         self.plot_widget.setLimits(
             xMin=- (math.ceil(self.wind_speed_max / 3) * 3 *1.3),
             xMax= (math.ceil(self.wind_speed_max / 3) * 3 *1.3),
@@ -300,6 +308,20 @@ class VerticalWindDialog(QtWidgets.QDialog):
         self.data_windspeed = data_windspeed
         self.data_winddir = data_wind_dir
         self.data_alti = data_alti
+
+
+        #Color mapping relative to altitude
+
+        z_max = np.nanmax(self.data_alti)
+        z_min = np.nanmin(self.data_alti)
+
+        norm = np.clip((self.data_alti - z_min) / (z_max - z_min),0,1)
+        
+        brush_map = self.cmap.map(norm, mode='qcolor')
+        self.scatter_color.setData(self.data_x, self.data_y)
+        self.scatter_color.setBrush(brush_map)
+        
+        
 
 
 
