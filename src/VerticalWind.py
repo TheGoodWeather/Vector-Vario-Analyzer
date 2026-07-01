@@ -3,7 +3,9 @@ import math
 from PyQt6 import QtWidgets
 import numpy as np
 import pyqtgraph as pg
-from PyQt6 import QtCore
+from PyQt6 import QtCore, QtGui
+
+from units import get_unit
 
 class VerticalWindDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
@@ -28,6 +30,38 @@ class VerticalWindDialog(QtWidgets.QDialog):
         layout = QtWidgets.QVBoxLayout(self)
         layout.addWidget(self.plot_widget)
 
+
+        # ------------------------------------------------------------------
+        # HUD
+        # ------------------------------------------------------------------
+
+        self.info_widget = QtWidgets.QFrame(self.plot_widget)
+        self.info_widget.setStyleSheet("""
+        QFrame {
+            background-color: rgba(255,255,255,180);
+        }
+        QLabel {
+            background: transparent;
+        }
+        """)
+
+        layout_info = QtWidgets.QVBoxLayout(self.info_widget)
+        layout_info.setContentsMargins(6, 4, 6, 4)
+
+        self.label_direction = QtWidgets.QLabel("Dir :")
+        self.label_speed = QtWidgets.QLabel("Speed :")
+        self.label_altitude = QtWidgets.QLabel("Alt :")
+
+        layout_info.addWidget(self.label_direction)
+        layout_info.addWidget(self.label_speed)
+        layout_info.addWidget(self.label_altitude)
+
+        self.info_widget.adjustSize()
+        self.info_widget.move(10, 10)
+        self.info_widget.raise_()
+
+
+
         self.curve = self.plot_widget.plot(
             [],
             [],
@@ -42,14 +76,15 @@ class VerticalWindDialog(QtWidgets.QDialog):
         self.data_y = []
         self.data_windspeed = []
         self.data_winddir = []
+        self.data_alti = []
         self.wind_speed_max = 30 # m/s
         self.wind_speed_min = 0 # m/s
 
         self.cursor_circle = self._make_circle(0)
         self.cursor_line = self._make_line(0, 0)
-        self.cursor_circle.setData(pen =pg.mkPen('b', width=0.5))
+        self.cursor_circle.setData(pen =pg.mkPen( pen=pg.mkPen(QtGui.QColor(0, 0, 0, 200), width=0.5)))
         self.cursor_circle.setOpacity(50)
-        self.cursor_line.setData(pen =pg.mkPen('b', width=0.5))
+        self.cursor_line.setData(pen =pg.mkPen(pen=pg.mkPen(QtGui.QColor(0, 0, 0, 200), width=0.5)))
         self.cursor_line.setOpacity(50)
 
         self.plot_widget.addItem(self.cursor_circle)
@@ -114,7 +149,7 @@ class VerticalWindDialog(QtWidgets.QDialog):
         theta = np.linspace(0, 2 * np.pi, 1000, endpoint=True)
         cx = r * np.cos(theta)
         cy = r * np.sin(theta)
-        return pg.PlotCurveItem(cx, cy, pen=pg.mkPen('b', width=1))
+        return pg.PlotCurveItem(cx, cy, pen=pg.mkPen(QtGui.QColor(0, 0, 0, 150), width=1))
     
     def _make_line(self, length: float, theta_deg: float) -> pg.PlotCurveItem:
         
@@ -125,7 +160,7 @@ class VerticalWindDialog(QtWidgets.QDialog):
         return pg.PlotCurveItem(
             [0, x_end],
             [0, y_end],
-            pen=pg.mkPen('b', width=1)
+            pen=pg.mkPen( pen=pg.mkPen(QtGui.QColor(0, 0, 0, 150), width=1))
         )
     
         
@@ -218,6 +253,11 @@ class VerticalWindDialog(QtWidgets.QDialog):
 
         self._set_cursor(closest_windspeed, closest_winddir)
 
+        self.label_direction.setText(f"Dir : {closest_windspeed:.0f} {get_unit("heading")}")
+        self.label_speed.setText(f"Speed : {closest_winddir:.1f} {get_unit("speed")}")
+        self.label_altitude.setText(f"Alt : {self.data_alti[index]:.0f} {get_unit("altitude")}")
+        self.info_widget.resize(self.info_widget.sizeHint())
+
 
     def _set_cursor(self, radius, angle):
         angle_rad = self._angle_to_rad(angle)
@@ -241,7 +281,7 @@ class VerticalWindDialog(QtWidgets.QDialog):
     
     # API 
 
-    def update_hodograph(self, data_windspeed, data_wind_dir):
+    def update_hodograph(self, data_windspeed, data_wind_dir, data_alti):
 
         self.wind_speed_max = np.max(data_windspeed)
         self._update_circle()
@@ -259,6 +299,7 @@ class VerticalWindDialog(QtWidgets.QDialog):
         self.plot_widget.autoRange()
         self.data_windspeed = data_windspeed
         self.data_winddir = data_wind_dir
+        self.data_alti = data_alti
 
 
 

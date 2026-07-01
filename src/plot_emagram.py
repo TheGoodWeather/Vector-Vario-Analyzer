@@ -314,6 +314,7 @@ class SkewTWidget:
         P = flight['data']['P_stat'][x_min : x_max]
         speed = flight['data']['wind_vel'][x_min : x_max]
         angle = flight['data']['wind_origin'][x_min : x_max]
+        alti = flight['data']['QNS_alt'][x_min : x_max]
         Xgraph = x_max_range - (x_max_range - x_min_range)*0.1 
         self.wind_barbs.update(P/100, speed, angle, Xgraph)
         self._update_windbarbs_display()
@@ -324,7 +325,7 @@ class SkewTWidget:
         
         # Updating the hodograph
 
-        self.vertical_wind_dialog.update_hodograph(speed, angle)
+        self.vertical_wind_dialog.update_hodograph(speed, angle, alti)
     
     def _update_windbarbs_display(self):
         vb = self.plot_widget.getViewBox()
