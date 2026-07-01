@@ -3,6 +3,7 @@ import numpy as np
 from PyQt6 import QtCore , QtGui
 from utils import mapping
 from windbarbs import WindBarbs
+from VerticalWind import VerticalWindDialog
 
 L = 2.501e6 # J/kg : latent heat of vaporization at 0°C (2.257 J/kg at 100°C)
 Ra = 287.04  # J/kg : gas constant for dry air
@@ -43,6 +44,13 @@ class SkewTWidget:
         #Windbarbs
         self.wind_barbs = WindBarbs(plot_widget)
         self.wind_barbs.P_bot = self.P_bot
+
+        #Vertical wind dialog 
+        self.vertical_wind_dialog = VerticalWindDialog()
+        # Cache des dernières données reçues : permet de peupler
+        # le hodograph à l'ouverture sans recalculer quoi que ce soit.
+        self._hodo_data = None  # tuple (speed, angle, alti) ou None
+
         
         # self.myregP = LinearRegression()
         # self.myregT100 = LinearRegression()
@@ -275,7 +283,7 @@ class SkewTWidget:
         self.plot_widget.setYRange(y_range_max, y_range_min)
         self.plot_widget.setXRange(x_range_min, x_range_max)   
         self.plot_widget.setLimits(
-            xMin=x_range_min - (x_range_max - x_range_min)*0.5,
+            xMin=-x_range_min - (x_range_max - x_range_min)*0.5,
             xMax=x_range_max + (x_range_max - x_range_min)*0.5,
             yMin=y_range_min - (y_range_max - y_range_min)*0.2,
             yMax=y_range_max + (y_range_max - y_range_min)*0.2
@@ -309,6 +317,7 @@ class SkewTWidget:
         P = flight['data']['P_stat'][x_min : x_max]
         speed = flight['data']['wind_vel'][x_min : x_max]
         angle = flight['data']['wind_origin'][x_min : x_max]
+        alti = flight['data']['QNS_alt'][x_min : x_max]
         Xgraph = x_max_range - (x_max_range - x_min_range)*0.1 
         self.wind_barbs.update(P/100, speed, angle, Xgraph)
         self._update_windbarbs_display()
@@ -316,6 +325,12 @@ class SkewTWidget:
         self._P_data_full = P_full  #converting from Pa to hPa
         self._Tdry_data = Tdry
         self._calculate_linreg(self._P_data, self._Tdry_data)
+        
+        # Mise en cache pour pouvoir peupler le hodograph à l'ouverture
+        # même si la fenêtre était fermée au moment du rechargement des données.
+        self._hodo_data = (speed, angle, alti)
+        if self.vertical_wind_dialog.isVisible():
+            self.vertical_wind_dialog.update_hodograph(speed, angle, alti)
     
     def _update_windbarbs_display(self):
         vb = self.plot_widget.getViewBox()
@@ -617,6 +632,45 @@ class SkewTWidget:
         # Recalcul APRÈS avoir mis à jour les index et snappé
         self._calculate_linreg_update_only()
       
+    def _on_hodo_cursor_changed(self, index: int):
+        """
+        Reçoit l'index du point survolé dans le hodograph et déplace
+        le curseur de l'émagram sur la pression et la température
+        correspondantes, exactement comme si la souris avait bougé.
+        """
+        if self._P_data is None or self._Tdry_data is None:
+            return
+        if index < 0 or index >= len(self._P_data):
+            return
+ 
+        P_at_index    = float(self._P_data[index])     # hPa
+        Tdry_at_index = float(self._Tdry_data[index])  # °C
+ 
+        self.cursor_x = Tdry_at_index
+        self.cursor_y = P_at_index
+ 
+        # Isotherm cursor
+        x = Tdry_at_index + self.skewnessTerm(self.plevs, self.P_bot)
+        self._curve_isotherm_cursor.setData(
+            x, self.plevs,
+            pen=pg.mkPen(color=(180, 115, 51, 90), width=1,
+                         style=QtCore.Qt.PenStyle.DashLine)
+        )
+        # Isobar cursor
+        self._curve_isobar_cursor.setValue(P_at_index)
+ 
+        # Dry adiabat from that point
+        Tk = (Tdry_at_index + 273.15) * (self.P_bot / P_at_index) ** kappa - 273.15
+        dry = ((Tk + 273.15) * (self.plevs / self.P_bot) ** kappa
+               - 273.15 + self.skewnessTerm(self.plevs, self.P_bot))
+        self._curve_dry_adia_cursor.setData(
+            dry, self.plevs,
+            pen=pg.mkPen(color=(0, 180, 0, 90), width=0.5,
+                         style=QtCore.Qt.PenStyle.SolidLine)
+        )
+ 
+        self._update_labels_cursor()
+
         
     def set_background_visibility(self, isotherms=None, isobars=None,
                                dry_adiabats=None, moist_adiabats=None,
@@ -729,3 +783,11 @@ class SkewTWidget:
         self._P_data = None
         self._Tdry_data = None
         self.plot_widget.autoRange()
+
+
+    def show_vertical_wind_dialog(self):
+        self.vertical_wind_dialog.cursorIndexChanged.connect(self._on_hodo_cursor_changed)
+        if self._hodo_data is not None:
+            speed, angle, alti = self._hodo_data
+            self.vertical_wind_dialog.update_hodograph(speed, angle, alti)
+        self.vertical_wind_dialog.show()

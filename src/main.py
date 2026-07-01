@@ -4,8 +4,13 @@ from pathlib import Path
 
 # PyQt6 
 from PyQt6 import QtWidgets, uic, QtCore
+<<<<<<< HEAD
 from PyQt6.QtWidgets import QLabel, QRadioButton, QTableWidgetItem, QMessageBox, QHeaderView, QSplashScreen, QPushButton
 from PyQt6.QtCore import Qt, QPoint, QSize, QThreadPool, QSettings  # ← fusionné
+=======
+from PyQt6.QtWidgets import QRadioButton, QTableWidgetItem, QMessageBox, QHeaderView, QSplashScreen
+from PyQt6.QtCore import Qt, QPoint, QSize, QThreadPool, QSettings  
+>>>>>>> feature/vertical_wind
 from PyQt6.QtGui import QColor, QBrush, QIcon, QPixmap
 
 # Libs tierces lougirdes
@@ -114,7 +119,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tab_list = [self.oneDplotter_tab,self.twoDplotter_tab,self.polar_tab,self.atmo_tab, self.dyna_tab]
         for tab in self.tab_list:
             index = self.tabWidget.indexOf(tab)
-            self.tabWidget.setTabEnabled(index, False)
+            self.tabWidget.setTabEnabled(index, True)
             
         self.tableWidget_database.setColumnCount(len(headers))
         self.tableWidget_database.setHorizontalHeaderLabels(headers)
@@ -484,6 +489,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkBox_moist_adia.setCheckState(Qt.CheckState.Unchecked)
         self.checkBox_mixing_ratio.setCheckState(Qt.CheckState.Unchecked)
         self.checkBox_windbarbs_atm.setCheckState(Qt.CheckState.Unchecked)
+
+        self.pushButton_vertical_wind.clicked.connect(self.display_vertical_wind_window)
 
 
         """
@@ -1159,9 +1166,8 @@ class MainWindow(QtWidgets.QMainWindow):
         dialog = AboutDialog(self)
         dialog.exec()
 
-    def display_version_window(self):
-        dialog = VersionDialog(self)
-        dialog.exec()
+    def display_vertical_wind_window(self):
+        self.skewt.show_vertical_wind_dialog()
         
         
     def button_help_grad_clicked(self):
