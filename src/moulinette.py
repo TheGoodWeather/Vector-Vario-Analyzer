@@ -106,7 +106,7 @@ def fetch_raw_csv(flight_dic , progress_callback):
             raw_data["IAS"] = np.round(np.divide(np.sqrt(np.abs(np.multiply(2.0 / 1.225, np.add(raw_data["DP"], np.add(raw_data["A0_cor_DP"][-1], np.multiply(raw_data["A1_cor_DP"][-1], raw_data["T_sensor"])))))), flight_dic['metadata']['calib']),2)
         
         #raw_data["P_stat"] = np.divide(raw_data["P_stat"],10)
-        
+        raw_data["turb"] = np.full(len(raw_data["GNSS_time"]),np.nan)
         raw_data["QNS_alt"] = np.full(len(raw_data["GNSS_time"]),np.nan)
         raw_data["netto"] = np.full(len(raw_data["GNSS_time"]),np.nan)
         
@@ -265,6 +265,8 @@ def fetch_raw_igc(flight_dic, progress_callback):
         
         if len(raw_data_turb) > 0:
             raw_data["turb"] = sma_filter(raw_data_turb, 20)
+        else:
+            raw_data["turb"] = np.full(len(raw_data["GNSS_time"]),np.nan)
 
         timestamps = np.array([t.timestamp() for t in raw_data["GNSS_time"]])
         dt = np.mean(np.diff(timestamps))

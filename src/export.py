@@ -35,7 +35,7 @@ def export_file_csv(flight, parent):
                     "GNSS_time", "GNSS_lat (dec degrees)", "GNSS_lon (dec degrees)" , "GNSS_alt (m)", "GNSS_speed (m/s)",  "GNSS_head (deg)", "QNS_alt (m)", "compass_head (deg)", 
                     "pitch (deg)", "roll (deg) ", "G_force" , "vario (m/s)", "DP (Pa)", "T_sensor (degC)", 
                     "P_stat (Pa)", "air_T (degC)" , "air_RH (%)", "wind_origin (deg)", "wind_vel (m/s)", "netto (m/s)", "IAS (m/s)","AirES (hPa)", 
-                    "AirE (hPa)", "AirW","AirTd (degC)", "LCL (m)" , "AirTheta (degK)", "AirRho (kg/m^3)", "VarioIAS (m/s)" , "TAS (m/s)"
+                    "AirE (hPa)", "AirW","AirTd (degC)", "LCL (m)" , "AirTheta (degK)", "AirRho (kg/m^3)", "VarioIAS (m/s)" , "TAS (m/s)", "turb (m/s)"
                 ])
                 
                 # Write data   
@@ -70,7 +70,8 @@ def export_file_csv(flight, parent):
                         flight["data"]["AirTheta"][i],
                         flight["data"]["AirRho"][i],
                         flight["data"]["VarioIAS"][i],
-                        flight["data"]["TAS"][i], 
+                        flight["data"]["TAS"][i],
+                        flight["data"]["turb"][i],
                     ])
                     
             logger.info(f"Save succesful : {filepath} ")

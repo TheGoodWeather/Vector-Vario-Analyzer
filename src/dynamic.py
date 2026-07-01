@@ -1221,8 +1221,12 @@ class ColorMapLimits(QtWidgets.QDialog):
         self.unit_max.setText(get_unit(self.variable))
         self.unit_min.setText(get_unit(self.variable))
         self.setWindowTitle(f"Color mapping limits : {get_label(variable)}")
+        self.spin_min.blockSignals(True)
+        self.spin_max.blockSignals(True)
         self.spin_min.setValue(v_min)
         self.spin_max.setValue(v_max)
+        self.spin_min.blockSignals(False)
+        self.spin_max.blockSignals(False)
 
     
 
