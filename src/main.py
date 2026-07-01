@@ -4,13 +4,8 @@ from pathlib import Path
 
 # PyQt6 
 from PyQt6 import QtWidgets, uic, QtCore
-<<<<<<< HEAD
 from PyQt6.QtWidgets import QLabel, QRadioButton, QTableWidgetItem, QMessageBox, QHeaderView, QSplashScreen, QPushButton
 from PyQt6.QtCore import Qt, QPoint, QSize, QThreadPool, QSettings  # ← fusionné
-=======
-from PyQt6.QtWidgets import QRadioButton, QTableWidgetItem, QMessageBox, QHeaderView, QSplashScreen
-from PyQt6.QtCore import Qt, QPoint, QSize, QThreadPool, QSettings  
->>>>>>> feature/vertical_wind
 from PyQt6.QtGui import QColor, QBrush, QIcon, QPixmap
 
 # Libs tierces lougirdes
@@ -1528,28 +1523,28 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 if __name__ == "__main__":
-    # try:
+    try:
        
-    app = QtWidgets.QApplication.instance()
+        app = QtWidgets.QApplication.instance()
 
-    if app is None:
-        app = QtWidgets.QApplication([sys.argv[0]])
-    
-    
-    #splash screen
-    pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
-    splash = QSplashScreen(pixmap)
-    splash.show()
+        if app is None:
+            app = QtWidgets.QApplication([sys.argv[0]])
+        
+        
+        #splash screen
+        pixmap = QPixmap(str(resource_path("gui/icons/logo.png")))
+        splash = QSplashScreen(pixmap)
+        splash.show()
 
-    app.processEvents()
-    app.setStyle("Fusion")
-    app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
-    window = MainWindow()
+        app.processEvents()
+        app.setStyle("Fusion")
+        app.setWindowIcon(QIcon(str(resource_path("gui/icons/app_icon.ico"))))
+        window = MainWindow()
 
-    window.show()
-    splash.finish(window)
-    sys.exit(app.exec())
-    # except Exception as e:
-    #     logger.exception(f"Fatal error occurred during startup {e}")
+        window.show()
+        splash.finish(window)
+        sys.exit(app.exec())
+    except Exception as e:
+        logger.exception(f"Fatal error occurred during startup {e}")
         
         
