@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased 
+## [0.04] - 2026-07-04
 
 ### Added
 - Refresh button for database
@@ -8,10 +8,7 @@
 - Open database folder from menu
 - Add dialog window to live change color mapping limits
 - Support multi-directories on database for a better file management
-
-### Changed
-
-### Fixed
+- Hodograph Analysis added to Skew-T tab
 
 
 ## [0.03] - 2026-06-09
